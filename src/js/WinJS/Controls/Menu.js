@@ -272,17 +272,31 @@ define([
                 // Called by flyout's _findPosition so that application can update it status
                 // we do the test and we can then fix this last-minute before showing.
                 _checkToggle: function Menu_checkToggle() {
-                    var toggles = this._element.querySelectorAll(".win-command[aria-checked]");
+                    var toggleCommands = this._element.querySelectorAll(".win-command[aria-checked]");
                     var hasToggle = false;
-                    if (toggles) {
-                        for (var i = 0; i < toggles.length; i++) {
-                            if (toggles[i] && toggles[i].winControl && !toggles[i].winControl.hidden) {
+                    if (toggleCommands) {
+                        for (var i = 0; i < toggleCommands.length; i++) {
+                            if (toggleCommands[i] && toggleCommands[i].winControl && !toggleCommands[i].winControl.hidden) {
                                 // Found a visible toggle control
                                 hasToggle = true;
                                 break;
                             }
                         }
                     }
+
+                    var flyoutCommands = this._element.querySelectorAll(".win-command");
+                    var hasFlyout = false;
+                    if (flyoutCommands) {
+                        for (var i = 0; i < flyoutCommands.length; i++) {
+                            if (flyoutCommands[i].winControl && flyoutCommands[i].winControl.type === _Constants.typeFlyout && !flyoutCommands[i].winControl.hidden) {
+                                for (var count = 0; count < flyoutCommands.length; count++) {
+                                // Found a visible toggle control
+                                hasFlyout = true;
+                                break;
+                            }
+                        }
+                    }
+
                     if (hasToggle) {
                         _ElementUtilities.addClass(this._element, _Constants.menuToggleClass);
                     } else {
@@ -291,7 +305,7 @@ define([
                 },
 
                 _checkForFlyoutCommands: function Menu_checkForFlyoutCommands() {
-                    var commands = this._element.querySelectorAll(".win-command");
+                    var commands = this._element.querySelectorAll(".win-command"); 
                     for (var count = 0; count < commands.length; count++) {
                         if (commands[count].winControl) {
                             // Remember our anchor in case it's a flyout
