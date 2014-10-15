@@ -290,9 +290,10 @@ define([
                         for (var i = 0; i < flyoutCommands.length; i++) {
                             if (flyoutCommands[i].winControl && flyoutCommands[i].winControl.type === _Constants.typeFlyout && !flyoutCommands[i].winControl.hidden) {
                                 for (var count = 0; count < flyoutCommands.length; count++) {
-                                // Found a visible toggle control
-                                hasFlyout = true;
-                                break;
+                                    // Found a visible toggle control
+                                    hasFlyout = true;
+                                    break;
+                                }
                             }
                         }
                     }

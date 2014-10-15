@@ -154,9 +154,19 @@ define([
                         // we allow setting first time only. otherwise we ignore it.
                         if (!this._type) {
                             if (value !== _Constants.typeButton && value !== _Constants.typeFlyout && value !== _Constants.typeToggle && value !== _Constants.typeSeparator) {
-                                this._type = _Constants.typeButton;
-                            } else {
-                                this._type = value;
+                                value = _Constants.typeButton;
+                            }
+
+                            this._type = value;
+
+                            if (value === _Constants.typeButton) {
+                                _Utilities.addClass(this.element, _Constants.menuCommandButtonClass);
+                            } else if (value === _Constants.typeFlyout) {
+                                _Utilities.addClass(this.element, _Constants.menuCommandFlyoutClass);
+                            } else if (value === _Constants.typeSeparator) {
+                                _Utilities.addClass(this.element, _Constants.menuCommandSeparatorClass);
+                            } else if (value === _Constants.typeToggle) {
+                                _Utilities.addClass(this.element, _Constants.menuCommandToggleClass);
                             }
                         }
                     }
@@ -172,7 +182,7 @@ define([
                     },
                     set: function (value) {
                         this._label = value || "";
-                        this._element.textContent = this.label;
+                        this._labelSpan.textContent = this.label;
 
                         // Update aria-label
                         this._element.setAttribute("aria-label", this.label);
@@ -385,7 +395,7 @@ define([
                 },
 
                 _createButton: function MenuCommand_createButton() {
-                    // Make sure there's an input element
+                    // Make sure there's an element
                     if (!this._element) {
                         this._element = _Global.document.createElement("button");
                     } else {
@@ -397,10 +407,45 @@ define([
                     }
 
                     // MenuCommand buttons need to look like this:
-                    //// <button type="button" onclick="" class="win-command">Command 1</button>
+                    //// <button type="button" onclick="" class="win-command">
+                    ////      <span class="win-toggleicon">&#xE0E7;</span><span class="win-label">Command 1</span><span class="win-flyouticon">&#xE76C</span>
+                    //// </button>
                     this._element.type = "button";
+                    this._toggleSpan = _Global.document.createElement("span");
+                    this._toggleSpan.setAttribute("aria-hidden", "true");
+                    this._toggleSpan.className = "win-toggleicon";
+                    this._toggleSpan.tabIndex = -1;
+                    this._element.appendChild(this._toggleSpan);
+                    this._labelSpan = _Global.document.createElement("span");
+                    this._labelSpan.setAttribute("aria-hidden", "true");
+                    this._labelSpan.className = "win-label";
+                    this._labelSpan.tabIndex = -1;
+                    this._element.appendChild(this._labelSpan);
+                    this._flyoutSpan = _Global.document.createElement("span");
+                    this._flyoutSpan.setAttribute("aria-hidden", "true");
+                    this._flyoutSpan.className = "win-flyouticon";
+                    this._flyoutSpan.tabIndex = -1;
+                    this._element.appendChild(this._flyoutSpan);
 
-                    // 'textContent' label is added later by caller
+                    // Label and icons are added later by caller
+
+                    //// Make sure there's an element
+                    //if (!this._element) {
+                    //    this._element = _Global.document.createElement("button");
+                    //} else {
+                    //    // Verify the input was a button
+                    //    if (this._element.tagName !== "BUTTON") {
+                    //        throw new _ErrorFromName("WinJS.UI.MenuCommand.BadButtonElement", strings.badButtonElement);
+                    //    }
+                    //    this._element.innerHTML = "";
+                    //}
+
+                    //// MenuCommand buttons need to look like this:
+                    ////// <button type="button" onclick="" class="win-command">Command 1</button>
+                    //this._element.type = "button";
+
+                    //// 'textContent' label is added later by caller
+
                 },
 
                 _handleMenuClick: function MenuCommand_handleMenuClick(event) {
