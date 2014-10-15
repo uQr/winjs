@@ -551,9 +551,32 @@ Menu commands.
 }
 
 /*
-Menu toggle buttons.
+Menu toggle commands.
 */
-.win-menu-toggle button.win-command::before {
+/*.win-menu-toggle button.win-command::before {
+    font-family: "Segoe UI Symbol", "Symbols";
+    content: "\E0E7";
+    visibility: hidden;
+    padding-left: 0px;
+    padding-right: 12px;
+}*/
+
+/*.win-menu-toggle button[aria-checked=true].win-command::before {*/
+    /* Display a checkbox if aria-checked is set */
+    /*visibility: visible;
+}*/
+
+/*.win-menu-toggle button.win-command {
+    .RTL({
+        &::before {
+            padding-right: 0;
+            padding-left: 12px;
+            float: right;
+        }
+    });
+}*/
+////////
+.win-menu-toggle button.win-command .win-toggleicon::before {
     font-family: "Segoe UI Symbol", "Symbols";
     content: "\E0E7";
     visibility: hidden;
@@ -561,12 +584,38 @@ Menu toggle buttons.
     padding-right: 12px;
 }
 
-.win-menu-toggle button[aria-checked=true].win-command::before {
+.win-menu-toggle button.win-command-toggle[aria-checked=true] .win-toggle-icon::before {
     /* Display a checkbox if aria-checked is set */
     visibility: visible;
 }
 
-.win-menu-toggle button.win-command {
+.win-menu-toggle button.win-command .win-toggleicon {
+    .RTL({
+        &::before {
+            padding-right: 0;
+            padding-left: 12px;
+            float: right;
+        }
+    });
+}
+
+/*
+Menu flyout commands.
+*/
+.win-menu-toggle button.win-command .win-flyouticon::before {
+    font-family: "Segoe UI Symbol", "Symbols";
+    content: "\E76C";
+    visibility: hidden;
+    padding-left: 0px;
+    padding-right: 12px;
+}
+
+.win-menu-toggle button.win-command-flyout .win-flyout-icon::before {
+    /* Display a checkbox if aria-checked is set */
+    visibility: visible;
+}
+
+.win-menu-toggle button.win-command .win-toggleicon {
     .RTL({
         &::before {
             padding-right: 0;
