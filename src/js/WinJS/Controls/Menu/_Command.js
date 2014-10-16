@@ -160,13 +160,13 @@ define([
                             this._type = value;
 
                             if (value === _Constants.typeButton) {
-                                _Utilities.addClass(this.element, _Constants.menuCommandButtonClass);
+                                _ElementUtilities.addClass(this.element, _Constants.menuCommandButtonClass);
                             } else if (value === _Constants.typeFlyout) {
-                                _Utilities.addClass(this.element, _Constants.menuCommandFlyoutClass);
+                                _ElementUtilities.addClass(this.element, _Constants.menuCommandFlyoutClass);
                             } else if (value === _Constants.typeSeparator) {
-                                _Utilities.addClass(this.element, _Constants.menuCommandSeparatorClass);
+                                _ElementUtilities.addClass(this.element, _Constants.menuCommandSeparatorClass);
                             } else if (value === _Constants.typeToggle) {
-                                _Utilities.addClass(this.element, _Constants.menuCommandToggleClass);
+                                _ElementUtilities.addClass(this.element, _Constants.menuCommandToggleClass);
                             }
                         }
                     }

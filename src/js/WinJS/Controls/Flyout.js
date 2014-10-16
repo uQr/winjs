@@ -396,9 +396,9 @@ define([
                     this._hasScrolls = false;
                     this._keyboardSquishedUs = 0;
 
-                    // Make sure menu toggles behave
-                    if (this._checkToggle) {
-                        this._checkToggle();
+                    // Make sure menu commands display correctly
+                    if (this._checkMenuCommands) {
+                        this._checkMenuCommands();
                     }
 
                     // Update margins for this alignment and remove old scrolling

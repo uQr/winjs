@@ -271,38 +271,26 @@ define([
 
                 // Called by flyout's _findPosition so that application can update it status
                 // we do the test and we can then fix this last-minute before showing.
-                _checkToggle: function Menu_checkToggle() {
-                    var toggleCommands = this._element.querySelectorAll(".win-command[aria-checked]");
-                    var hasToggle = false;
-                    if (toggleCommands) {
-                        for (var i = 0; i < toggleCommands.length; i++) {
-                            if (toggleCommands[i] && toggleCommands[i].winControl && !toggleCommands[i].winControl.hidden) {
-                                // Found a visible toggle control
-                                hasToggle = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    var flyoutCommands = this._element.querySelectorAll(".win-command");
-                    var hasFlyout = false;
-                    if (flyoutCommands) {
-                        for (var i = 0; i < flyoutCommands.length; i++) {
-                            if (flyoutCommands[i].winControl && flyoutCommands[i].winControl.type === _Constants.typeFlyout && !flyoutCommands[i].winControl.hidden) {
-                                for (var count = 0; count < flyoutCommands.length; count++) {
-                                    // Found a visible toggle control
-                                    hasFlyout = true;
-                                    break;
+                _checkMenuCommands: function Menu_checkMenuCommands() {
+                    var menuCommands = this._element.querySelectorAll(".win-command"),
+                        hasToggleCommands = false,
+                        hasFlyoutCommands = false;
+                    if (menuCommands) {
+                        for (var i = 0, len = menuCommands.length; i < len; i++) {
+                            var menuCommand = menuCommands[i].winControl;
+                            if (menuCommand && !menuCommand.hidden) {
+                                if (!hasToggleCommands && menuCommand.type === _Constants.typeToggle && menuCommand.selected) {
+                                    hasToggleCommands = true;
+                                }
+                                if (!hasFlyoutCommands && menuCommand.type === _Constants.typeFlyout && menuCommand.flyout) {
+                                    hasFlyoutCommands = true;
                                 }
                             }
                         }
                     }
 
-                    if (hasToggle) {
-                        _ElementUtilities.addClass(this._element, _Constants.menuToggleClass);
-                    } else {
-                        _ElementUtilities.removeClass(this._element, _Constants.menuToggleClass);
-                    }
+                    _ElementUtilities[hasToggleCommands ? 'addClass' : 'removeClass'](this._element, _Constants.menuContainsToggleCommandClass);
+                    _ElementUtilities[hasFlyoutCommands ? 'addClass' : 'removeClass'](this._element, _Constants.menuContainsFlyoutCommandClass);
                 },
 
                 _checkForFlyoutCommands: function Menu_checkForFlyoutCommands() {

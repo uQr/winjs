@@ -11,7 +11,7 @@ export var flyoutMenuCssClass = "win-toolbar-flyoutmenu";
 export var inlineMenuCssClass = "win-toolbar-inlinemenu";
 export var emptyToolbarCssClass = "win-toolbar-empty";
 export var menuCssClass = "win-menu";
-export var menuToggleClass = "win-menu-toggle";
+export var menuContainsToggleCommandClass = "win-menu-containstogglecommand";
 
 export var contentMenuCommandDefaultLabel = "Custom content";
 

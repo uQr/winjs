@@ -506,7 +506,8 @@ Menu control.
     text-align: left; /* Set explicitly in case our parent has different alignment, like appbar overflow. */
     min-height: 46px; /* 44px -  2px in border = 46px */
     max-height: ~"calc(100% - 26px)";
-    max-width: none;
+    min-width: 136px;
+    max-width: 456px;
 }
 
 .win-menu {
@@ -520,20 +521,54 @@ Menu control.
 Menu commands.
 */
 .win-menu button.win-command {
-    display: block;
-    padding: 10px 20px 12px 20px;
+    #flex > .display-flex();
+    #flex > .flex-direction(row);
+    #flex > .flex-wrap(nowrap);
+    #flex > .align-items(center);
+        
+    padding-top: 11px; 
+    padding-bottom: 13px;
     min-height: 44px;
     margin-left: 0;
     margin-right: 0;
-    float: none;
-    text-align: left;
     width: 100%;
     .win-type-body();
+    
+    .win-toggleicon, .win-flyouticon {
+        #flex > .flex(0; 0; auto);
+        display: none;
+        visibility: hidden;
+        font-size: 16px;
+        font-family: "Segoe UI Symbol", "Symbols";
+        margin-left: 12px;
+    }
+    .win-toggleicon::before {
+        content: "\E0E7";
+    }
+    .win-flyouticon {
+        margin-right: 16px;
+        &::before {
+            content: "\E26B"; 
+        }
+    }
+
+    .win-label {
+        #flex > .flex(1; 1; auto);
+        font-size: 15px;
+        line-height: inherit;
+        min-width: 112px;
+        max-width: none;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        margin: 0px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
 }
 
 .win-menu button.win-command {
     .RTL({
-        text-align: right;
+        #flex > .flex-direction(row-reverse);
     });
 }
 
@@ -551,77 +586,27 @@ Menu commands.
 }
 
 /*
-Menu toggle commands.
+Menu toggle and flyout commands.
 */
-/*.win-menu-toggle button.win-command::before {
-    font-family: "Segoe UI Symbol", "Symbols";
-    content: "\E0E7";
-    visibility: hidden;
-    padding-left: 0px;
-    padding-right: 12px;
-}*/
-
-/*.win-menu-toggle button[aria-checked=true].win-command::before {*/
-    /* Display a checkbox if aria-checked is set */
-    /*visibility: visible;
-}*/
-
-/*.win-menu-toggle button.win-command {
-    .RTL({
-        &::before {
-            padding-right: 0;
-            padding-left: 12px;
-            float: right;
-        }
-    });
-}*/
-////////
-.win-menu-toggle button.win-command .win-toggleicon::before {
-    font-family: "Segoe UI Symbol", "Symbols";
-    content: "\E0E7";
-    visibility: hidden;
-    padding-left: 0px;
-    padding-right: 12px;
+.win-menu-containstogglecommand button.win-command .win-toggleicon,
+.win-menu-containsflyoutcommand button.win-command .win-flyouticon {
+    display: inline-block;
 }
 
-.win-menu-toggle button.win-command-toggle[aria-checked=true] .win-toggle-icon::before {
-    /* Display a checkbox if aria-checked is set */
+.win-menu-containstogglecommand button.win-command-toggle[aria-checked=true] .win-toggleicon,
+.win-menu-containsflyoutcommand button.win-command-flyout .win-flyouticon {
     visibility: visible;
 }
 
-.win-menu-toggle button.win-command .win-toggleicon {
+.win-menu-containstogglecommand button.win-command .win-toggleicon {
     .RTL({
-        &::before {
-            padding-right: 0;
-            padding-left: 12px;
-            float: right;
-        }
+        // Do we need to do something here
     });
 }
 
-/*
-Menu flyout commands.
-*/
-.win-menu-toggle button.win-command .win-flyouticon::before {
-    font-family: "Segoe UI Symbol", "Symbols";
-    content: "\E76C";
-    visibility: hidden;
-    padding-left: 0px;
-    padding-right: 12px;
-}
-
-.win-menu-toggle button.win-command-flyout .win-flyout-icon::before {
-    /* Display a checkbox if aria-checked is set */
-    visibility: visible;
-}
-
-.win-menu-toggle button.win-command .win-toggleicon {
+.win-menu-containsflyoutcommand button.win-command .win-flyouticon {
     .RTL({
-        &::before {
-            padding-right: 0;
-            padding-left: 12px;
-            float: right;
-        }
+        // Do we need to do something here
     });
 }
 

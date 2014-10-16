@@ -62,7 +62,8 @@ define([
         flyoutClass: "win-flyout",
         flyoutLightClass: "win-ui-light",
         menuClass: "win-menu",
-        menuToggleClass: "win-menu-toggle",
+        menuContainsToggleCommandClass: "win-menu-containstogglecommand",
+        menuContainsFlyoutCommandClass: "win-menu-containsflyoutcommand",
         settingsFlyoutClass: "win-settingsflyout",
         scrollsClass: "win-scrolls",
 

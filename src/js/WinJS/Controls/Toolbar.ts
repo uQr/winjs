@@ -845,7 +845,7 @@ export class Toolbar {
             }
         });
 
-        _ElementUtilities[hasToggleCommands ? "addClass" : "removeClass"](this._inlineOverflowArea, _Constants.menuToggleClass);
+        _ElementUtilities[hasToggleCommands ? "addClass" : "removeClass"](this._inlineOverflowArea, _Constants.menuContainsToggleCommandClass);
     }
 
     private _setupOverflowAreaDetached(additionalCommands: any[]) {
