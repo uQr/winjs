@@ -279,10 +279,10 @@ define([
                         for (var i = 0, len = menuCommands.length; i < len; i++) {
                             var menuCommand = menuCommands[i].winControl;
                             if (menuCommand && !menuCommand.hidden) {
-                                if (!hasToggleCommands && menuCommand.type === _Constants.typeToggle && menuCommand.selected) {
+                                if (!hasToggleCommands && menuCommand.type === _Constants.typeToggle) {
                                     hasToggleCommands = true;
                                 }
-                                if (!hasFlyoutCommands && menuCommand.type === _Constants.typeFlyout && menuCommand.flyout) {
+                                if (!hasFlyoutCommands && menuCommand.type === _Constants.typeFlyout) {
                                     hasFlyoutCommands = true;
                                 }
                             }

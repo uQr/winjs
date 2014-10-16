@@ -533,6 +533,10 @@ Menu commands.
     margin-right: 0;
     width: 100%;
     .win-type-body();
+
+    &:focus {
+        outline: none;
+    }
     
     .win-toggleicon, .win-flyouticon {
         #flex > .flex(0; 0; auto);
@@ -540,18 +544,20 @@ Menu commands.
         visibility: hidden;
         font-size: 16px;
         font-family: "Segoe UI Symbol", "Symbols";
-        margin-left: 12px;
     }
-    .win-toggleicon::before {
-        content: "\E0E7";
+    .win-toggleicon {
+        margin-left: 12px;
+        &::before {
+            content: "\E0E7";
+        }
     }
     .win-flyouticon {
+        margin-left: 12px;
         margin-right: 16px;
         &::before {
             content: "\E26B"; 
         }
     }
-
     .win-label {
         #flex > .flex(1; 1; auto);
         font-size: 15px;
@@ -561,20 +567,30 @@ Menu commands.
         white-space: nowrap;
         text-overflow: ellipsis;
         margin: 0px;
-        padding-left: 12px;
-        padding-right: 12px;
+        padding: 0px 12px;
     }
-}
 
-.win-menu button.win-command {
     .RTL({
-        #flex > .flex-direction(row-reverse);
+        .win-toggleicon {
+            margin-left: 0px;
+            margin-right: 12px;
+        }
+        .win-toggleicon {
+            margin-left: 16px;
+            margin-right: 12px;
+        }
     });
 }
 
-.win-menu button.win-command:focus {
+/*.win-menu button.win-command {
+    .RTL({
+        #flex > .flex-direction(row-reverse);
+    });
+}*/
+
+/*.win-menu button.win-command:focus {
     outline: none;
-}
+}*/
 
 .win-menu hr.win-command {
     display: block;
@@ -596,18 +612,6 @@ Menu toggle and flyout commands.
 .win-menu-containstogglecommand button.win-command-toggle[aria-checked=true] .win-toggleicon,
 .win-menu-containsflyoutcommand button.win-command-flyout .win-flyouticon {
     visibility: visible;
-}
-
-.win-menu-containstogglecommand button.win-command .win-toggleicon {
-    .RTL({
-        // Do we need to do something here
-    });
-}
-
-.win-menu-containsflyoutcommand button.win-command .win-flyouticon {
-    .RTL({
-        // Do we need to do something here
-    });
 }
 
 /*
