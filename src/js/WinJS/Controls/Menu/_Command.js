@@ -183,7 +183,9 @@ define([
                     },
                     set: function (value) {
                         this._label = value || "";
-                        this._labelSpan.textContent = this.label;
+                        if (this._labelSpan) {
+                            this._labelSpan.textContent = this.label;
+                        }
 
                         // Update aria-label
                         this._element.setAttribute("aria-label", this.label);

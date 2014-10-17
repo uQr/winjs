@@ -257,12 +257,12 @@ module CorsicaTests {
                 });
             }
 
-            verifyInvoke(Helper.keydown(mcf.element, Key.rightArrow)).then(function () {
-                return verifyInvoke(Helper.keydown(mcf.element, Key.enter))
-            }).then(function () {  
+            verifyInvoke(function () { Helper.keydown(mcf.element, Key.rightArrow); }).then(function () {
+                return verifyInvoke(function () { Helper.keydown(mcf.element, Key.enter); })
+            }).then(function () {
                 return verifyInvoke(mcf.element.click).then(complete);
             }).then(function () {
-                return verifyInvoke(commonUtils.mouseOverUsingMiP(mcf.element, null)).done(complete);
+                return verifyInvoke(function () { commonUtils.mouseOverUsingMiP(mcf.element, null); }).done(complete);
             });
         }
 
