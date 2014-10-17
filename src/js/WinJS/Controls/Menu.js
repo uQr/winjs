@@ -306,9 +306,6 @@ define([
                 _handleKeyDown: function Menu_handleKeyDown(event) {
                     var that = this;
 
-                    var rtl = _Global.getComputedStyle(this.appBarEl).direction === "rtl";
-                    var rightKey = rtl ? Key.leftArrow : Key.rightArrow;
-
                     if (event.keyCode === Key.escape) {
                         // Show a focus rect on what we move focus to
                         this.winControl._keyboardInvoked = true;
@@ -329,8 +326,6 @@ define([
                         event.preventDefault();
                     } else if (event.keyCode === Key.tab) {
                         event.preventDefault();
-                    } else if (event.keyCode === rightKey) {
-
                     }
                 },
 

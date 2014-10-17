@@ -163,6 +163,7 @@ define([
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandButtonClass);
                             } else if (value === _Constants.typeFlyout) {
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandFlyoutClass);
+                                _ElementUtilities.addEventListener(this.element, "keydown", this._handleKeyDown.bind(this), false);
                             } else if (value === _Constants.typeSeparator) {
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandSeparatorClass);
                             } else if (value === _Constants.typeToggle) {
@@ -482,6 +483,16 @@ define([
                         if (hideParent && command._parentFlyout) {
                             command._parentFlyout.hide();
                         }
+                    }
+                },
+
+                _handleKeyDown: function MenuCommand_handleKeyDown(event){
+                    var that = this;
+                    var rtl = _Global.getComputedStyle(this.appBarEl).direction === "rtl";
+                    var rightKey = rtl ? Key.leftArrow : Key.rightArrow;
+
+                    if (event.keyCode === rightKey && this.type === _Constants.menuCommandFlyoutClass) {
+                        this._handleMenuClick
                     }
                 },
 
