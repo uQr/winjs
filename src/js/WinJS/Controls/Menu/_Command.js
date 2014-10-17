@@ -346,7 +346,9 @@ define([
                         return;
                     }
                     this._disposed = true;
-
+                    if (this._flyoutHoverPromise) {
+                        this._hoverPromise.cancel;
+                    }
                     if (this._flyout) {
                         this._flyout.dispose();
                     }
@@ -495,21 +497,24 @@ define([
                         this._handleMenuClick(event);
                     }
                 },
-                _hoverPromise: null,
-                _handleMouseOver: function MenuCommand_handleMouseOver() {
+                _flyoutHoverPromise: null,
+                _handleMouseOver: function MenuCommand_handleMouseOver(event) {
                     /*jshint validthis: true */
+                    var that = this;
                     if (this && this.element && this.element.focus) {
                         this.element.focus();
 
-                        if (this.type === _Constants.typeFlyout) {
-                            this._hoverPromise = this._hoverPromise || WinJS.Promise.timeout(500).then(
+                        if (this.type === _Constants.typeFlyout && this.flyout.hidden) {
+                            this._flyoutHoverPromise = this._flyoutHoverPromise || WinJS.Promise.timeout(500).then(
                                 function () {
-                                    this._handleMenuClick();
+                                    that._handleMenuClick(event);
+                                    that._flyoutHoverPromise = null;
                                 },
                                 function () {
-                                    this._hoverPromise = null;
+                                    that._flyoutHoverPromise = null;
                                 })
                         }
+
                         this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
                     }
                 },
@@ -542,6 +547,9 @@ define([
                     }
 
                     this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
+                    if (this._hoverPromise) {
+                        this._hoverPromise.cancel();
+                    }
                 },
 
                 _getParentFlyout: function MenuCommand_getParentFlyout(element) {
