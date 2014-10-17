@@ -492,7 +492,7 @@ define([
                     var rightKey = rtl ? Key.leftArrow : Key.rightArrow;
 
                     if (event.keyCode === rightKey && this.type === _Constants.menuCommandFlyoutClass) {
-                        this._handleMenuClick
+                        this._handleMenuClick(event);
                     }
                 },
 
