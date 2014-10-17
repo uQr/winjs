@@ -11,7 +11,7 @@ define([
     '../../Utilities/_ElementUtilities',
     '../AppBar/_Constants',
     '../Flyout/_Overlay'
-    ], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, _Control, _ElementUtilities, _Constants, _Overlay) {
+], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, _Control, _ElementUtilities, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -163,7 +163,7 @@ define([
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandButtonClass);
                             } else if (value === _Constants.typeFlyout) {
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandFlyoutClass);
-                                _ElementUtilities.addEventListener(this.element, "keydown", this._handleKeyDown.bind(this), false);
+                                this.element.addEventListener("keydown", this._handleKeyDown.bind(this), false);
                             } else if (value === _Constants.typeSeparator) {
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandSeparatorClass);
                             } else if (value === _Constants.typeToggle) {
@@ -486,21 +486,30 @@ define([
                     }
                 },
 
-                _handleKeyDown: function MenuCommand_handleKeyDown(event){
-                    var that = this;
-                    var rtl = _Global.getComputedStyle(this.appBarEl).direction === "rtl";
-                    var rightKey = rtl ? Key.leftArrow : Key.rightArrow;
+                _handleKeyDown: function MenuCommand_handleKeyDown(event) {
+                    var Key = _ElementUtilities.Key,
+                        rtl = _Global.getComputedStyle(this.element).direction === "rtl",
+                        rightKey = rtl ? Key.leftArrow : Key.rightArrow;
 
-                    if (event.keyCode === rightKey && this.type === _Constants.menuCommandFlyoutClass) {
+                    if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
                         this._handleMenuClick(event);
                     }
                 },
-
+                _hoverPromise: null,
                 _handleMouseOver: function MenuCommand_handleMouseOver() {
                     /*jshint validthis: true */
                     if (this && this.element && this.element.focus) {
                         this.element.focus();
 
+                        if (this.type === _Constants.typeFlyout) {
+                            this._hoverPromise = this._hoverPromise || WinJS.Promise.timeout(500).then(
+                                function () {
+                                    this._handleMenuClick();
+                                },
+                                function () {
+                                    this._hoverPromise = null;
+                                })
+                        }
                         this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
                     }
                 },
