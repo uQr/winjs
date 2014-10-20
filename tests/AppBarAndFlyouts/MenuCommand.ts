@@ -320,7 +320,7 @@ module CorsicaTests {
                         });
                         menu.onafterhide = completePromise;
                         menu.hide();
-                        
+
                     };
                     menu.onaftershow = menu_onaftershow;
                     menu.show();
@@ -328,15 +328,40 @@ module CorsicaTests {
             }
 
             // commands
-            var b1, b2 = new WinJS.UI.MenuCommand(null, { type: 'button' }),
+            var b1 = new WinJS.UI.MenuCommand(null, { type: 'button' }),
                 t1 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected: true }),
-                t2 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected, false }),
-                f1, f2 = new WinJS.UI.MenuCommand(null, { type: 'flyout' }),
-                s1, s2 = new WinJS.UI.MenuCommand(null, { type: 'separator' });
+                t2 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected: false }),
+                f1 = new WinJS.UI.MenuCommand(null, { type: 'flyout' }),
+                s1 = new WinJS.UI.MenuCommand(null, { type: 'separator' }),
+                //buttonCommands = [b1, b2],
+                //toggleCommands = [t1, t2],
+                //flyoutCommands = [f1, f2],
+                //separatorCommands = [s1, s2];
+                commands = [b1, t1, t2, f1, s1];
 
-            var menu = WinJS.UI.Menu(null, {})
+            var menu = new WinJS.UI.Menu(null, { commands: commands });
 
-            //verifyCommandsInMenu(menu, buttonCommands, toggleCommands, flyoutCommands, separatorCommands);
+            verifyCommandsInMenu(menu, [b1], [t1, t2], [f1], [s1]).then(function () {
+                return verifyCommandsInMenu(menu);
+            }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [], [], [s1]);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t1], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                })
         }
     }
 }
