@@ -349,7 +349,7 @@ define([
                         return;
                     }
                     this._disposed = true;
-                    if (this._flyoutHoverPromise) {
+                    if (this._hoverPromise) {
                         this._hoverPromise.cancel;
                     }
                     if (this._flyout) {
@@ -500,7 +500,7 @@ define([
                         this._handleMenuClick(event);
                     }
                 },
-                _flyoutHoverPromise: null,
+                _hoverPromise: null,
                 _handleMouseOver: function MenuCommand_handleMouseOver(event) {
                     /*jshint validthis: true */
                     var that = this;
@@ -508,13 +508,13 @@ define([
                         this.element.focus();
 
                         if (this.type === _Constants.typeFlyout && this.flyout.hidden) {
-                            this._flyoutHoverPromise = this._flyoutHoverPromise || Promise.timeout(500).then(
+                            this._hoverPromise = this._hoverPromise || Promise.timeout(500).then(
                                 function () {
                                     that._handleMenuClick(event);
-                                    that._flyoutHoverPromise = null;
+                                    that._hoverPromise = null;
                                 },
                                 function () {
-                                    that._flyoutHoverPromise = null;
+                                    that._hoverPromise = null;
                                 });
                         }
 
