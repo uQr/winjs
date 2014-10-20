@@ -490,7 +490,8 @@ define([
                         this.element.focus();
 
                         if (this.type === _Constants.typeFlyout && this.flyout.hidden) {
-                            this._hoverPromise = this._hoverPromise || Promise.timeout(500).then(
+                            var delay = 400;
+                            this._hoverPromise = this._hoverPromise || Promise.timeout(delay).then(
                                 function () {
                                     that._handleMenuClick(event);
                                     that._hoverPromise = null;
