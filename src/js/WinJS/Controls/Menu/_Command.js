@@ -7,11 +7,12 @@ define([
     '../../Core/_Base',
     '../../Core/_ErrorFromName',
     '../../Core/_Resources',
+    '../../Promise',
     '../../Utilities/_Control',
     '../../Utilities/_ElementUtilities',
     '../AppBar/_Constants',
     '../Flyout/_Overlay'
-], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, _Control, _ElementUtilities, _Constants, _Overlay) {
+], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, Promise, _Control, _ElementUtilities, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -507,14 +508,14 @@ define([
                         this.element.focus();
 
                         if (this.type === _Constants.typeFlyout && this.flyout.hidden) {
-                            this._flyoutHoverPromise = this._flyoutHoverPromise || WinJS.Promise.timeout(500).then(
+                            this._flyoutHoverPromise = this._flyoutHoverPromise || Promise.timeout(500).then(
                                 function () {
                                     that._handleMenuClick(event);
                                     that._flyoutHoverPromise = null;
                                 },
                                 function () {
                                     that._flyoutHoverPromise = null;
-                                })
+                                });
                         }
 
                         this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);

@@ -8,7 +8,15 @@
 // <reference path="OverlayHelpers.ts" />
 
 module CorsicaTests {
+
     "use strict";
+
+    var _Constants;
+    var _ToolbarConstants;
+    var _element;
+    WinJS.Utilities._require(["WinJS/Controls/AppBar/_Constants"], function (constants) {
+        _Constants = constants;
+    })
 
     var commonUtils = Helper;
 
@@ -257,15 +265,79 @@ module CorsicaTests {
                 });
             }
 
-            verifyInvoke(function () { Helper.keydown(mcf.element, Key.rightArrow); }).then(function () {
-                return verifyInvoke(function () { Helper.keydown(mcf.element, Key.enter); })
+            verifyInvoke(function () {
+                Helper.keydown(mcf.element, Key.rightArrow);
+                //}).then(function () {
+                //        return verifyInvoke(mcf.element.click.bind(mcf.element));
             }).then(function () {
-                return verifyInvoke(mcf.element.click).then(complete);
-            }).then(function () {
-                return verifyInvoke(function () { commonUtils.mouseOverUsingMiP(mcf.element, null); }).done(complete);
-            });
+                    return verifyInvoke(function () {
+                        commonUtils.mouseOverUsingMiP(mcf.element, null);
+                    });
+                }).done(complete);
         }
 
+        // Tests that 'flyout' typed menu commands invoke flyouts.
+        testMenuCommandsInMenu = function (complete) {
+
+            var verifyCommandsInMenu = function verifyCommandsInMenu(menu, buttonCommands = [], toggleCommands = [], flyoutCommands = [], separatorCommands = []) {
+                return new WinJS.Promise(function (completePromise) {
+
+                    var allCommands = buttonCommands.concat(toggleCommands).concat(flyoutCommands).concat(separatorCommands);
+                    menu.showOnlyCommands(allCommands);
+
+                    function menu_onaftershow() {
+                        allCommands.forEach(function (command) {
+                            if (command.type !== _Constants.typeSeparator) {
+                                var toggleIconStyle = getComputedStyle(command._toggleIcon);
+                                var flyoutIconStyle = getComputedStyle(command._flyoutIcon);
+
+                                if (toggleCommands && toggleCommands.length) {
+                                    LiveUnit.Assert.isFalse(toggleIconStyle.display === "none",
+                                        "When a menu contains a visible toggle commands, EVERY command should reserve extra width for the toggle icon");
+                                    if (command.type === _Constants.typeToggle && command.selected) {
+                                        LiveUnit.Assert.isTrue(toggleIconStyle.visibility === "visible");
+                                    } else {
+                                        LiveUnit.Assert.isTrue(toggleIconStyle.visibility === "hidden");
+                                    }
+                                } else {
+                                    LiveUnit.Assert.isTrue(toggleIconStyle.display === "none",
+                                        "When a menu does not contain visible toggle commands, NO command should reserve space for the toggle icon");
+                                }
+
+                                if (flyoutCommands && flyoutCommands.length) {
+                                    LiveUnit.Assert.isFalse(flyoutIconStyle.display === "none",
+                                        "When a menu contains a visible flyout commands, EVERY command should reserve extra width for the flyout icon");
+                                    if (command.type === _Constants.typeFlyout) {
+                                        LiveUnit.Assert.isTrue(flyoutIconStyle.visibility === "visible");
+                                    } else {
+                                        LiveUnit.Assert.isTrue(flyoutIconStyle.visibility === "hidden");
+                                    }
+                                } else {
+                                    LiveUnit.Assert.isTrue(flyoutIconStyle.display === "none",
+                                        "When a menu does not contain visible flyout commands, NO command should reserve space for the flyout icon");
+                                }
+                            }
+                        });
+                        menu.onafterhide = completePromise;
+                        menu.hide();
+                        
+                    };
+                    menu.onaftershow = menu_onaftershow;
+                    menu.show();
+                });
+            }
+
+            // commands
+            var b1, b2 = new WinJS.UI.MenuCommand(null, { type: 'button' }),
+                t1 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected: true }),
+                t2 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected, false }),
+                f1, f2 = new WinJS.UI.MenuCommand(null, { type: 'flyout' }),
+                s1, s2 = new WinJS.UI.MenuCommand(null, { type: 'separator' });
+
+            var menu = WinJS.UI.Menu(null, {})
+
+            //verifyCommandsInMenu(menu, buttonCommands, toggleCommands, flyoutCommands, separatorCommands);
+        }
     }
 }
 // register the object as a test class by passing in the name
