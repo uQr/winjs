@@ -433,25 +433,7 @@ define([
                     this._flyoutSpan.tabIndex = -1;
                     this._element.appendChild(this._flyoutSpan);
 
-                    // Label and icons are added later by caller
-
-                    //// Make sure there's an element
-                    //if (!this._element) {
-                    //    this._element = _Global.document.createElement("button");
-                    //} else {
-                    //    // Verify the input was a button
-                    //    if (this._element.tagName !== "BUTTON") {
-                    //        throw new _ErrorFromName("WinJS.UI.MenuCommand.BadButtonElement", strings.badButtonElement);
-                    //    }
-                    //    this._element.innerHTML = "";
-                    //}
-
-                    //// MenuCommand buttons need to look like this:
-                    ////// <button type="button" onclick="" class="win-command">Command 1</button>
-                    //this._element.type = "button";
-
-                    //// 'textContent' label is added later by caller
-
+                    // Label 'textContent' is added later by caller
                 },
 
                 _handleMenuClick: function MenuCommand_handleMenuClick(event) {
