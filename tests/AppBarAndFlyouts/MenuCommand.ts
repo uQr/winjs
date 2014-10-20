@@ -241,42 +241,7 @@ module CorsicaTests {
 
         }
 
-        // Tests that 'flyout' typed menu commands invoke flyouts.
-        testMenuCommandInvokesFlyout = function (complete) {
-            var Key = WinJS.Utilities.Key;
-
-            var testFlyout = new WinJS.UI.Flyout();
-            document.body.appendChild(testFlyout.element);
-
-            var mcb = new WinJS.UI.MenuCommand(null, { id: 'mcb', type: 'button' });
-            var mcf = new WinJS.UI.MenuCommand(null, { id: 'mcf', type: 'flyout', flyout: testFlyout });
-
-            var menu = new WinJS.UI.Menu(null, { commands: [mcb, mcf] });
-            document.body.appendChild(menu.element);
-
-            var verifyInvoke = function (afterMenuShow) {
-                return new WinJS.Promise(function (c) {
-                    testFlyout.onaftershow = function () {
-                        testFlyout.onafterhide = c;
-                        testFlyout.hide();
-                    };
-                    menu.onaftershow = afterMenuShow;
-                    menu.show(document.body);
-                });
-            }
-
-            verifyInvoke(function () {
-                Helper.keydown(mcf.element, Key.rightArrow);
-                //}).then(function () {
-                //        return verifyInvoke(mcf.element.click.bind(mcf.element));
-            }).then(function () {
-                    return verifyInvoke(function () {
-                        commonUtils.mouseOverUsingMiP(mcf.element, null);
-                    });
-                }).done(complete);
-        }
-
-        // Tests that 'flyout' typed menu commands invoke flyouts.
+        // Tests that all visible commands in a menu adjust their layout relative to what other types of commands are also visible in the menu.
         testMenuCommandsInMenu = function (complete) {
 
             var verifyCommandsInMenu = function verifyCommandsInMenu(menu, buttonCommands = [], toggleCommands = [], flyoutCommands = [], separatorCommands = []) {
@@ -288,33 +253,33 @@ module CorsicaTests {
                     function menu_onaftershow() {
                         allCommands.forEach(function (command) {
                             if (command.type !== _Constants.typeSeparator) {
-                                var toggleIconStyle = getComputedStyle(command._toggleIcon);
-                                var flyoutIconStyle = getComputedStyle(command._flyoutIcon);
+                                var toggleSpanStyle = getComputedStyle(command._toggleSpan);
+                                var flyoutSpanStyle = getComputedStyle(command._flyoutSpan);
 
                                 if (toggleCommands && toggleCommands.length) {
-                                    LiveUnit.Assert.isFalse(toggleIconStyle.display === "none",
-                                        "When a menu contains a visible toggle commands, EVERY command should reserve extra width for the toggle icon");
+                                    LiveUnit.Assert.isFalse(toggleSpanStyle.display === "none",
+                                        "When a menu contains a visible toggle commands, EVERY command should reserve extra width for the toggle span");
                                     if (command.type === _Constants.typeToggle && command.selected) {
-                                        LiveUnit.Assert.isTrue(toggleIconStyle.visibility === "visible");
+                                        LiveUnit.Assert.isTrue(toggleSpanStyle.visibility === "visible");
                                     } else {
-                                        LiveUnit.Assert.isTrue(toggleIconStyle.visibility === "hidden");
+                                        LiveUnit.Assert.isTrue(toggleSpanStyle.visibility === "hidden");
                                     }
                                 } else {
-                                    LiveUnit.Assert.isTrue(toggleIconStyle.display === "none",
-                                        "When a menu does not contain visible toggle commands, NO command should reserve space for the toggle icon");
+                                    LiveUnit.Assert.isTrue(toggleSpanStyle.display === "none",
+                                        "When a menu does not contain visible toggle commands, NO command should reserve space for the toggle span");
                                 }
 
                                 if (flyoutCommands && flyoutCommands.length) {
-                                    LiveUnit.Assert.isFalse(flyoutIconStyle.display === "none",
-                                        "When a menu contains a visible flyout commands, EVERY command should reserve extra width for the flyout icon");
+                                    LiveUnit.Assert.isFalse(flyoutSpanStyle.display === "none",
+                                        "When a menu contains a visible flyout commands, EVERY command should reserve extra width for the flyout span");
                                     if (command.type === _Constants.typeFlyout) {
-                                        LiveUnit.Assert.isTrue(flyoutIconStyle.visibility === "visible");
+                                        LiveUnit.Assert.isTrue(flyoutSpanStyle.visibility === "visible");
                                     } else {
-                                        LiveUnit.Assert.isTrue(flyoutIconStyle.visibility === "hidden");
+                                        LiveUnit.Assert.isTrue(flyoutSpanStyle.visibility === "hidden");
                                     }
                                 } else {
-                                    LiveUnit.Assert.isTrue(flyoutIconStyle.display === "none",
-                                        "When a menu does not contain visible flyout commands, NO command should reserve space for the flyout icon");
+                                    LiveUnit.Assert.isTrue(flyoutSpanStyle.display === "none",
+                                        "When a menu does not contain visible flyout commands, NO command should reserve space for the flyout span");
                                 }
                             }
                         });
@@ -323,7 +288,7 @@ module CorsicaTests {
 
                     };
                     menu.onaftershow = menu_onaftershow;
-                    menu.show();
+                    menu.show(menu.element);
                 });
             }
 
@@ -333,35 +298,29 @@ module CorsicaTests {
                 t2 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected: false }),
                 f1 = new WinJS.UI.MenuCommand(null, { type: 'flyout' }),
                 s1 = new WinJS.UI.MenuCommand(null, { type: 'separator' }),
-                //buttonCommands = [b1, b2],
-                //toggleCommands = [t1, t2],
-                //flyoutCommands = [f1, f2],
-                //separatorCommands = [s1, s2];
                 commands = [b1, t1, t2, f1, s1];
 
             var menu = new WinJS.UI.Menu(null, { commands: commands });
+            document.body.appendChild(menu.element);
 
-            verifyCommandsInMenu(menu, [b1], [t1, t2], [f1], [s1]).then(function () {
-                return verifyCommandsInMenu(menu);
+            verifyCommandsInMenu(menu, [], [], [], []).then(function () {
+                return verifyCommandsInMenu(menu, [b1], [t1, t2], [f1], [s1]);
             }).then(function () {
                     return verifyCommandsInMenu(menu, [b1], [], [], [s1]);
                 }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t1], [f1], []);
+                    return verifyCommandsInMenu(menu, [b1], [t1], [], []);
                 }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                    return verifyCommandsInMenu(menu, [], [t2], [f1], []);
                 }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], [s1]);
                 }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
+                    return verifyCommandsInMenu(menu, [b1], [], [f1], []);
                 }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
-                }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
-                }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
-                }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], []);
-                })
+                    return verifyCommandsInMenu(menu, [], [t1], [f1], []);
+                }).done(function () {
+                    OverlayHelpers.disposeAndRemove(menu.element);
+                    complete();
+                });
         }
     }
 }
