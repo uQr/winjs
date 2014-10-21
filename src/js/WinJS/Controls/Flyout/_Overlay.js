@@ -443,7 +443,7 @@ define([
 
                 _baseShow: function _Overlay_baseShow() {
                     // If we are already animating, just remember this for later
-                    if (this._animating || this._needToHandleShowingKeyboard || this._needToHandleHidingKeyboard) {
+                    if (this._animating) {
                         this._doNext = "show";
                         return false;
                     }
@@ -525,7 +525,7 @@ define([
 
                 _baseHide: function _Overlay_baseHide() {
                     // If we are already animating, just remember this for later
-                    if (this._animating || this._needToHandleShowingKeyboard) {
+                    if (this._animating) {
                         this._doNext = "hide";
                         return false;
                     }
@@ -602,7 +602,7 @@ define([
 
                 _checkDoNext: function _Overlay_checkDoNext() {
                     // Do nothing if we're still animating
-                    if (this._animating || this._needToHandleShowingKeyboard || this._needToHandleHidingKeyboard || this._disposed) {
+                    if (this._animating || this._disposed) {
                         return;
                     }
 

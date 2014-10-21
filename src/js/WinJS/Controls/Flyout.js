@@ -282,6 +282,7 @@ define([
                     if (this.disabled) {
                         return;
                     }
+
                     // Pick up defaults
                     if (!anchor) {
                         anchor = this._anchor;
@@ -358,6 +359,9 @@ define([
                             }
                             finalDiv.tabIndex = _ElementUtilities._getHighestTabIndexInList(_elms);
                         }
+
+                        // INSERT NEW STACK CODE HERE
+
 
                         // Hide all other flyouts
                         this._hideAllOtherFlyouts(this);
@@ -897,6 +901,9 @@ define([
                 _writeProfilerMark: function Flyout_writeProfilerMark(text) {
                     _WriteProfilerMark("WinJS.UI.Flyout:" + this._id + ":" + text);
                 }
+            },
+            {
+                _cascadingStack: [],
             });
             return Flyout;
         })
