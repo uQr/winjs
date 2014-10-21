@@ -443,7 +443,7 @@ define([
 
                 _baseShow: function _Overlay_baseShow() {
                     // If we are already animating, just remember this for later
-                    if (this._animating) {
+                    if (this._animating || this._needToHandleHidingKeyboard) {
                         this._doNext = "show";
                         return false;
                     }
@@ -451,7 +451,6 @@ define([
                     // Each overlay tracks the size of the <HTML> element for triggering light-dismiss in the window resize handler.
                     this._cachedDocumentSize = this._cachedDocumentSize || _Overlay._sizeOfDocument();
 
-                    // "hiding" would need to cancel.
                     if (this._element.style.visibility !== "visible") {
                         // Let us know we're showing.
                         this._element.winAnimating = "showing";
@@ -536,7 +535,6 @@ define([
                         this._element.style.visibility = "";
                     }
 
-                    // "showing" would need to queue up.
                     if (this._element.style.visibility !== "hidden") {
                         // Let us know we're hiding, accessibility as well.
                         this._element.winAnimating = "hiding";
@@ -602,7 +600,7 @@ define([
 
                 _checkDoNext: function _Overlay_checkDoNext() {
                     // Do nothing if we're still animating
-                    if (this._animating || this._disposed) {
+                    if (this._animating || this._needToHandleHidingKeyboard || this._disposed) {
                         return;
                     }
 

@@ -361,10 +361,20 @@ define([
                         }
 
                         // INSERT NEW STACK CODE HERE
+                        for (var i = Flyout._cascadingStack.length - 1; i >= 0; i--) {
+                            var shownFlyout = Flyout._cascadingStack[i];
+                            if (shownFlyout.element.contains(this._currentAnchor)) {
+                                break;
+                            } else {
+                                shownFlyout.hide();
+                                Flyout._cascadingStack.pop();
+                            }
+                        }
+                        Flyout._cascadingStack.push(this);
 
 
-                        // Hide all other flyouts
-                        this._hideAllOtherFlyouts(this);
+                        //// Hide all other flyouts
+                        //this._hideAllOtherFlyouts(this);
 
                         // Store what had focus before showing the Flyout.
                         // This must happen after we hide all other flyouts so that we store the correct element.
