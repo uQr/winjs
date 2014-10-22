@@ -240,8 +240,8 @@ define([
                 },
 
                 _show: function Menu_show(anchor, placement, alignment) {
-                    // Before we show, we also need to check for children flyouts needing anchors
-                    this._checkForFlyoutCommands();
+                    //// Before we show, we also need to check for children flyouts needing anchors
+                    //this._checkForFlyoutCommands();
 
                     // Call flyout show
                     this._baseFlyoutShow(anchor, placement, alignment);
@@ -290,15 +290,15 @@ define([
                     }
                 },
 
-                _checkForFlyoutCommands: function Menu_checkForFlyoutCommands() {
-                    var commands = this._element.querySelectorAll(".win-command");
-                    for (var count = 0; count < commands.length; count++) {
-                        if (commands[count].winControl) {
-                            // Remember our anchor in case it's a flyout
-                            commands[count].winControl._parentFlyout = this;
-                        }
-                    }
-                },
+                //_checkForFlyoutCommands: function Menu_checkForFlyoutCommands() {
+                //    var commands = this._element.querySelectorAll(".win-command");
+                //    for (var count = 0; count < commands.length; count++) {
+                //        if (commands[count].winControl) {
+                //            // Remember our anchor in case it's a flyout
+                //            commands[count].winControl._parentFlyout = this;
+                //        }
+                //    }
+                //},
 
                 _handleKeyDown: function Menu_handleKeyDown(event) {
                     var that = this;
