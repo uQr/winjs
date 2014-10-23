@@ -409,29 +409,17 @@ define([
                         if (this._element.tagName !== "BUTTON") {
                             throw new _ErrorFromName("WinJS.UI.MenuCommand.BadButtonElement", strings.badButtonElement);
                         }
-                        this._element.innerHTML = "";
                     }
 
-                    // MenuCommand buttons need to look like this:
-                    //// <button type="button" onclick="" class="win-command">
-                    ////      <span class="win-toggleicon">&#xE0E7;</span><span class="win-label">Command 1</span><span class="win-flyouticon">&#xE76C</span>
-                    //// </button>
+                    this._element.innerHTML = 
+                        '<span class="win-toggleicon" tabindex="-1" aria-hidden="true"></span>' +
+                        '<span class="win-label" tabindex="-1" aria-hidden="true"></span>' +
+                        '<span class="win-flyouticon" tabindex="-1" aria-hidden="true"></span>';
                     this._element.type = "button";
-                    this._toggleSpan = _Global.document.createElement("span");
-                    this._toggleSpan.setAttribute("aria-hidden", "true");
-                    this._toggleSpan.className = "win-toggleicon";
-                    this._toggleSpan.tabIndex = -1;
-                    this._element.appendChild(this._toggleSpan);
-                    this._labelSpan = _Global.document.createElement("span");
-                    this._labelSpan.setAttribute("aria-hidden", "true");
-                    this._labelSpan.className = "win-label";
-                    this._labelSpan.tabIndex = -1;
-                    this._element.appendChild(this._labelSpan);
-                    this._flyoutSpan = _Global.document.createElement("span");
-                    this._flyoutSpan.setAttribute("aria-hidden", "true");
-                    this._flyoutSpan.className = "win-flyouticon";
-                    this._flyoutSpan.tabIndex = -1;
-                    this._element.appendChild(this._flyoutSpan);
+
+                    this._toggleSpan = this._element.querySelector(".win-toggleicon");
+                    this._labelSpan = this._element.querySelector(".win-label");
+                    this._flyoutSpan = this._element.querySelector(".win-flyouticon");
 
                     // Label 'textContent' is added later by caller
                 },
