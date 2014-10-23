@@ -11,7 +11,6 @@ module CorsicaTests {
 
     export class MenuTests {
 
-
         tearDown() {
             LiveUnit.LoggingCore.logComment("In tearDown");
 

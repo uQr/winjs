@@ -350,7 +350,7 @@ define([
                     }
                     this._disposed = true;
                     if (this._hoverPromise) {
-                        this._hoverPromise.cancel;
+                        this._hoverPromise.cancel();
                     }
                     if (this._flyout) {
                         this._flyout.dispose();
@@ -490,10 +490,11 @@ define([
                         this.element.focus();
 
                         if (this.type === _Constants.typeFlyout && this.flyout.hidden) {
-                            var delay = 400;
-                            this._hoverPromise = this._hoverPromise || Promise.timeout(delay).then(
+                            this._hoverPromise = this._hoverPromise || Promise.timeout(_Constants.menuCommandHoverDelay).then(
                                 function () {
-                                    that._handleMenuClick(event);
+                                    if (!that._parentFlyout || !that._parentFlyout.hidden) {
+                                        that._handleMenuClick(event);
+                                    }
                                     that._hoverPromise = null;
                                 },
                                 function () {

@@ -564,10 +564,12 @@ Menu control.
 }
 
 .win-menu {
-    /* Set explicitly in case our parent has different alignment, like appbar overflow. */
+    text-align: left;
     .RTL({
         text-align: right;
     });
+    /* Set explicitly in case our parent has different alignment, like appbar overflow. */
+    
 }
 
 /*
@@ -585,6 +587,7 @@ Menu commands.
     margin-left: 0;
     margin-right: 0;
     width: 100%;
+    text-align: left;
     .win-type-body();
 
     &:focus {
@@ -624,13 +627,18 @@ Menu commands.
     }
 
     .RTL({
+        text-align: right;
+
         .win-toggleicon {
             margin-left: 0px;
             margin-right: 12px;
         }
-        .win-toggleicon {
+        .win-flyouticon {
             margin-left: 16px;
             margin-right: 12px;
+            &::before {
+                content: "\E26C"; 
+            }
         }
     });
 }

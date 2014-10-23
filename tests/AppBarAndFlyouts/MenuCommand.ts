@@ -11,14 +11,7 @@ module CorsicaTests {
 
     "use strict";
 
-    var _Constants;
-    var _ToolbarConstants;
-    var _element;
-    WinJS.Utilities._require(["WinJS/Controls/AppBar/_Constants"], function (constants) {
-        _Constants = constants;
-    })
-
-    var commonUtils = Helper;
+    var _Constants = Helper.require("WinJS/Controls/AppBar/_Constants");
 
     export class MenuCommandTests {
 
@@ -257,12 +250,12 @@ module CorsicaTests {
                                 var flyoutSpanStyle = getComputedStyle(command._flyoutSpan);
 
                                 if (toggleCommands && toggleCommands.length) {
-                                    LiveUnit.Assert.isFalse(toggleSpanStyle.display === "none",
-                                        "When a menu contains a visible toggle commands, EVERY command should reserve extra width for the toggle span");
+                                    LiveUnit.Assert.areNotEqual(toggleSpanStyle.display, "none",
+                                        "When a menu contains a visible toggle command, EVERY command should reserve extra width for the toggle span");
                                     if (command.type === _Constants.typeToggle && command.selected) {
-                                        LiveUnit.Assert.isTrue(toggleSpanStyle.visibility === "visible");
+                                        LiveUnit.Assert.areEqual(toggleSpanStyle.visibility, "visible");
                                     } else {
-                                        LiveUnit.Assert.isTrue(toggleSpanStyle.visibility === "hidden");
+                                        LiveUnit.Assert.areEqual(toggleSpanStyle.visibility, "hidden");
                                     }
                                 } else {
                                     LiveUnit.Assert.isTrue(toggleSpanStyle.display === "none",
@@ -270,12 +263,12 @@ module CorsicaTests {
                                 }
 
                                 if (flyoutCommands && flyoutCommands.length) {
-                                    LiveUnit.Assert.isFalse(flyoutSpanStyle.display === "none",
-                                        "When a menu contains a visible flyout commands, EVERY command should reserve extra width for the flyout span");
+                                    LiveUnit.Assert.areNotEqual(flyoutSpanStyle.display, "none",
+                                        "When a menu contains a visible flyout command, EVERY command should reserve extra width for the flyout span");
                                     if (command.type === _Constants.typeFlyout) {
-                                        LiveUnit.Assert.isTrue(flyoutSpanStyle.visibility === "visible");
+                                        LiveUnit.Assert.areEqual(flyoutSpanStyle.visibility, "visible");
                                     } else {
-                                        LiveUnit.Assert.isTrue(flyoutSpanStyle.visibility === "hidden");
+                                        LiveUnit.Assert.areEqual(flyoutSpanStyle.visibility, "hidden");
                                     }
                                 } else {
                                     LiveUnit.Assert.isTrue(flyoutSpanStyle.display === "none",
