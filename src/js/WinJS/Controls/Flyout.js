@@ -52,6 +52,39 @@ define([
                 get badAlignment() { return "Invalid argument: Flyout alignment should be 'center' (default), 'left', or 'right'."; }
             };
 
+            ////
+            var _CascadeManager = _Base.Class.define(function _CascadeManager_ctor() {
+                this._cascadingStack = [];
+            },
+            {
+                addToStack: function _CascadeManager_addToStack(flyoutToAdd) {
+                    for (var i = this._cascadingStack.length - 1; i >= 0; i--) {
+                        var flyoutInStack = this.cascadingStack[i];
+                        if (flyoutInStack.element.contains(flyoutToAdd._currentAnchor)) {
+                            break;
+                        } else {
+                            flyoutInStack.hide();
+                            this._cascadingStack.pop();
+                        }
+                    }
+                    this._cascadingStack.push(flyoutToAdd);
+                },
+                removeFromStack: function _CascadeManager_removeFromStack(flyout) {
+                    if (!this._reentrancyLock) {
+                        this._reentrancyLock = true;
+                        
+                        var lastItem = this._cascadingStack.pop();
+
+                    }
+                },
+                tail: {
+                    get: function(){
+                        return this._cascadingStack[this._cascadingStack.length - 1];
+                    }
+                }
+            },
+            {});
+
             var Flyout = _Base.Class.derive(_Overlay._Overlay, function Flyout_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.Flyout.Flyout">
                 /// <summary locid="WinJS.UI.Flyout.constructor">
@@ -227,6 +260,13 @@ define([
                 },
 
                 _hide: function Flyout_hide() {
+
+                    //var lastFlyoutInCascade = Flyout._cascadingStack[Flyout._cascadingStack.length - 1];
+                    //while (lastFlyoutInCascade !== this) {
+                    //    lastFlyoutInCascade.hide();
+                    //    lastFlyoutInCascade = Flyout._cascadingStack[Flyout._cascadingStack.length - 1];
+                    //}
+
                     if (this._baseHide()) {
                         // Return focus if this or the flyout CED has focus
                         var active = _Global.document.activeElement;
@@ -360,17 +400,7 @@ define([
                             finalDiv.tabIndex = _ElementUtilities._getHighestTabIndexInList(_elms);
                         }
 
-                        // INSERT NEW STACK CODE HERE
-                        for (var i = Flyout._cascadingStack.length - 1; i >= 0; i--) {
-                            var shownFlyout = Flyout._cascadingStack[i];
-                            if (shownFlyout.element.contains(this._currentAnchor)) {
-                                break;
-                            } else {
-                                shownFlyout.hide();
-                                Flyout._cascadingStack.pop();
-                            }
-                        }
-                        Flyout._cascadingStack.push(this);
+                        Fkyout._CascadeManager.addToStack(this);
 
 
                         //// Hide all other flyouts
@@ -913,7 +943,7 @@ define([
                 }
             },
             {
-                _cascadingStack: [],
+                _cascade: new _CascadeManager(),
             });
             return Flyout;
         })
