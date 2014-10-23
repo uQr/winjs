@@ -809,7 +809,8 @@ export class Toolbar {
     private _setupOverflowAreaInline(additionalCommands: any[]) {
         this._writeProfilerMark("_setupOverflowAreaInline,info");
 
-        var hasToggleCommands = false;
+        var hasToggleCommands = false,
+            hasFlyoutCommands = false;
 
         _ElementUtilities.empty(this._inlineOverflowArea);
 
@@ -819,6 +820,9 @@ export class Toolbar {
         additionalCommands.forEach((command) => {
             if (command.type === _Constants.typeToggle) {
                 hasToggleCommands = true;
+            }
+            if (command.type === _Constants.typeFlyout) {
+                hasFlyoutCommands = true;
             }
 
             this._inlineOverflowArea.appendChild(this._getMenuCommand(command).element);
@@ -841,13 +845,15 @@ export class Toolbar {
                 if (command.type === _Constants.typeToggle) {
                     hasToggleCommands = true;
                 }
-
+                if (command.type === _Constants.typeFlyout) {
+                    hasFlyoutCommands = true;
+                }
                 this._inlineOverflowArea.appendChild(this._getMenuCommand(command).element);
             }
         });
 
         _ElementUtilities[hasToggleCommands ? "addClass" : "removeClass"](this._inlineOverflowArea, _Constants.menuContainsToggleCommandClass);
-        _ElementUtilities[hasToggleCommands ? "addClass" : "removeClass"](this._inlineOverflowArea, _Constants.menuContainsFlyoutCommandClass);
+        _ElementUtilities[hasFlyoutCommands ? "addClass" : "removeClass"](this._inlineOverflowArea, _Constants.menuContainsFlyoutCommandClass);
     }
 
     private _setupOverflowAreaDetached(additionalCommands: any[]) {
