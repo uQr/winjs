@@ -57,48 +57,50 @@ define([
             },
             {
                 addToStack: function _CascadeManager_addToStack(flyoutToAdd) {
-                    // If the anchor element for the specified flyoutToAdd is contained within another flyout, 
-                    // and that flyout is also currently in the cascade, we consider that flyout to be the parent to the specified flyoutToAdd.
-                    //  Empty the cascading stack of any cascading subtree offshoots from the parent flyout.
-                    // Else the specified flyoutToAdd isn't part of the existing cascade
-                    //  Empty the entire cascading stack
-                    // Finally, add the specified flyoutToAdd to the end of the cascading stack
-                    var flyoutInStack,
-                        isParentFlyout,
-                        cascadingSubTree;
-                    for (var i = this._cascadingStack.length - 1; i >= 0; i--) {
-                        
-                        flyoutInStack = this._cascadingStack[i];
-                        isParentFlyout = flyoutInStack.element.contains(flyoutToAdd._currentAnchor);
-                        if (isParentFlyout) {
-                            // close any existing sub-cascade
-                            cascadingSubTree = this._cascadingStack[i + 1];
-                            if (cascadingSubTree) {
-                                this.removeFromStack(cascadingSubTree);
-                            }
-                        } else if( i === 0){
-                            this.removeFromStack(flyoutInStack);
+                    // IF the anchor element for flyoutToAdd is contained within another flyout, 
+                    // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
+                    //  Remove from the cascadingStack, any subflyout descendants of the parent flyout.
+                    // ELSE flyoutToAdd isn't part of the existing cascade
+                    //  Empty the entire cascadingStack to start a new cascade.
+                    // FINALLY: 
+                    //  add flyoutToAdd to the end of the cascading stack
+                    var parentFlyout,
+                        cascadingSubFlyout;
+
+                    for (var i = 0, len = this._cascadingStack.length; i < len; i++) {
+                        var currentFlyout = this._cascadingStack[i];
+                        if (currentFlyout.element.contains(flyoutToAdd._currentAnchor)) {
+                            parentFlyout = currentFlyout;
+                            cascadingSubFlyout = this._cascadingStack[i + 1];
+                            break;
                         }
                     }
+
+                    if (parentFlyout) {
+                        this.removeFromStack(cascadingSubFlyout);
+                    } else {
+                        this.emptyStack();
+                    }
+
                     this._cascadingStack.push(flyoutToAdd);
                 },
                 removeFromStack: function _CascadeManager_removeFromStack(flyoutToRemove) {
-                    // Hide the specified flyout and its subtree of cascading flyouts.
-                    if (!this._reentrancyLock) {
+                    // Removes flyoutToRemove and its subflyout descendants from the cascadingStack.
+                    if (!this._reentrancyLock && flyoutToRemove && this._cascadingStack.contains(flyoutToRemove)) {
                         this._reentrancyLock = true;
 
-                        var endOfStack;
-                        while (this._cascadingStack.length && flyoutToRemove !== endOfStack) {
-                            endOfStack = this._cascadingStack.pop();
-                            endOfStack.hide();
+                        var poppedFromStack;
+                        while (this._cascadingStack.length && flyoutToRemove !== poppedFromStack) {
+                            poppedFromStack = this._cascadingStack.pop();
+                            poppedFromStack.hide();
                         }
+
                         this._reentrancyLock = false;
                     }
                 },
-                tail: {
-                    get: function () {
-                        return this._cascadingStack[this._cascadingStack.length - 1];
-                    }
+                emptyStack: function _CascadeManager_emptyStack(flyoutToRemove) {
+                    // Empties the cascadingStack and hides all flyouts.
+                    this.removeFromStack(this._cascadingStack[0]);
                 }
             },
             {});
@@ -279,11 +281,7 @@ define([
 
                 _hide: function Flyout_hide() {
 
-                    //var lastFlyoutInCascade = Flyout._cascadingStack[Flyout._cascadingStack.length - 1];
-                    //while (lastFlyoutInCascade !== this) {
-                    //    lastFlyoutInCascade.hide();
-                    //    lastFlyoutInCascade = Flyout._cascadingStack[Flyout._cascadingStack.length - 1];
-                    //}
+                    Flyout._cascadeManager.removeFromStack(this);
 
                     if (this._baseHide()) {
                         // Return focus if this or the flyout CED has focus
@@ -418,8 +416,7 @@ define([
                             finalDiv.tabIndex = _ElementUtilities._getHighestTabIndexInList(_elms);
                         }
 
-                        Fkyout._CascadeManager.addToStack(this);
-
+                        Flyout._cascadeManager.addToStack(this);
 
                         //// Hide all other flyouts
                         //this._hideAllOtherFlyouts(this);
@@ -961,7 +958,11 @@ define([
                 }
             },
             {
-                _cascade: new _CascadeManager(),
+                _cascadeManager: new _CascadeManager(),
+                _lightDismissFlyouts: function () {
+                    Flyout.cascadeManager.emptyStack();
+                }
+
             });
             return Flyout;
         })
