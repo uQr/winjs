@@ -142,6 +142,10 @@ define([
                     this._element.setAttribute("aria-label", strings.ariaLabel);
                 }
 
+                // Need to hide ourselves if we lose focus
+                var that = this;
+                _ElementUtilities._addEventListener(this._element, "focusout", function (e) { _Overlay._hideIfLostFocus(that, e); }, false);
+
                 // Make sure additional _Overlay event handlers are hooked up.
                 this._handleOverlayEventsForFlyoutOrSettingsFlyout();
 

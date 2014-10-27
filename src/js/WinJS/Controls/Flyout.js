@@ -64,19 +64,19 @@ define([
                     //  Empty the entire cascadingStack to start a new cascade.
                     // FINALLY: 
                     //  add flyoutToAdd to the end of the cascading stack
-                    var parentFlyout,
+                    var parentFlyoutInStack,
                         cascadingSubFlyout;
 
                     for (var i = 0, len = this._cascadingStack.length; i < len; i++) {
                         var currentFlyout = this._cascadingStack[i];
                         if (currentFlyout.element.contains(flyoutToAdd._currentAnchor)) {
-                            parentFlyout = currentFlyout;
+                            parentFlyoutInStack = currentFlyout;
                             cascadingSubFlyout = this._cascadingStack[i + 1];
                             break;
                         }
                     }
 
-                    if (parentFlyout) {
+                    if (parentFlyoutInStack) {
                         this.removeFromStack(cascadingSubFlyout);
                     } else {
                         this.emptyStack();
@@ -86,7 +86,7 @@ define([
                 },
                 removeFromStack: function _CascadeManager_removeFromStack(flyoutToRemove) {
                     // Removes flyoutToRemove and its subflyout descendants from the cascadingStack.
-                    if (!this._reentrancyLock && flyoutToRemove && this._cascadingStack.contains(flyoutToRemove)) {
+                    if (!this._reentrancyLock && flyoutToRemove && this._cascadingStack.indexOf(flyoutToRemove) >= 0) {
                         this._reentrancyLock = true;
 
                         var poppedFromStack;
@@ -101,7 +101,31 @@ define([
                 emptyStack: function _CascadeManager_emptyStack(flyoutToRemove) {
                     // Empties the cascadingStack and hides all flyouts.
                     this.removeFromStack(this._cascadingStack[0]);
-                }
+                },
+                _handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(e) {
+                    // When a flyout in the cascade recieves focus, we should only allow
+                    // one subflyout in the cascade below it to stay open.
+                    var flyoutRecievingFocus = e.target;
+                    var index = this._cascadingStack.indexOf(flyoutRecievingFocus);
+                    if (index >= 0) {
+                        var subSubFlyout = this._cascadingStack[index + 2];
+                        this.removeFromStack(subSubFlyout);
+                    }
+                },
+                _handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(e) {
+                    // Hide the entire cascade if focus has moved somewhere outside of it
+                    var focusLeftTheCascade = true;
+                    for (var i = 0, len = this._cascadingStack.length; i < len; i++) {
+                        if (this._cascadingStack[i].contains(e.target)) {
+                            focusLeftTheCascade = false;
+                            break;
+                        }
+                    }
+                    if (focusLeftTheCascade) {
+                        this.emptyStack();
+                    }
+                },
+
             },
             {});
 
@@ -181,6 +205,9 @@ define([
                     // Base animation is popIn, but our flyout has different arguments
                     this._currentAnimateIn = this._flyoutAnimateIn;
                     this._currentAnimateOut = this._flyoutAnimateOut;
+
+                    _ElementUtilities._addEventListener(this.element, "focusin", Flyout._cascadeManager._handleFocusIntoCascade, false);
+                    _ElementUtilities._addEventListener(this.element, "focusout", Flyout._cascadeManager._handleFocusOutOfCascade, false);
 
                     // Make sure additional _Overlay event handlers are hooked up
                     this._handleOverlayEventsForFlyoutOrSettingsFlyout();
@@ -281,6 +308,7 @@ define([
 
                 _hide: function Flyout_hide() {
 
+                    // Also close all subflyout descendants in the cascade.
                     Flyout._cascadeManager.removeFromStack(this);
 
                     if (this._baseHide()) {
@@ -959,8 +987,8 @@ define([
             },
             {
                 _cascadeManager: new _CascadeManager(),
-                _lightDismissFlyouts: function () {
-                    Flyout.cascadeManager.emptyStack();
+                _lightDismissFlyouts: function Flyout_lightDismissFlyouts() {
+                    Flyout._cascadeManager.emptyStack();
                 }
 
             });

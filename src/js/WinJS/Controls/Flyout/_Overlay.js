@@ -1167,10 +1167,6 @@ define([
                 },
 
                 _handleOverlayEventsForFlyoutOrSettingsFlyout: function _Overlay_handleOverlayEventsForFlyoutOrSettingsFlyout() {
-                    var that = this;
-                    // Need to hide ourselves if we lose focus
-                    _ElementUtilities._addEventListener(this._element, "focusout", function (e) { _Overlay._hideIfLostFocus(that, e); }, false);
-
                     // Need to handle right clicks that trigger edgy events in WWA
                     _ElementUtilities._addEventListener(this._element, "pointerdown", _Overlay._checkRightClickDown, true);
                     _ElementUtilities._addEventListener(this._element, "pointerup", _Overlay._checkRightClickUp, true);
@@ -1187,20 +1183,20 @@ define([
 
                 _lightDismissFlyouts: function _Overlay_lightDismissFlyouts() {
                     _Overlay._hideClickEatingDivFlyout();
+                    //_Flyout._lightDismissFlyouts();
 
-
-                //    var elements = _Global.document.body.querySelectorAll("." + _Constants.flyoutClass);
-                //    var len = elements.length;
-                //    for (var i = 0; i < len; i++) {
-                //        var element = elements[i];
-                //        if (element.style.visibility !== "hidden") {
-                //            var flyout = element.winControl;
-                //            if (flyout && (!flyout._sticky)) {
-                //                flyout._hideOrDismiss();
-                //            }
-                //        }
-                //    }
-                //},
+                    var elements = _Global.document.body.querySelectorAll("." + _Constants.flyoutClass);
+                    var len = elements.length;
+                    for (var i = 0; i < len; i++) {
+                        var element = elements[i];
+                        if (element.style.visibility !== "hidden") {
+                            var flyout = element.winControl;
+                            if (flyout && (!flyout._sticky)) {
+                                flyout._hideOrDismiss();
+                            }
+                        }
+                    }
+                },
 
                 _lightDismissSettingsFlyouts: function _Overlay_lightDismissSettingsFlyouts() {
                     var elements = _Global.document.body.querySelectorAll("." + _Constants.settingsFlyoutClass);
