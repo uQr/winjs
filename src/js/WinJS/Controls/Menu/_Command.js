@@ -474,6 +474,9 @@ define([
 
                     if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
                         invokeFlyout(this);
+
+                        // Prevent the page from scrolling
+                        event.preventDefault();
                     }
                 },
                 _hoverPromise: null,
