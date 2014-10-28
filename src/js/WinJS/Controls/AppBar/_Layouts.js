@@ -159,6 +159,9 @@ define([
                     // NOP
                     return Promise.wrap();
                 },
+                setFocusOnShow: function _AppBarBaseLayout_setFocusOnShow() {
+                    this.appBarEl.winControl._setFocusToAppBar();
+                }
             });
             return _AppBarBaseLayout;
         }),
@@ -587,6 +590,12 @@ define([
                     this._originalCommands = [];
                     this._displayedCommands = [];
                 },
+                
+                setFocusOnShow: function _AppBarMenuLayout_setFocusOnShow() {
+                    // Make sure the toolbarContainer (used for clipping during the resize animation)
+                    // doesn't scroll when we give focus to the AppBar.
+                    this.appBarEl.winControl._setFocusToAppBar(true, this._toolbarContainer);
+                },
 
                 _updateData: function _AppBarMenuLayout_updateData(data) {
                     var hadHiddenClass = _ElementUtilities.hasClass(this.appBarEl, _Constants.hiddenClass);
@@ -640,7 +649,7 @@ define([
                                         }
                                     }
                                 }
-                            } else if (elements[i].element) {
+                            } else if (commands[i].element) {
                                 elements.push(commands[i].element);
                             } else {
                                 elements.push(commands[i]);
