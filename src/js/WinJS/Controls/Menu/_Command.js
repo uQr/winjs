@@ -40,6 +40,26 @@ define([
                 get badButtonElement() { return "Invalid argument: For a button, toggle, or flyout command, the element must be null or a button element"; }
             };
 
+            function invokeFlyout(menuCommand) {
+                var flyout = menuCommand._flyout;
+                if (flyout) {
+                    // Flyout may not have processAll'd, so this may be a DOM object
+                    if (typeof flyout === "string") {
+                        flyout = _Global.document.getElementById(flyout);
+                    }
+                    if (!flyout.show) {
+                        flyout = flyout.winControl;
+                    }
+                    if (flyout && flyout.show) {
+                        if (menuCommand._parentFlyout) {
+                            flyout.show(menuCommand._parentFlyout._currentAnchor, menuCommand._parentFlyout._currentPlacement, menuCommand._parentFlyout._currentAlignment);
+                        } else {
+                            flyout.show(menuCommand.element);
+                        }
+                    }
+                }
+            }
+
             return _Base.Class.define(function MenuCommand_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.AppBarCommand.MenuCommand">
                 /// <summary locid="WinJS.UI.MenuCommand.constructor">
@@ -433,22 +453,8 @@ define([
                         if (command._type === _Constants.typeToggle) {
                             command.selected = !command.selected;
                         } else if (command._type === _Constants.typeFlyout && command._flyout) {
-                            var flyout = command._flyout;
-                            // Flyout may not have processAll'd, so this may be a DOM object
-                            if (typeof flyout === "string") {
-                                flyout = _Global.document.getElementById(flyout);
-                            }
-                            if (!flyout.show) {
-                                flyout = flyout.winControl;
-                            }
-                            if (flyout && flyout.show) {
-                                if (command._parentFlyout) {
-                                    hideParent = false;
-                                    flyout.show(command._parentFlyout._currentAnchor, command._parentFlyout._currentPlacement, command._parentFlyout._currentAlignment);
-                                } else {
-                                    flyout.show(this.element);
-                                }
-                            }
+                            var hideParent = false;
+                            invokeFlyout(command);
                         }
 
                         if (command.onclick) {
@@ -467,7 +473,7 @@ define([
                         rightKey = rtl ? Key.leftArrow : Key.rightArrow;
 
                     if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
-                        this._handleMenuClick(event);
+                        invokeFlyout(this);
                     }
                 },
                 _hoverPromise: null,
@@ -477,11 +483,11 @@ define([
                     if (this && this.element && this.element.focus) {
                         this.element.focus();
 
-                        if (this.type === _Constants.typeFlyout && this.flyout.hidden) {
+                        if (this.type === _Constants.typeFlyout && this.flyout && this.flyout.hidden) {
                             this._hoverPromise = this._hoverPromise || Promise.timeout(_Constants.menuCommandHoverDelay).then(
                                 function () {
                                     if (!that._parentFlyout || !that._parentFlyout.hidden) {
-                                        that._handleMenuClick(event);
+                                        invokeFlyout(that);
                                     }
                                     that._hoverPromise = null;
                                 },
