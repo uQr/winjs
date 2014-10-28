@@ -7,11 +7,12 @@ define([
     '../../Core/_Base',
     '../../Core/_ErrorFromName',
     '../../Core/_Resources',
+    '../../Promise',
     '../../Utilities/_Control',
     '../../Utilities/_ElementUtilities',
     '../AppBar/_Constants',
     '../Flyout/_Overlay'
-], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, _Control, _ElementUtilities, _Constants, _Overlay) {
+], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, Promise, _Control, _ElementUtilities, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -97,8 +98,8 @@ define([
 
                 if (options.onclick) {
                     this.onclick = options.onclick;
+                    delete options.onclick;
                 }
-                options.onclick = this._handleMenuClick.bind(this);
 
                 _Control.setOptions(this, options);
 
@@ -122,9 +123,9 @@ define([
                     }
                 }
 
-                this._handleMouseMoveBound = this._handleMouseMove.bind(this);
-                this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
-                this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
+                //this._handleMouseMoveBound = this._handleMouseMove.bind(this);
+                //this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
+                //this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
             }, {
                 /// <field type="String" locid="WinJS.UI.MenuCommand.id" helpKeyword="WinJS.UI.MenuCommand.id" isAdvanced="true">
                 /// Gets the  ID of the MenuCommand.
@@ -154,9 +155,20 @@ define([
                         // we allow setting first time only. otherwise we ignore it.
                         if (!this._type) {
                             if (value !== _Constants.typeButton && value !== _Constants.typeFlyout && value !== _Constants.typeToggle && value !== _Constants.typeSeparator) {
-                                this._type = _Constants.typeButton;
-                            } else {
-                                this._type = value;
+                                value = _Constants.typeButton;
+                            }
+
+                            this._type = value;
+
+                            if (value === _Constants.typeButton) {
+                                _ElementUtilities.addClass(this.element, _Constants.menuCommandButtonClass);
+                            } else if (value === _Constants.typeFlyout) {
+                                _ElementUtilities.addClass(this.element, _Constants.menuCommandFlyoutClass);
+                                //this.element.addEventListener("keydown", this._handleKeyDown.bind(this), false);
+                            } else if (value === _Constants.typeSeparator) {
+                                _ElementUtilities.addClass(this.element, _Constants.menuCommandSeparatorClass);
+                            } else if (value === _Constants.typeToggle) {
+                                _ElementUtilities.addClass(this.element, _Constants.menuCommandToggleClass);
                             }
                         }
                     }
@@ -172,7 +184,9 @@ define([
                     },
                     set: function (value) {
                         this._label = value || "";
-                        this._element.textContent = this.label;
+                        if (this._labelSpan) {
+                            this._labelSpan.textContent = this.label;
+                        }
 
                         // Update aria-label
                         this._element.setAttribute("aria-label", this.label);
@@ -335,7 +349,9 @@ define([
                         return;
                     }
                     this._disposed = true;
-
+                    if (this._hoverPromise) {
+                        this._hoverPromise.cancel();
+                    }
                     if (this._flyout) {
                         this._flyout.dispose();
                     }
@@ -385,7 +401,7 @@ define([
                 },
 
                 _createButton: function MenuCommand_createButton() {
-                    // Make sure there's an input element
+                    // Make sure there's an element
                     if (!this._element) {
                         this._element = _Global.document.createElement("button");
                     } else {
@@ -393,110 +409,131 @@ define([
                         if (this._element.tagName !== "BUTTON") {
                             throw new _ErrorFromName("WinJS.UI.MenuCommand.BadButtonElement", strings.badButtonElement);
                         }
-                        this._element.innerHTML = "";
                     }
 
-                    // MenuCommand buttons need to look like this:
-                    //// <button type="button" onclick="" class="win-command">Command 1</button>
+                    this._element.innerHTML = 
+                        '<span class="win-toggleicon" tabindex="-1" aria-hidden="true"></span>' +
+                        '<span class="win-label" tabindex="-1" aria-hidden="true"></span>' +
+                        '<span class="win-flyouticon" tabindex="-1" aria-hidden="true"></span>';
                     this._element.type = "button";
 
-                    // 'textContent' label is added later by caller
+                    this._toggleSpan = this._element.querySelector(".win-toggleicon");
+                    this._labelSpan = this._element.querySelector(".win-label");
+                    this._flyoutSpan = this._element.querySelector(".win-flyouticon");
+
+                    // Label 'textContent' is added later by caller
                 },
 
-                _handleMenuClick: function MenuCommand_handleMenuClick(event) {
-                    /*jshint validthis: true */
-                    var command = this;
-                    if (command) {
-                        var hideMenu = this._getParentMenu(this.element);
+                //_handleMenuClick: function MenuCommand_handleMenuClick(event) {
+                //    /*jshint validthis: true */
+                //    var command = this;
+                //    if (command) {
+                //        var hideMenu = this._getParentMenu(this.element);
 
-                        if (command._type === _Constants.typeToggle) {
-                            command.selected = !command.selected;
-                        } else if (command._type === _Constants.typeFlyout && command._flyout) {
-                            var flyout = command._flyout;
-                            // Flyout may not have processAll'd, so this may be a DOM object
-                            if (typeof flyout === "string") {
-                                flyout = _Global.document.getElementById(flyout);
-                            }
-                            if (!flyout.show) {
-                                flyout = flyout.winControl;
-                            }
-                            if (flyout && flyout.show) {
-                                //if (command._parentFlyout) {
-                                //    hideParent = false;
-                                //    flyout.show(command._parentFlyout._currentAnchor, command._parentFlyout._currentPlacement, command._parentFlyout._currentAlignment);
-                                //} else {
-                                hideMenu = null;
-                                flyout.show(this.element);
-                                //}
-                            }
-                        }
+                //        if (command._type === _Constants.typeToggle) {
+                //            command.selected = !command.selected;
+                //        } else if (command._type === _Constants.typeFlyout && command._flyout) {
+                //            hideMenu = null;
+                //            this._invokeFlyout(command);
 
-                        if (command.onclick) {
-                            command.onclick(event);
-                        }
-                        // Close containing menu on command invoke
-                        if (hideMenu && hideMenu.hide) {
-                            hideMenu.hide();
-                        }
-                    }
-                },
+                //        }
 
-                _handleMouseOver: function MenuCommand_handleMouseOver() {
-                    /*jshint validthis: true */
-                    if (this && this.element && this.element.focus) {
-                        this.element.focus();
+                //        if (command.onclick) {
+                //            command.onclick(event);
+                //        }
+                //        // Close containing menu hideMenu = null;on command invoke
+                //        if (hideMenu && hideMenu.hide) {
+                //            hideMenu.hide();
+                //        }
+                //    }
+                //},
 
-                        this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
-                    }
-                },
+                //_handleKeyDown: function MenuCommand_handleKeyDown(event) {
+                //    var Key = _ElementUtilities.Key,
+                //        rtl = _Global.getComputedStyle(this.element).direction === "rtl",
+                //        rightKey = rtl ? Key.leftArrow : Key.rightArrow;
 
-                _handleMouseMove: function MenuCommand_handleMouseMove() {
-                    /*jshint validthis: true */
-                    if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
-                        this.element.focus();
-                    }
-                },
+                //    if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
+                //        this._invokeFlyout(this);
 
-                _handleMouseOut: function MenuCommand_handleMouseOut() {
-                    /*jshint validthis: true */
-                    var parentMenuEl = this._getParentMenu(this.element).element;
-                    if (parentMenuEl
-                     && this.element === _Global.document.activeElement
-                     && parentMenuEl.focus) {
-                        // Menu gives focus to the menu itself
-                        parentMenuEl.focus();
-                    }
-                    this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
-                },
+                //        // Prevent the page from scrolling
+                //        event.preventDefault();
+                //    }
+                //},
+                //_hoverPromise: null,
+                //_handleMouseOver: function MenuCommand_handleMouseOver(event) {
+                //    /*jshint validthis: true */
+                //    var that = this;
+                //    if (this && this.element && this.element.focus) {
+                //        this.element.focus();
 
-                _getParentMenu: function MenuCommand_getParentMenu(element) {
-                    while (element && !_ElementUtilities.hasClass(element, _Constants.menuClass)) {
-                        element = element.parentElement;
-                    }
+                //        if (this.type === _Constants.typeFlyout && this.flyout && this.flyout.hidden) {
+                //            this._hoverPromise = this._hoverPromise || Promise.timeout(_Constants.menuCommandHoverDelay).then(
+                //                function () {
+                //                    if (!that._parentFlyout || !that._parentFlyout.hidden) {
+                //                        invokeFlyout(that);
+                //                    }
+                //                    that._hoverPromise = null;
+                //                },
+                //                function () {
+                //                    that._hoverPromise = null;
+                //                });
+                //        }
 
-                    return element;
-                },
+                //        this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
+                //    }
+                //},
 
-                _handleFocusIn: function MenuCommand_handleFocusIn (e) {
-                    if (this.flyout.element.contains(e.relatedTerget)) {
-                        if (flyout.hidden) {
-                            // The assumption is that focus is coming back into the menuCommand because 
-                            // its submenu flyout was closed and focus has been restored to this MenuCommand
-                            clearSelectionStyles();
-                        }
-                    }
-                },
-                _handleFocusOut: function MenuCommand_handleFocusOut(e) {
-                    if (!this.flyout.element.contains(e.relatedTerget)) {
-                        // If focus isn't going into the flyout, clear selection and hide the flyout.
-                        // The assumption is that the user has moved the mouse off of the currentMenuCommand
-                        clearSelectionStyles();
-                        this.flyout.hide();
-                    } else {
-                        // Focus is going into the flyout
-                        applySelectionStyles();
-                    }
-                },
+                //_handleMouseMove: function MenuCommand_handleMouseMove() {
+                //    /*jshint validthis: true */
+                //    if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
+                //        this.element.focus();
+                //    }
+                //},
+
+                //_handleMouseOut: function MenuCommand_handleMouseOut() {
+                //    /*jshint validthis: true */
+                //    var parentMenuEl = this._getParentMenu(this.element).element;
+                //    if (parentMenuEl
+                //     && this.element === _Global.document.activeElement
+                //     && parentMenuEl.focus) {
+                //        // Menu gives focus to the menu itself
+                //        parentMenuEl.focus();
+                //    }
+                //    this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
+                //    if (this._hoverPromise) {
+                //        this._hoverPromise.cancel();
+                //    }
+                //},
+
+                ////_getParentMenu: function MenuCommand_getParentMenu(element) {
+                ////    while (element && !_ElementUtilities.hasClass(element, _Constants.menuClass)) {
+                ////        element = element.parentElement;
+                ////    }
+
+                ////    return element;
+                ////},
+
+                ////_handleFocusIn: function MenuCommand_handleFocusIn (e) {
+                ////    if (this.flyout.element.contains(e.relatedTerget)) {
+                ////        if (flyout.hidden) {
+                ////            // The assumption is that focus is coming back into the menuCommand because 
+                ////            // its submenu flyout was closed and focus has been restored to this MenuCommand
+                ////            clearSelectionStyles();
+                ////        }
+                ////    }
+                ////},
+                ////_handleFocusOut: function MenuCommand_handleFocusOut(e) {
+                ////    if (!this.flyout.element.contains(e.relatedTerget)) {
+                ////        // If focus isn't going into the flyout, clear selection and hide the flyout.
+                ////        // The assumption is that the user has moved the mouse off of the currentMenuCommand
+                ////        clearSelectionStyles();
+                ////        this.flyout.hide();
+                ////    } else {
+                ////        // Focus is going into the flyout
+                ////        applySelectionStyles();
+                ////    }
+                ////},
             });
         })
     });

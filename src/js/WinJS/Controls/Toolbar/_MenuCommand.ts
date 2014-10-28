@@ -18,20 +18,4 @@ export class _MenuCommand extends _MenuCommandBase.MenuCommand {
         this._beforeOnClick && this._beforeOnClick(event);
         super._handleMenuClick(event);
     }
-
-    _handleMouseOver() {
-        if (this._isAttachedMode) {
-            // override base behavior, do nothing
-        } else {
-            super._handleMouseOver();
-        }
-    }
-
-    _handleMouseOut() {
-        if (this._isAttachedMode) {
-            // override base behavior, do nothing
-        } else {
-            super._handleMouseOut();
-        }
-    }
 }

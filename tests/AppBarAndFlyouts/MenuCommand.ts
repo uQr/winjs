@@ -4,13 +4,16 @@
 // <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
 // <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
-/// <reference path="OverlayHelpers.ts" />
+// <reference path="../TestLib/Helper.ts"/>
+// <reference path="OverlayHelpers.ts" />
 
 module CorsicaTests {
+
     "use strict";
 
-    export class MenuCommandTests {
+    var _Constants = Helper.require("WinJS/Controls/AppBar/_Constants");
 
+    export class MenuCommandTests {
 
         tearDown() {
             LiveUnit.LoggingCore.logComment("In tearDown");
@@ -35,22 +38,14 @@ module CorsicaTests {
             // We have no functions
         }
 
-
-
-
-
-    // Test MenuCommand Instantiation with null element
-    testMenuCommandNullInstantiation = function () {
+        // Test MenuCommand Instantiation with null element
+        testMenuCommandNullInstantiation = function () {
             LiveUnit.LoggingCore.logComment("Attempt to Instantiate the MenuCommand with null element");
             var menuCommand = new WinJS.UI.MenuCommand(null, { type: 'separator' });
             LiveUnit.Assert.isNotNull(menuCommand, "MenuCommand instantiation was null when sent a null MenuCommand element.");
         }
 
-
-
-
-
-    // Test multiple instantiation of the same MenuCommand DOM element
+        // Test multiple instantiation of the same MenuCommand DOM element
         testMenuCommandMultipleInstantiation() {
             MenuCommandTests.prototype.testMenuCommandMultipleInstantiation["LiveUnit.ExpectedException"] = { message: "Invalid argument: Controls may only be instantiated one time for each DOM element" };
             // Get the MenuCommand element from the DOM
@@ -67,11 +62,6 @@ module CorsicaTests {
                 OverlayHelpers.disposeAndRemove(menuCommandElement);
             }
         }
-
-
-
-
-
 
         // Test MenuCommand parameters
         testMenuCommandParams = function () {
@@ -147,11 +137,7 @@ module CorsicaTests {
             //testBadInitOption("element", {}, WinJS.UI.MenuCommand.badElement);
         }
 
-
-
-
-
-    testDefaultMenuCommandParameters = function () {
+        testDefaultMenuCommandParameters = function () {
             // Get the MenuCommand element from the DOM
             LiveUnit.LoggingCore.logComment("Attempt to Instantiate the MenuCommand element");
             var menuCommand = new WinJS.UI.MenuCommand(null, { label: 'test', icon: 'test.png' });
@@ -169,12 +155,8 @@ module CorsicaTests {
             LiveUnit.Assert.isFalse(menuCommand.selected, "Verifying that selected is false");
         }
 
-
-
-
-
-    // Simple Property tests
-    testSimpleMenuCommandProperties = function () {
+        // Simple Property tests
+        testSimpleMenuCommandProperties = function () {
             // Get the MenuCommand element from the DOM
             LiveUnit.LoggingCore.logComment("Attempt to Instantiate the MenuCommand element");
             var menuCommand = new WinJS.UI.MenuCommand(null, { label: 'test', icon: 'test.png', type: 'toggle', extraClass: 'extra' });
@@ -205,12 +187,8 @@ module CorsicaTests {
             LiveUnit.Assert.areEqual("unique", menuCommand.element.getAttribute("aria-owns"), "Verifying that aria-owns is set by flyout setter");
         }
 
-
-
-
-
-    // Hidden Property tests
-    testHiddenProperty = function () {
+        // Hidden Property tests
+        testHiddenProperty = function () {
             LiveUnit.LoggingCore.logComment("Attempt to test hidden property on menucommand");
             // Get the Menu element from the DOM
             var menuElement = document.createElement("div");
@@ -233,12 +211,8 @@ module CorsicaTests {
             LiveUnit.Assert.areEqual(true, result, "verify the hidden property throw the exception");
         }
 
-
-
-
-
-    // Tests for dispose members and requirements
-    testMenuCommandDispose = function () {
+        // Tests for dispose members and requirements
+        testMenuCommandDispose = function () {
             var button = document.createElement("button");
             var mc = <WinJS.UI.PrivateMenuCommand>new WinJS.UI.MenuCommand(button);
             LiveUnit.Assert.isTrue(mc.dispose);
@@ -250,20 +224,98 @@ module CorsicaTests {
             mc.dispose();
         }
 
-
-
-    // Tests that previous innerHTML is cleared when we instantiate a new button.
-    testMenuCommandRemovesOldInnerHTML = function () {
+        // Tests that previous innerHTML is cleared when we instantiate a new button.
+        testMenuCommandRemovesOldInnerHTML = function () {
             var button = document.createElement("button");
             button.innerHTML = "<div id='testMenuCommandRemovesOldInnerHTML'>";
             LiveUnit.Assert.isTrue(button.querySelector("#testMenuCommandRemovesOldInnerHTML"));
             var mc = new WinJS.UI.MenuCommand(button);
-            LiveUnit.Assert.isFalse(button.querySelector("#testMenuCommandRemovesOldInnerHTML"), "MenuCommand butttons should lose previous innerHTML on control Instantiation");
+            LiveUnit.Assert.isFalse(button.querySelector("#testMenuCommandRemovesOldInnerHTML"), "MenuCommand buttons should lose previous innerHTML on control Instantiation");
 
         }
 
+        // Tests that all visible commands in a menu adjust their layout relative to what other types of commands are also visible in the menu.
+        testMenuCommandsInMenu = function (complete) {
 
-}
+            var verifyCommandsInMenu = function verifyCommandsInMenu(menu, buttonCommands = [], toggleCommands = [], flyoutCommands = [], separatorCommands = []) {
+                return new WinJS.Promise(function (completePromise) {
+
+                    var allCommands = buttonCommands.concat(toggleCommands).concat(flyoutCommands).concat(separatorCommands);
+                    menu.showOnlyCommands(allCommands);
+
+                    function menu_onaftershow() {
+                        allCommands.forEach(function (command) {
+                            if (command.type !== _Constants.typeSeparator) {
+                                var toggleSpanStyle = getComputedStyle(command._toggleSpan);
+                                var flyoutSpanStyle = getComputedStyle(command._flyoutSpan);
+
+                                if (toggleCommands && toggleCommands.length) {
+                                    LiveUnit.Assert.areNotEqual(toggleSpanStyle.display, "none",
+                                        "When a menu contains a visible toggle command, EVERY command should reserve extra width for the toggle span");
+                                    if (command.type === _Constants.typeToggle && command.selected) {
+                                        LiveUnit.Assert.areEqual(toggleSpanStyle.visibility, "visible");
+                                    } else {
+                                        LiveUnit.Assert.areEqual(toggleSpanStyle.visibility, "hidden");
+                                    }
+                                } else {
+                                    LiveUnit.Assert.isTrue(toggleSpanStyle.display === "none",
+                                        "When a menu does not contain visible toggle commands, NO command should reserve space for the toggle span");
+                                }
+
+                                if (flyoutCommands && flyoutCommands.length) {
+                                    LiveUnit.Assert.areNotEqual(flyoutSpanStyle.display, "none",
+                                        "When a menu contains a visible flyout command, EVERY command should reserve extra width for the flyout span");
+                                    if (command.type === _Constants.typeFlyout) {
+                                        LiveUnit.Assert.areEqual(flyoutSpanStyle.visibility, "visible");
+                                    } else {
+                                        LiveUnit.Assert.areEqual(flyoutSpanStyle.visibility, "hidden");
+                                    }
+                                } else {
+                                    LiveUnit.Assert.isTrue(flyoutSpanStyle.display === "none",
+                                        "When a menu does not contain visible flyout commands, NO command should reserve space for the flyout span");
+                                }
+                            }
+                        });
+                        menu.onafterhide = completePromise;
+                        menu.hide();
+
+                    };
+                    menu.onaftershow = menu_onaftershow;
+                    menu.show(menu.element);
+                });
+            }
+
+            // commands
+            var b1 = new WinJS.UI.MenuCommand(null, { type: 'button' }),
+                t1 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected: true }),
+                t2 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected: false }),
+                f1 = new WinJS.UI.MenuCommand(null, { type: 'flyout' }),
+                s1 = new WinJS.UI.MenuCommand(null, { type: 'separator' }),
+                commands = [b1, t1, t2, f1, s1];
+
+            var menu = new WinJS.UI.Menu(null, { commands: commands });
+            document.body.appendChild(menu.element);
+
+            verifyCommandsInMenu(menu, [], [], [], []).then(function () {
+                return verifyCommandsInMenu(menu, [b1], [t1, t2], [f1], [s1]);
+            }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [], [], [s1]);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t1], [], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [], [t2], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], [s1]);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [b1], [], [f1], []);
+                }).then(function () {
+                    return verifyCommandsInMenu(menu, [], [t1], [f1], []);
+                }).done(function () {
+                    OverlayHelpers.disposeAndRemove(menu.element);
+                    complete();
+                });
+        }
+    }
 }
 // register the object as a test class by passing in the name
 LiveUnit.registerTestClass("CorsicaTests.MenuCommandTests");

@@ -116,7 +116,7 @@ define([
                     // Hide the entire cascade if focus has moved somewhere outside of it
                     var focusLeftTheCascade = true;
                     for (var i = 0, len = this._cascadingStack.length; i < len; i++) {
-                        if (this._cascadingStack[i].contains(e.target)) {
+                        if (this._cascadingStack[i].element.contains(e.target)) {
                             focusLeftTheCascade = false;
                             break;
                         }
@@ -206,8 +206,8 @@ define([
                     this._currentAnimateIn = this._flyoutAnimateIn;
                     this._currentAnimateOut = this._flyoutAnimateOut;
 
-                    _ElementUtilities._addEventListener(this.element, "focusin", Flyout._cascadeManager._handleFocusIntoCascade, false);
-                    _ElementUtilities._addEventListener(this.element, "focusout", Flyout._cascadeManager._handleFocusOutOfCascade, false);
+                    _ElementUtilities._addEventListener(this.element, "focusin", Flyout._cascadeManager._handleFocusIntoCascade.bind(Flyout._cascadeManager), false);
+                    _ElementUtilities._addEventListener(this.element, "focusout", Flyout._cascadeManager._handleFocusOutOfCascade.bind(Flyout._cascadeManager), false);
 
                     // Make sure additional _Overlay event handlers are hooked up
                     this._handleOverlayEventsForFlyoutOrSettingsFlyout();
@@ -483,9 +483,9 @@ define([
                     this._hasScrolls = false;
                     this._keyboardSquishedUs = 0;
 
-                    // Make sure menu toggles behave
-                    if (this._checkToggle) {
-                        this._checkToggle();
+                    // Make sure menu commands display correctly
+                    if (this._checkMenuCommands) {
+                        this._checkMenuCommands();
                     }
 
                     // Update margins for this alignment and remove old scrolling
