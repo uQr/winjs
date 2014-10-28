@@ -14,6 +14,13 @@ interface IStyleEquivalentsMap {
 }
 
 declare module WinJS {
+    
+    interface IPosition {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    }
 
     class _Signal<T> {
         constructor(oncancel?: Function);
@@ -27,6 +34,7 @@ declare module WinJS {
     module Utilities {
         function _bubbleEvent(element: HTMLElement, type: string, eventObject: any): void;
         function _setImmediate(func: () => any): void;
+        export function _getPositionRelativeTo(element: HTMLElement, ancestor: HTMLElement): IPosition;
 
         module _resizeNotifier {
             function subscribe(element: HTMLElement, handler): void;
@@ -53,6 +61,7 @@ declare module WinJS {
 
         function _yieldForEvents(handler: Function);
         function _merge(a: any, b: any): any;
+        function _mergeAll(list: any): any;
         var _isiOS;
         function _setIsiOS(isiOS: boolean);
 
@@ -200,6 +209,24 @@ declare module WinJS {
             _updateTabIndices();
             _updateTabIndicesImpl();
         }
+        
+        class PrivateSplitView extends WinJS.UI.SplitView {
+            static _ClassNames: {
+                splitView: string;
+                pane: string;
+                content: string;
+                // hidden/shown
+                paneHidden: string;
+                paneShown: string;
+            }
+            
+            _playShowAnimation(): Promise<any>;
+            _playHideAnimation(): Promise<any>;
+            _prepareAnimation(paneRect: any, contentRect: any): void;
+            _clearAnimation(): void;
+            _disposed: boolean;
+            _state: any;
+        }
 
         interface ISelect {
             value;
@@ -258,6 +285,7 @@ declare module WinJS {
         class PrivateAutoSuggestBox extends WinJS.UI.AutoSuggestBox {
             _disposed: boolean;
             _inputElement: HTMLInputElement;
+            _isFlyoutPointerDown: boolean;
             _flyoutElement: HTMLDivElement;
             _lastKeyPressLanguage: string;
             _repeater: WinJS.UI.Repeater;
