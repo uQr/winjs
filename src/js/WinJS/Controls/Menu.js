@@ -289,7 +289,7 @@ define([
                     if (this._hoverPromise) {
                         this._hoverPromise.cancel();
                     }
-                    _Flyout._Flyout.prototype._dispose.call(this)
+                    Flyout.Flyout.prototype._dispose.call(this);
 
                 },
 

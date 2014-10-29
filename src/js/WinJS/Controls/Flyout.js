@@ -74,9 +74,9 @@ define([
                         this.emptyStack();
                     }
 
-                    flyoutToAdd.addEventListener("focusin", this._handleFocusIntoCascade_bound, false);
-                    flyoutToAdd.addEventListener("focusout", this._handleFocusOutOfCascade_bound, false);
-                    flyoutToAdd.addEventListener("keydown", this._handleKeyDown_bound, false);
+                    _ElementUtilities._addEventListener(flyoutToAdd.element, "focusin", this._handleFocusIntoCascade_bound, false);
+                    _ElementUtilities._addEventListener(flyoutToAdd.element, "focusout", this._handleFocusOutOfCascade_bound, false);
+                    flyoutToAdd.element.addEventListener("keydown", this._handleKeyDown_bound, false);
                     this._cascadingStack.push(flyoutToAdd);
                 },
                 removeFromStack: function _CascadeManager_removeFromStack(flyoutToRemove) {
@@ -87,9 +87,9 @@ define([
                         var subFlyout;
                         while (this._cascadingStack.length && flyoutToRemove !== subFlyout) {
                             subFlyout = this._cascadingStack.pop();
-                            subFlyout.removeEventListener("focusin", this._handleFocusIntoCascade_bound, false);
-                            subFlyout.removeEventListener("focusout", this._handleFocusOutOfCascade_bound, false);
-                            subFlyout.removeEventListener("keydown", this._handleKeyDown_bound, false);
+                            _ElementUtilities._addEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
+                            _ElementUtilities._addEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
+                            subFlyout.element.removeEventListener("keydown", this._handleKeyDown_bound, false);
                             subFlyout.hide();
                         }
 
@@ -118,11 +118,10 @@ define([
 
                     // When a flyout in the cascade recieves focus, we close all subflyouts beneath it.
                     if (!event._handled) {
-                        var flyoutRecievingFocus = event.target;
-                        var index = this._cascadingStack.indexOf(flyoutRecievingFocus);
+                        var index = this.containsElement(event.target);
                         if (index >= 0) {
-                            var subSubFlyout = this._cascadingStack[index + 1];
-                            this.removeFromStack(subSubFlyout);
+                            var subFlyout = this._cascadingStack[index + 1];
+                            this.removeFromStack(subFlyout);
                         }
                     }
                 },
