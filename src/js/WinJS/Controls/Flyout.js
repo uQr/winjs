@@ -66,25 +66,11 @@ define([
                     // ELSE flyoutToAdd isn't part of the existing cascade
                     //  Empty the entire cascadingStack to start a new cascade.
                     // FINALLY: 
-                    //  add flyoutToAdd to the end of the cascading stack
-
+                    //  add flyoutToAdd to the end of the cascading stack. Monitor it for events.
                     var indexOfParentFlyout = this.containsElement(flyoutToAdd._currentAnchor);
                     if (indexOfParentFlyout >= 0) {
                         this.removeFromStack(this._cascadingStack[indexOfParentFlyout + 1]);
                     } else {
-
-                    ////for (var i = 0, len = this._cascadingStack.length; i < len; i++) {
-                    ////    var currentFlyout = this._cascadingStack[i];
-                    ////    if (currentFlyout.element.contains(flyoutToAdd._currentAnchor)) {
-                    ////        parentFlyoutInStack = currentFlyout;
-                    ////        cascadingSubFlyout = this._cascadingStack[i + 1];
-                    ////        break;
-                    ////    }
-                    ////}
-
-                    //if (parentFlyoutInStack) {
-                    //    this.removeFromStack(cascadingSubFlyout);
-                    //} else {
                         this.emptyStack();
                     }
 
@@ -145,8 +131,7 @@ define([
 
                     // Hide the entire cascade if focus has moved somewhere outside of it
                     if (!event._handled) {
-                        var focusLeftTheCascade = this.containsElement(event.target) < 0;
-                        if (focusLeftTheCascade) {
+                        if (this.containsElement(event.relatedTarget) < 0) {
                             this.emptyStack();
                         }
                     }
