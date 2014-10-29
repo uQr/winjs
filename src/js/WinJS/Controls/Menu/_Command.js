@@ -7,12 +7,11 @@ define([
     '../../Core/_Base',
     '../../Core/_ErrorFromName',
     '../../Core/_Resources',
-    '../../Promise',
     '../../Utilities/_Control',
     '../../Utilities/_ElementUtilities',
     '../AppBar/_Constants',
     '../Flyout/_Overlay'
-], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, Promise, _Control, _ElementUtilities, _Constants, _Overlay) {
+], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, _Control, _ElementUtilities, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -98,8 +97,8 @@ define([
 
                 if (options.onclick) {
                     this.onclick = options.onclick;
-                    delete options.onclick;
                 }
+                options.onclick = this._handleClick.bind(this);
 
                 _Control.setOptions(this, options);
 
@@ -164,7 +163,7 @@ define([
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandButtonClass);
                             } else if (value === _Constants.typeFlyout) {
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandFlyoutClass);
-                                //this.element.addEventListener("keydown", this._handleKeyDown.bind(this), false);
+                                this.element.addEventListener("keydown", this._handleKeyDown.bind(this), false);
                             } else if (value === _Constants.typeSeparator) {
                                 _ElementUtilities.addClass(this.element, _Constants.menuCommandSeparatorClass);
                             } else if (value === _Constants.typeToggle) {
@@ -349,9 +348,7 @@ define([
                         return;
                     }
                     this._disposed = true;
-                    if (this._hoverPromise) {
-                        this._hoverPromise.cancel();
-                    }
+
                     if (this._flyout) {
                         this._flyout.dispose();
                     }
@@ -411,10 +408,10 @@ define([
                         }
                     }
 
-                    this._element.innerHTML = 
-                        '<span class="win-toggleicon" tabindex="-1" aria-hidden="true"></span>' +
-                        '<span class="win-label" tabindex="-1" aria-hidden="true"></span>' +
-                        '<span class="win-flyouticon" tabindex="-1" aria-hidden="true"></span>';
+                    this._element.innerHTML =
+                        '<span class="win-toggleicon" aria-hidden="true"></span>' +
+                        '<span class="win-label" aria-hidden="true"></span>' +
+                        '<span class="win-flyouticon" aria-hidden="true"></span>';
                     this._element.type = "button";
 
                     this._toggleSpan = this._element.querySelector(".win-toggleicon");
@@ -424,42 +421,51 @@ define([
                     // Label 'textContent' is added later by caller
                 },
 
-                //_handleMenuClick: function MenuCommand_handleMenuClick(event) {
-                //    /*jshint validthis: true */
-                //    var command = this;
-                //    if (command) {
-                //        var hideMenu = this._getParentMenu(this.element);
+                _sendEvent: function MenuCommand_sendEvent(eventName, detail) {
+                    if (!this._disposed) {
+                        var event = _Global.document.createEvent("CustomEvent");
+                        event.initCustomEvent(eventName, true, true, (detail || {}));
+                        this._element.dispatchEvent(event);
+                    }
+                },
 
-                //        if (command._type === _Constants.typeToggle) {
-                //            command.selected = !command.selected;
-                //        } else if (command._type === _Constants.typeFlyout && command._flyout) {
-                //            hideMenu = null;
-                //            this._invokeFlyout(command);
+                _handleClick: function MenuCommand_handleClick(event) {
+                    /*jshint validthis: true */
+                    var command = this;
+                    if (command) {
+                        var actionCommitted = true;
 
-                //        }
+                        if (command._type === _Constants.typeToggle) {
+                            command.selected = !command.selected;
+                        } else if (command._type === _Constants.typeFlyout && command._flyout) {
+                            actionCommitted = false;
+                        }
 
-                //        if (command.onclick) {
-                //            command.onclick(event);
-                //        }
-                //        // Close containing menu hideMenu = null;on command invoke
-                //        if (hideMenu && hideMenu.hide) {
-                //            hideMenu.hide();
-                //        }
-                //    }
-                //},
+                        if (command.onclick) {
+                            command.onclick(event);
+                        }
 
-                //_handleKeyDown: function MenuCommand_handleKeyDown(event) {
-                //    var Key = _ElementUtilities.Key,
-                //        rtl = _Global.getComputedStyle(this.element).direction === "rtl",
-                //        rightKey = rtl ? Key.leftArrow : Key.rightArrow;
+                        // Bubble private 'invoked' event to Menu
+                        this._sendEvent(_Constants.menuCommandInvokedEvent, { actionCommitted: actionCommitted });
+                    }
+                },
 
-                //    if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
-                //        this._invokeFlyout(this);
+                _handleKeyDown: function MenuCommand_handleKeyDown(event) {
+                    var Key = _ElementUtilities.Key,
+                        rtl = _Global.getComputedStyle(this.element).direction === "rtl",
+                        rightKey = rtl ? Key.leftArrow : Key.rightArrow;
 
-                //        // Prevent the page from scrolling
-                //        event.preventDefault();
-                //    }
-                //},
+                    if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
+
+                        // Bubble private 'invoked' event to Menu
+                        this._sendEvent(_Constants.menuCommandInvokedEvent, { actionCommitted: false });
+
+                        // Prevent the page from scrolling
+                        event.preventDefault();
+                    }
+                },
+
+
                 //_hoverPromise: null,
                 //_handleMouseOver: function MenuCommand_handleMouseOver(event) {
                 //    /*jshint validthis: true */

@@ -54,6 +54,8 @@ define([
 
             var _CascadeManager = _Base.Class.define(function _CascadeManager_ctor() {
                 this._cascadingStack = [];
+                this._handleFocusIntoCascade_bound = this._handleFocusIntoCascade.bind(this);
+                this._handleFocusOutOfCascade_bound = this._handleFocusOutOfCascade.bind(this);
             },
             {
                 addToStack: function _CascadeManager_addToStack(flyoutToAdd) {
@@ -82,6 +84,8 @@ define([
                         this.emptyStack();
                     }
 
+                    flyoutToAdd.addEventListener("focusin", this._handleFocusIntoCascade_bound, false);
+                    flyoutToAdd.addEventListener("focusout", this._handleFocusOutOfCascade_bound, false);
                     this._cascadingStack.push(flyoutToAdd);
                 },
                 removeFromStack: function _CascadeManager_removeFromStack(flyoutToRemove) {
@@ -92,6 +96,8 @@ define([
                         var poppedFromStack;
                         while (this._cascadingStack.length && flyoutToRemove !== poppedFromStack) {
                             poppedFromStack = this._cascadingStack.pop();
+                            poppedFromStack.removeEventListener("focusin", this._handleFocusIntoCascade_bound, false);
+                            poppedFromStack.removeEventListener("focusout", this._handleFocusOutOfCascade_bound, false);
                             poppedFromStack.hide();
                         }
 
@@ -102,27 +108,53 @@ define([
                     // Empties the cascadingStack and hides all flyouts.
                     this.removeFromStack(this._cascadingStack[0]);
                 },
-                _handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(e) {
-                    // When a flyout in the cascade recieves focus, we should only allow
-                    // one subflyout in the cascade below it to stay open.
-                    var flyoutRecievingFocus = e.target;
-                    var index = this._cascadingStack.indexOf(flyoutRecievingFocus);
-                    if (index >= 0) {
-                        var subSubFlyout = this._cascadingStack[index + 2];
-                        this.removeFromStack(subSubFlyout);
-                    }
-                },
-                _handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(e) {
-                    // Hide the entire cascade if focus has moved somewhere outside of it
-                    var focusLeftTheCascade = true;
+                containsElement: function _CascadeManager_containsElement(el){
+                    // Returns the index of the Flyout in the cascade whose element contains the element in question.
+                    // Returns -1 if the element is not contained by any Flyouts in the cascade.
+                    var indexOfContainingFlyout = -1;
                     for (var i = 0, len = this._cascadingStack.length; i < len; i++) {
-                        if (this._cascadingStack[i].element.contains(e.target)) {
-                            focusLeftTheCascade = false;
+                        var currentFlyout = this._cascadingStack[i];
+                        if (currentFlyout.element.contains(el)) {
+                            indexOfContainingFlyout = i;
                             break;
                         }
                     }
-                    if (focusLeftTheCascade) {
-                        this.emptyStack();
+
+                    return indexOfContainingFlyout;
+                },
+                _handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(event) {
+                    // When a flyout in the cascade recieves focus, we close all subflyouts beneath it.
+                    if (!event._handled) {
+                        var flyoutRecievingFocus = event.target;
+                        var index = this._cascadingStack.indexOf(flyoutRecievingFocus);
+                        if (index >= 0) {
+                            var subSubFlyout = this._cascadingStack[index + 1];
+                            this.removeFromStack(subSubFlyout);
+                        }
+                    }
+                },
+                _handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(event) {
+                    // Hide the entire cascade if focus has moved somewhere outside of it
+                    if (!event._handled) {
+                        var focusLeftTheCascade = this.containsElement(event.target) < 0;
+                        if (focusLeftTheCascade) {
+                            this.emptyStack();
+                        }
+                    }
+                },
+                _handleKeyDown: function _CascadeManager_handleKeyDown(event) {
+                    var rtl = _Global.getComputedStyle(this.element).direction === "rtl",
+                        leftKey = rtl ? Key.rightArrow : Key.leftArrow,
+                        target = event.target;
+
+                    if (event.keyCode === leftKey) {
+                        // Left key press in a sub flyout will close that sub flyout.  
+                        if (!this._cascadingStack[0].element.contains(target)) {
+                            // Show a focus rect on what we move focus to
+                            this._keyboardInvoked = true;
+                            this._hide();
+                            event.preventDefault();
+                        }
                     }
                 },
 
@@ -206,8 +238,8 @@ define([
                     this._currentAnimateIn = this._flyoutAnimateIn;
                     this._currentAnimateOut = this._flyoutAnimateOut;
 
-                    _ElementUtilities._addEventListener(this.element, "focusin", Flyout._cascadeManager._handleFocusIntoCascade.bind(Flyout._cascadeManager), false);
-                    _ElementUtilities._addEventListener(this.element, "focusout", Flyout._cascadeManager._handleFocusOutOfCascade.bind(Flyout._cascadeManager), false);
+                    _ElementUtilities._addEventListener(this.element, "focusin", this._handleFocusChange.bind(this), false);
+                    _ElementUtilities._addEventListener(this.element, "focusout", this._handleFocusChange.bind(this), false);
 
                     // Make sure additional _Overlay event handlers are hooked up
                     this._handleOverlayEventsForFlyoutOrSettingsFlyout();
@@ -942,6 +974,13 @@ define([
                         event.preventDefault();
                         event.stopPropagation();
                         this.winControl._focusOnLastFocusableElementOrThis();
+                    }
+                },
+
+                _handleFocusChange: function Flyout_handleFocusChange(event) {
+                    if (this.element.contains(event.relatedTarget)) {
+                        // Focus is only moving between elements in the flyout. Doesn't need to be handled by cascadeManager.
+                        event._handled = true;
                     }
                 },
 

@@ -9,6 +9,7 @@ define([
     '../Core/_ErrorFromName',
     '../Core/_Resources',
     '../Core/_WriteProfilerMark',
+    '../Promise',
     '../Utilities/_ElementUtilities',
     '../Utilities/_Hoverable',
     '../Utilities/_KeyboardBehavior',
@@ -17,7 +18,7 @@ define([
     './Flyout/_Overlay',
     './Menu/_Command',
     'require-style!less/controls'
-], function menuInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Resources, _WriteProfilerMark, _ElementUtilities, _Hoverable, _KeyboardBehavior, _Constants, Flyout, _Overlay, _Command) {
+], function menuInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Resources, _WriteProfilerMark, Promise, _ElementUtilities, _Hoverable, _KeyboardBehavior, _Constants, Flyout, _Overlay, _Command) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -52,18 +53,9 @@ define([
                 var subFlyout = menuCommand._flyout;
                 if (subFlyout) {
                     // Flyout may not have processAll'd, so this may be a DOM object
-                    if (typeof subFlyout === "string") {
-                        subFlyout = _Global.document.getElementById(subFlyout);
-                    }
-                    if (!subFlyout.show) {
-                        subFlyout = subFlyout.winControl;
-                    }
+                    subFlyout = subFlyout.winControl || subFlyout;
                     if (subFlyout && subFlyout.show) {
-                        if (menuCommand._parentFlyout) {
-                            subFlyout.show(menuCommand._parentFlyout._currentAnchor, menuCommand._parentFlyout._currentPlacement, menuCommand._parentFlyout._currentAlignment);
-                        } else {
-                            subFlyout.show(menuCommand.element);
-                        }
+                        subFlyout.show(menuCommand, "right");
                     }
                 }
             }
@@ -117,7 +109,7 @@ define([
 
                 // Handle "esc" & "up/down" key presses
                 this._element.addEventListener("keydown", this._handleKeyDown.bind(this), true);
-                this._element.addEventListener("click", this._handleMenuClick.bind(this), false);
+                this._element.addEventListener(_Constants.menuCommandInvokedEvent, this._handleCommandInvoked.bind(this), false);
                 this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
                 this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
                 //this._handleMouseMoveBound = this._handleMouseMove.bind(this);
@@ -293,6 +285,14 @@ define([
                     this._element.appendChild(command._element);
                 },
 
+                _dispose: function Menu_dispose() {
+                    if (this._hoverPromise) {
+                        this._hoverPromise.cancel();
+                    }
+                    _Flyout._Flyout.prototype._dispose.call(this)
+
+                },
+
                 // Called by flyout's _findPosition so that application can update it status
                 // we do the test and we can then fix this last-minute before showing.
                 _checkMenuCommands: function Menu_checkMenuCommands() {
@@ -320,24 +320,24 @@ define([
                 _isCommandInMenu: function Menu_isCommandInMenu(object) {
                     // Verifies that we have a menuCommand element and that it is in a Menu.
                     var element = object.element || object;
-                    return _ElementUtilities._matchesSelector(element, "." + _Constants._menuClass + " " + "." + _Constants._menuCommandClass);
+                    return _ElementUtilities._matchesSelector(element, "." + _Constants.menuClass + " " + "." + _Constants.menuCommandClass);
                 },
 
                 _handleKeyDown: function Menu_handleKeyDown(event) {
                     /*jshint validthis: true */
 
                     var rtl = _Global.getComputedStyle(this.element).direction === "rtl",
-                        rightKey = rtl ? Key.leftArrow : Key.rightArrow,
                         leftKey = rtl ? Key.rightArrow : Key.leftArrow,
                         target = event.target;
 
-                    if (event.keyCode === rightKey) {
+                    /*if (event.keyCode === rightKey) {
                         if (this._isCommandInMenu(target) && target.winControl.type === _Constants.typeFlyout) {
                             invokeSubFlyout(target.winControl);
                         }
                         // Prevent the page from scrolling
                         event.preventDefault();
-                    } else if (event.keyCode === leftKey || event.keyCode === Key.escape) {
+                    } else*/
+                    if (event.keyCode === leftKey || event.keyCode === Key.escape) {
                         // Show a focus rect on what we move focus to
                         this._keyboardInvoked = true;
                         this._hide();
@@ -367,28 +367,19 @@ define([
 
                 /******* START MENUCOMMAND HANDLERS.... NEED TO ADD EVENT LISTENER THESE  */
 
-                _handleMenuClick: function Menu_handleMenuClick(event) {
+                _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
                     /*jshint validthis: true */
-
                     var target = event.target;
                     if (this._isCommandInMenu(target)) {
                         var command = target.winControl;
                         if (command) {
-                            var hideMenu = this;
-
-                            if (command._type === _Constants.typeToggle) {
-                                command.selected = !command.selected;
-                            } else if (command._type === _Constants.typeFlyout && command._flyout) {
-                                hideMenu = null;
+                            if (command._type === _Constants.typeFlyout && command._flyout) {
                                 invokeSubFlyout(command);
                             }
 
-                            if (command.onclick) {
-                                command.onclick(event);
-                            }
                             // Close menu after command invoke
-                            if (hideMenu) {
-                                hideMenu.hide();
+                            if (event.detail.actionCommitted) {
+                                this.hide();
                             }
                         }
                     }
