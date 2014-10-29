@@ -326,26 +326,10 @@ define([
                 _handleKeyDown: function Menu_handleKeyDown(event) {
                     /*jshint validthis: true */
 
-                    var rtl = _Global.getComputedStyle(this.element).direction === "rtl",
-                        leftKey = rtl ? Key.rightArrow : Key.leftArrow,
-                        target = event.target;
-
-                    /*if (event.keyCode === rightKey) {
-                        if (this._isCommandInMenu(target) && target.winControl.type === _Constants.typeFlyout) {
-                            invokeSubFlyout(target.winControl);
-                        }
-                        // Prevent the page from scrolling
-                        event.preventDefault();
-                    } else*/
-                    if (event.keyCode === leftKey || event.keyCode === Key.escape) {
+                    if (event.keyCode === Key.escape) {
                         // Show a focus rect on what we move focus to
                         this._keyboardInvoked = true;
                         this._hide();
-
-                        if (event.keyCode === leftKey) {
-                            // Prevent the page from scrolling
-                            event.preventDefault();
-                        }
                     } else if (event.keyCode === Key.upArrow) {
                         Menu._focusOnPreviousElement(this.element);
 
@@ -384,19 +368,6 @@ define([
                         }
                     }
                 },
-
-                //_handleKeyDown: function MenuCommand_handleKeyDown(event) {
-                //    var Key = _ElementUtilities.Key,
-                //        rtl = _Global.getComputedStyle(this.element).direction === "rtl",
-                //        rightKey = rtl ? Key.leftArrow : Key.rightArrow;
-
-                //    if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
-                //        invokeSubFlyout(this);
-
-                //        // Prevent the page from scrolling
-                //        event.preventDefault();
-                //    }
-                //},
 
                 _hoverPromise: null,
                 _handleMouseOver: function Menu_handleMouseOver(event) {
