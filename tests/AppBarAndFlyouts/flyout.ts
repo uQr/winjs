@@ -416,8 +416,8 @@ module CorsicaTests {
                 // In High DPI scenarios the actual distance may be within 1px of the expected distance.
                 var actualDistance = anchorRect.top - flyoutRect.bottom;
 
-                LiveUnit.LoggingCore.logComment("Flyout should be on the top of the anchor")
-            LiveUnit.LoggingCore.logComment("actual: " + actualDistance);
+                LiveUnit.LoggingCore.logComment("Flyout should be on the top of the anchor");
+                LiveUnit.LoggingCore.logComment("actual: " + actualDistance);
                 LiveUnit.LoggingCore.logComment("expected: " + expectedDistanceFromAnchor);
 
                 LiveUnit.Assert.isTrue(Math.abs(expectedDistanceFromAnchor - actualDistance) < 1, "Flyout is not in the right location");

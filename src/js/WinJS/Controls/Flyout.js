@@ -67,9 +67,9 @@ define([
                     //  Empty the entire cascadingStack to start a new cascade.
                     // FINALLY: 
                     //  add flyoutToAdd to the end of the cascading stack. Monitor it for events.
-                    var indexOfParentFlyout = this.containsElement(flyoutToAdd._currentAnchor);
+                    var indexOfParentFlyout = this.indexOfElement(flyoutToAdd._currentAnchor);
                     if (indexOfParentFlyout >= 0) {
-                        this.removeFromStack(this._cascadingStack[indexOfParentFlyout + 1]);
+                        this.removeFromStack(this.getAt(indexOfParentFlyout + 1));
                     } else {
                         this.emptyStack();
                     }
@@ -81,11 +81,11 @@ define([
                 },
                 removeFromStack: function _CascadeManager_removeFromStack(flyoutToRemove) {
                     // Removes flyoutToRemove and its subflyout descendants from the cascadingStack.
-                    if (!this._reentrancyLock && flyoutToRemove && this._cascadingStack.indexOf(flyoutToRemove) >= 0) {
+                    if (!this._reentrancyLock && flyoutToRemove && this.indexOf(flyoutToRemove) >= 0) {
                         this._reentrancyLock = true;
 
                         var subFlyout;
-                        while (this._cascadingStack.length && flyoutToRemove !== subFlyout) {
+                        while (this.length && flyoutToRemove !== subFlyout) {
                             subFlyout = this._cascadingStack.pop();
                             _ElementUtilities._addEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
                             _ElementUtilities._addEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
@@ -98,14 +98,17 @@ define([
                 },
                 emptyStack: function _CascadeManager_emptyStack(flyoutToRemove) {
                     // Empties the cascadingStack and hides all flyouts.
-                    this.removeFromStack(this._cascadingStack[0]);
+                    this.removeFromStack(this.getAt(0));
                 },
-                containsElement: function _CascadeManager_containsElement(el) {
+                indexOf: function _CascadeManager_indexOf(flyout) {
+                    return this._cascadingStack.indexOf(flyout);
+                },
+                indexOfElement: function _CascadeManager_indexOfElement(el) {
                     // Returns the index of the Flyout in the cascade whose element contains the element in question.
                     // Returns -1 if the element is not contained by any Flyouts in the cascade.
                     var indexOfAssociatedFlyout = -1;
-                    for (var i = 0, len = this._cascadingStack.length; i < len; i++) {
-                        var currentFlyout = this._cascadingStack[i];
+                    for (var i = 0, len = this.length; i < len; i++) {
+                        var currentFlyout = this.getAt(i);
                         if (currentFlyout.element.contains(el)) {
                             indexOfAssociatedFlyout = i;
                             break;
@@ -113,14 +116,22 @@ define([
                     }
                     return indexOfAssociatedFlyout;
                 },
+                length: {
+                    get: function _CascadeManager_getLength() {
+                        return this._cascadingStack.length;
+                    }
+                },
+                getAt: function _CascadeManager_getAt(index){
+                    return this._cascadingStack[index];
+                },
                 _handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(event) {
                     /*jshint validthis: true */
 
                     // When a flyout in the cascade recieves focus, we close all subflyouts beneath it.
                     if (!event._handled) {
-                        var index = this.containsElement(event.target);
+                        var index = this.indexOfElement(event.target);
                         if (index >= 0) {
-                            var subFlyout = this._cascadingStack[index + 1];
+                            var subFlyout = this.getAt(index + 1);
                             this.removeFromStack(subFlyout);
                         }
                     }
@@ -130,7 +141,7 @@ define([
 
                     // Hide the entire cascade if focus has moved somewhere outside of it
                     if (!event._handled) {
-                        if (this.containsElement(event.relatedTarget) < 0) {
+                        if (this.indexOfElement(event.relatedTarget) < 0) {
                             this.emptyStack();
                         }
                     }
@@ -144,9 +155,9 @@ define([
 
                     if (event.keyCode === leftKey) {
                         // Left key press in a SubFlyout will close that subFlyout and any subFlyouts cascading from it. 
-                        var index = this.containsElement(target);
+                        var index = this.indexOfElement(target);
                         if (index >= 1) {
-                            var subFlyout = this._cascadingStack[index];
+                            var subFlyout = this.getAt(index);
                             // Show a focus rect where focus is restored.
                             subFlyout._keyboardInvoked = true;
                             this.removeFromStack(subFlyout);
