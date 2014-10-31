@@ -498,9 +498,7 @@ module CorsicaTests {
             WinJS.Application.start();
             var backClickEvent;
 
-            var flyoutElement = document.createElement("div");
-            document.body.appendChild(flyoutElement);
-            var flyout = new WinJS.UI.Flyout(flyoutElement);
+            var flyout = new WinJS.UI.Flyout(_element);
             flyout.addEventListener("aftershow", simulateBackClick, false);
             flyout.show(document.body);
         };
