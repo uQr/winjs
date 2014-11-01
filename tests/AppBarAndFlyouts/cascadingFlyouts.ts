@@ -51,7 +51,7 @@ module CorsicaTests {
         });
     }
 
-    function showCascade(flyoutChain: Array<WinJS.UI.Flyout>, sentinelFlyout?: WinJS.UI.Flyout): WinJS.Promise<any> {
+    function expandChain(flyoutChain: Array<WinJS.UI.Flyout>, sentinelFlyout?: WinJS.UI.Flyout): WinJS.Promise<any> {
         // Shows all flyouts in the specified flyoutChain until the sentinel flyout is shown.
         // If no sentinel is specified, the entire chain is shown.
         // Returns a promise that is completed when the last flyout is finished showing.
@@ -160,12 +160,12 @@ module CorsicaTests {
 
             var flyoutChain: Array<WinJS.UI.Flyout> = generateFlyoutChain();
 
-            showCascade(flyoutChain).then(function () {
+            expandChain(flyoutChain).then(function () {
                 var msg = "Each chained flyout that was shown should have been appended to the cascade in order";
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
                 LiveUnit.Assert.areEqual(flyoutChain.length, cascadeManager.length, msg);
                 for (var i = 0, len = flyoutChain.length; i < len; i++) {
-                    LiveUnit.Assert.areEqual(flyoutChain[i] === cascadeManager.getAt(i), msg);
+                    LiveUnit.Assert.areEqual(flyoutChain[i], cascadeManager.getAt(i), msg);
                 }
 
                 msg = "There should be " + flyoutChain.length + " flyouts visible after cascading the entire flyout chain.";
@@ -184,7 +184,7 @@ module CorsicaTests {
 
             var flyoutChain: Array<WinJS.UI.Flyout> = generateFlyoutChain();
 
-            showCascade(flyoutChain).then(function () {
+            expandChain(flyoutChain).then(function () {
                 var msg = "Each chained flyout that was shown should have been appended to the cascade in order";
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
                 LiveUnit.Assert.areEqual(flyoutChain.length, cascadeManager.length, msg);

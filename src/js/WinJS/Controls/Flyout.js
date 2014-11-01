@@ -59,7 +59,7 @@ define([
                 this._handleKeyDown_bound = this._handleKeyDown.bind(this);
             },
             {
-                addToStack: function _CascadeManager_addToStack(flyoutToAdd) {
+                push: function _CascadeManager_push(flyoutToAdd) {
                     // IF the anchor element for flyoutToAdd is contained within another flyout, 
                     // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
                     //  Remove from the cascadingStack, any subflyout descendants of the parent flyout.
@@ -69,9 +69,9 @@ define([
                     //  add flyoutToAdd to the end of the cascading stack. Monitor it for events.
                     var indexOfParentFlyout = this.indexOfElement(flyoutToAdd._currentAnchor);
                     if (indexOfParentFlyout >= 0) {
-                        this.removeFromStack(this.getAt(indexOfParentFlyout + 1));
+                        this.collapse(this.getAt(indexOfParentFlyout + 1));
                     } else {
-                        this.emptyStack();
+                        this.empty();
                     }
 
                     _ElementUtilities._addEventListener(flyoutToAdd.element, "focusin", this._handleFocusIntoCascade_bound, false);
@@ -79,13 +79,13 @@ define([
                     flyoutToAdd.element.addEventListener("keydown", this._handleKeyDown_bound, false);
                     this._cascadingStack.push(flyoutToAdd);
                 },
-                removeFromStack: function _CascadeManager_removeFromStack(flyoutToRemove) {
-                    // Removes flyoutToRemove and its subflyout descendants from the cascadingStack.
-                    if (!this._reentrancyLock && flyoutToRemove && this.indexOf(flyoutToRemove) >= 0) {
+                collapse: function _CascadeManager_collapse(flyout) {
+                    // Removes flyout and its subflyout descendants from the _cascadingStack.
+                    if (!this._reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
                         this._reentrancyLock = true;
 
                         var subFlyout;
-                        while (this.length && flyoutToRemove !== subFlyout) {
+                        while (this.length && flyout !== subFlyout) {
                             subFlyout = this._cascadingStack.pop();
                             _ElementUtilities._addEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
                             _ElementUtilities._addEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
@@ -96,9 +96,9 @@ define([
                         this._reentrancyLock = false;
                     }
                 },
-                emptyStack: function _CascadeManager_emptyStack(flyoutToRemove) {
-                    // Empties the cascadingStack and hides all flyouts.
-                    this.removeFromStack(this.getAt(0));
+                empty: function _CascadeManager_empty() {
+                    // Empties the _cascadingStack and hides all flyouts.
+                    this.collapse(this.getAt(0));
                 },
                 indexOf: function _CascadeManager_indexOf(flyout) {
                     return this._cascadingStack.indexOf(flyout);
@@ -132,7 +132,7 @@ define([
                         var index = this.indexOfElement(event.target);
                         if (index >= 0) {
                             var subFlyout = this.getAt(index + 1);
-                            this.removeFromStack(subFlyout);
+                            this.collapse(subFlyout);
                         }
                     }
                 },
@@ -142,7 +142,7 @@ define([
                     // Hide the entire cascade if focus has moved somewhere outside of it
                     if (!event._handled) {
                         if (this.indexOfElement(event.relatedTarget) < 0) {
-                            this.emptyStack();
+                            this.empty();
                         }
                     }
                 },
@@ -160,7 +160,7 @@ define([
                             var subFlyout = this.getAt(index);
                             // Show a focus rect where focus is restored.
                             subFlyout._keyboardInvoked = true;
-                            this.removeFromStack(subFlyout);
+                            this.collapse(subFlyout);
                             event.preventDefault();
                         }
                     }
@@ -348,7 +348,7 @@ define([
                 _hide: function Flyout_hide() {
 
                     // Also close all subflyout descendants in the cascade.
-                    Flyout._cascadeManager.removeFromStack(this);
+                    Flyout._cascadeManager.collapse(this);
 
                     if (this._baseHide()) {
                         // Return focus if this or the flyout CED has focus
@@ -483,7 +483,7 @@ define([
                             finalDiv.tabIndex = _ElementUtilities._getHighestTabIndexInList(_elms);
                         }
 
-                        Flyout._cascadeManager.addToStack(this);
+                        Flyout._cascadeManager.push(this);
 
                         //// Hide all other flyouts
                         //this._hideAllOtherFlyouts(this);
@@ -1034,7 +1034,7 @@ define([
             {
                 _cascadeManager: new _CascadeManager(),
                 _lightDismissFlyouts: function Flyout_lightDismissFlyouts() {
-                    Flyout._cascadeManager.emptyStack();
+                    Flyout._cascadeManager.empty();
                 }
 
             });
