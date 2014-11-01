@@ -87,8 +87,8 @@ define([
                         var subFlyout;
                         while (this.length && flyout !== subFlyout) {
                             subFlyout = this._cascadingStack.pop();
-                            _ElementUtilities._addEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
-                            _ElementUtilities._addEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
+                            _ElementUtilities._removeEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
+                            _ElementUtilities._removeEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
                             subFlyout.element.removeEventListener("keydown", this._handleKeyDown_bound, false);
                             subFlyout.hide();
                         }

@@ -130,13 +130,13 @@ module CorsicaTests {
                 flyout.hide();
             };
             function checkAfterHide() {
-                flyout.removeEventListener("aftershow", checkAfterHide, false);
+                flyout.removeEventListener("afterhide", checkAfterHide, false);
 
                 var msg = "Hiding a flyout should always remove it from the cascade";
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
 
                 LiveUnit.Assert.isFalse(cascadeManager.indexOf(flyout) >= 0, msg);
-                LiveUnit.Assert.areEqual(cascadeManager.length, 1);
+                LiveUnit.Assert.areEqual(cascadeManager.length, 0);
 
                 complete();
             };
@@ -150,7 +150,7 @@ module CorsicaTests {
             LiveUnit.Assert.areEqual(cascadeManager.length, 0, msg);
 
             flyout.addEventListener("aftershow", checkAfterShow, false);
-            flyout.addEventListener("afterHide", checkAfterHide, false);
+            flyout.addEventListener("afterhide", checkAfterHide, false);
 
             flyout.show();
         }
