@@ -365,8 +365,9 @@ define([
         return eventObject;
     }
 
+    var nativeSupportForFocusIn = "onfocusin" in _Global.document.documentElement;
     var activeElement = null;
-    _Global.addEventListener("blur", function () {
+    _Global.addEventListener(nativeSupportForFocusIn ? "focusout" : "blur", function () {
         // Fires focusout when focus move to another window or into an iframe.
         var previousActiveElement = activeElement;
         if (previousActiveElement) {
@@ -379,7 +380,7 @@ define([
         activeElement = null;
     });
 
-    _Global.document.documentElement.addEventListener("focus", function (eventObject) {
+    _Global.document.documentElement.addEventListener(nativeSupportForFocusIn ? "focusin" : "focus", function (eventObject) {
         var previousActiveElement = activeElement;
         activeElement = eventObject.target;
         if (previousActiveElement) {
@@ -741,7 +742,7 @@ define([
             _resizeEvent: { get: function () { return 'WinJSElementResize'; } }
         }
     );
-    
+
     // - object: The object on which GenericListener will listen for events.
     // - objectName: A string representing the name of *object*. This will be
     //   incorporated into the names of the events and classNames created by
@@ -754,8 +755,8 @@ define([
     var GenericListener = _Base.Class.define(
         function GenericListener_ctor(objectName, object, options) {
             options = options || {};
-            this.registerThruWinJSCustomEvents = !!options.registerThruWinJSCustomEvents; 
-            
+            this.registerThruWinJSCustomEvents = !!options.registerThruWinJSCustomEvents;
+
             this.objectName = objectName;
             this.object = object;
             this.capture = {};
@@ -771,7 +772,7 @@ define([
                     handler = this._getListener(name, capture);
                     handler.refCount = 0;
                     handlers[name] = handler;
-                    
+
                     if (this.registerThruWinJSCustomEvents) {
                         exports._addEventListener(this.object, name, handler, capture);
                     } else {
@@ -1240,7 +1241,7 @@ define([
                 return _resizeNotifier;
             }
         },
-        
+
         _GenericListener: GenericListener,
         _globalListener: new GenericListener("Global", _Global, { registerThruWinJSCustomEvents: true }),
         _documentElementListener: new GenericListener("DocumentElement", _Global.document.documentElement, { registerThruWinJSCustomEvents: true }),
@@ -1268,7 +1269,7 @@ define([
 
             return hiddenElement;
         },
-        
+
         // Returns a promise which completes when *element* is in the DOM.
         _inDom: function Utilities_inDom(element) {
             return new Promise(function (c) {
@@ -2175,7 +2176,7 @@ define([
                 }
             };
         },
-        
+
         _getPositionRelativeTo: function Utilities_getPositionRelativeTo(element, ancestor) {
             var fromElement = element,
                 offsetParent = element.offsetParent,
@@ -2204,7 +2205,7 @@ define([
                 height: fromElement.offsetHeight
             };
         },
-        
+
         // *element* is not included in the tabIndex search
         _getHighAndLowTabIndices: function Utilities_getHighAndLowTabIndices(element) {
             var descendants = element.getElementsByTagName("*");
@@ -2230,9 +2231,9 @@ define([
                             highestTabIndex = tabIndex;
                         }
                     }
-                } 
+                }
             }
-            
+
             return {
                 highest: highestTabIndex,
                 lowest: lowestTabIndex
