@@ -367,17 +367,19 @@ define([
 
     var nativeSupportForFocusIn = "onfocusin" in _Global.document.documentElement;
     var activeElement = null;
-    _Global.addEventListener(nativeSupportForFocusIn ? "focusout" : "blur", function () {
+    _Global.addEventListener(nativeSupportForFocusIn ? "focusout" : "blur", function (eventObject) {
         // Fires focusout when focus move to another window or into an iframe.
-        var previousActiveElement = activeElement;
-        if (previousActiveElement) {
-            bubbleEvent(previousActiveElement, "focusout", prepareFocusEvent({
-                type: "focusout",
-                target: previousActiveElement,
-                relatedTarget: null
-            }));
+        if (eventObject.target === _Global) {
+            var previousActiveElement = activeElement;
+            if (previousActiveElement) {
+                bubbleEvent(previousActiveElement, "focusout", prepareFocusEvent({
+                    type: "focusout",
+                    target: previousActiveElement,
+                    relatedTarget: null
+                }));
+            }
+            activeElement = null;
         }
-        activeElement = null;
     });
 
     _Global.document.documentElement.addEventListener(nativeSupportForFocusIn ? "focusin" : "focus", function (eventObject) {
