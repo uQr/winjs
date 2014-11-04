@@ -102,9 +102,7 @@ declare module WinJS {
         var _getHighestTabIndexInList;
         var _getLowestTabIndexInList;
         var _MSPointerEvent;
-        var _detectSnapPointsSupport;
-        var _supportsZoomTo;
-
+        var _supportsSnapPoints: boolean;
     }
 
     module Resources {
@@ -414,7 +412,7 @@ declare module WinJS {
             _sizes;
         }
 
-        class PrivateToolbar extends WinJS.UI.Toolbar {
+        class PrivateToolBar extends WinJS.UI.ToolBar {
             _disposed: boolean;
             _primaryCommands: ICommand[];
             _secondaryCommands: ICommand[];
@@ -439,7 +437,7 @@ declare module WinJS {
             _lastElementFocus;
         }
 
-        // Move to WinJS.d.ts after the Toolbar API review
+        // Move to WinJS.d.ts after the ToolBar API review
         export interface ICommand {
             addEventListener(type: string, listener: Function, useCapture?: boolean): void;
             dispose(): void;
@@ -697,7 +695,7 @@ declare module WinJS {
         }
 
         
-        class Toolbar {
+        class ToolBar {
             public element: HTMLElement;
             public inlineMenu: boolean;
             public data: WinJS.Binding.List<ICommand>;

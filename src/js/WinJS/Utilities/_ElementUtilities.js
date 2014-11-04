@@ -342,7 +342,11 @@ define([
     // Generally, use these instead of using the browser's blur/focus/focusout/focusin events directly.
     // However, this doesn't support the window object. If you need to listen to focus events on the window,
     // use the browser's events directly.
-    //
+    // 
+    // In order to send our custom focusin/focusout events synchronously on every browser, we feature detect 
+    // for native "focusin" and "focusout" since every browser that supports them will fire them synchronously. 
+    // Every browser in our support matrix, except for IE, also fires focus/blur synchronously, we fall back to 
+    // those events in browsers such as Firefox that do not have native support for focusin/focusout.
 
     function bubbleEvent(element, type, eventObject) {
         while (element) {
@@ -744,7 +748,7 @@ define([
             _resizeEvent: { get: function () { return 'WinJSElementResize'; } }
         }
     );
-    
+
     // - object: The object on which GenericListener will listen for events.
     // - objectName: A string representing the name of *object*. This will be
     //   incorporated into the names of the events and classNames created by
@@ -757,8 +761,8 @@ define([
     var GenericListener = _Base.Class.define(
         function GenericListener_ctor(objectName, object, options) {
             options = options || {};
-            this.registerThruWinJSCustomEvents = !!options.registerThruWinJSCustomEvents; 
-            
+            this.registerThruWinJSCustomEvents = !!options.registerThruWinJSCustomEvents;
+
             this.objectName = objectName;
             this.object = object;
             this.capture = {};
@@ -774,7 +778,7 @@ define([
                     handler = this._getListener(name, capture);
                     handler.refCount = 0;
                     handlers[name] = handler;
-                    
+
                     if (this.registerThruWinJSCustomEvents) {
                         exports._addEventListener(this.object, name, handler, capture);
                     } else {
@@ -940,7 +944,10 @@ define([
         setAdjustedScrollPosition(element, position.scrollLeft, position.scrollTop);
     }
 
-    var supportsZoomTo = !!_Global.HTMLElement.prototype.msZoomTo;
+    // navigator.msManipulationViewsEnabled tells us whether snap points work or not regardless of whether the style properties exist, however,
+    // on Phone WWAs, this check returns false even though snap points are supported. To work around this bug, we check for the presence of
+    // 'MSAppHost' in the user agent string which indicates that we are in a WWA environment; all WWA environments support snap points.
+    var supportsSnapPoints = _Global.navigator.msManipulationViewsEnabled || _Global.navigator.userAgent.indexOf("MSAppHost") >= 0;
     var supportsTouchDetection = !!(_Global.MSPointerEvent || _Global.TouchEvent);
 
     var uniqueElementIDCounter = 0;
@@ -986,15 +993,15 @@ define([
     _Base.Namespace._moduleDefine(exports, "WinJS.Utilities", {
         _dataKey: _dataKey,
 
-        _supportsTouchDetection: {
+        _supportsSnapPoints: {
             get: function () {
-                return supportsTouchDetection;
+                return supportsSnapPoints;
             }
         },
 
-        _supportsZoomTo: {
+        _supportsTouchDetection: {
             get: function () {
-                return supportsZoomTo;
+                return supportsTouchDetection;
             }
         },
 
@@ -1038,48 +1045,6 @@ define([
                 }
                 return this._supportsTouchActionCrossSlideValue;
             }
-        },
-
-        _detectSnapPointsSupport: function () {
-            // Snap point feature detection is special - On most platforms it is enough to check if 'msZoomTo'
-            // is available, however, Windows Phone IEs claim that they support it but don't really do so we
-            // test by creating a scroller with mandatory snap points and test against ManipulationStateChanged events.
-            if (!this._snapPointsDetectionPromise) {
-                if (!_Global.HTMLElement.prototype.msZoomTo) {
-                    this._snapPointsDetectionPromise = Promise.wrap(false);
-                } else {
-                    this._snapPointsDetectionPromise = new Promise(function (c) {
-                        var scroller = _Global.document.createElement("div");
-                        scroller.style.width = "100px";
-                        scroller.style.overflowX = "scroll";
-                        scroller.style.msScrollSnapType = "mandatory";
-                        scroller.style.position = "absolute";
-                        scroller.style.opacity = "0";
-                        scroller.style.visibility = "hidden";
-                        var handler = function (e) {
-                            scroller.removeEventListener("MSManipulationStateChanged", handler);
-                            _Global.clearTimeout(timeoutHandle);
-                            _Global.document.body.removeChild(scroller);
-                            c(true);
-                        };
-                        scroller.addEventListener("MSManipulationStateChanged", handler);
-
-                        var content = _Global.document.createElement("div");
-                        content.style.width = content.style.height = "200px";
-                        scroller.appendChild(content);
-
-                        _Global.document.body.appendChild(scroller);
-                        scroller.msZoomTo({ contentX: 90 });
-
-                        var timeoutHandle = _Global.setTimeout(function () {
-                            scroller.removeEventListener("MSManipulationStateChanged", handler);
-                            _Global.document.body.removeChild(scroller);
-                            c(false);
-                        }, 50);
-                    });
-                }
-            }
-            return this._snapPointsDetectionPromise;
         },
 
         _MSGestureEvent: _MSGestureEvent,
@@ -1282,7 +1247,7 @@ define([
                 return _resizeNotifier;
             }
         },
-        
+
         _GenericListener: GenericListener,
         _globalListener: new GenericListener("Global", _Global, { registerThruWinJSCustomEvents: true }),
         _documentElementListener: new GenericListener("DocumentElement", _Global.document.documentElement, { registerThruWinJSCustomEvents: true }),
@@ -1310,7 +1275,7 @@ define([
 
             return hiddenElement;
         },
-        
+
         // Returns a promise which completes when *element* is in the DOM.
         _inDom: function Utilities_inDom(element) {
             return new Promise(function (c) {
@@ -2217,7 +2182,7 @@ define([
                 }
             };
         },
-        
+
         _getPositionRelativeTo: function Utilities_getPositionRelativeTo(element, ancestor) {
             var fromElement = element,
                 offsetParent = element.offsetParent,
@@ -2246,7 +2211,7 @@ define([
                 height: fromElement.offsetHeight
             };
         },
-        
+
         // *element* is not included in the tabIndex search
         _getHighAndLowTabIndices: function Utilities_getHighAndLowTabIndices(element) {
             var descendants = element.getElementsByTagName("*");
@@ -2272,9 +2237,9 @@ define([
                             highestTabIndex = tabIndex;
                         }
                     }
-                } 
+                }
             }
-            
+
             return {
                 highest: highestTabIndex,
                 lowest: lowestTabIndex

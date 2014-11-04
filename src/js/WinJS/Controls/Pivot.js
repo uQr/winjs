@@ -66,8 +66,7 @@ define([
             };
             var MSManipulationEventStates = _ElementUtilities._MSManipulationEvent;
 
-            var supportsSnap = false;
-            var ready = null;
+            var supportsSnap = !!(_ElementUtilities._supportsSnapPoints && _Global.HTMLElement.prototype.msZoomTo);
 
             function _nop() { }
             var headersStates = {
@@ -94,7 +93,10 @@ define([
                 common: {
                     // This object contains a set of static helper functions for other states to use
 
-                    headersContainerLeadingMargin: 9,
+                    headersContainerLeadingMargin: 12,
+
+                    headerPadding: 4,
+                    headerHorizontalMargin: 12,
 
                     getCumulativeHeaderWidth: function headersState_getCumulativeHeaderWidth(pivot, index) {
                         // Computes the total width of headers from 0 up to the specified index
@@ -112,6 +114,8 @@ define([
                         var leftElement = pivot._rtl ? pivot._headersContainerElement.lastElementChild : pivot._headersContainerElement.children[originalLength];
                         var rightElement = pivot._rtl ? pivot._headersContainerElement.children[originalLength] : pivot._headersContainerElement.lastElementChild;
                         width = (rightElement.offsetLeft + rightElement.offsetWidth) - leftElement.offsetLeft;
+                        width += index * headersStates.common.headerPadding;
+                        width += 2 * headersStates.common.headerHorizontalMargin;
 
                         for (var i = 0; i < index; i++) {
                             pivot._headersContainerElement.removeChild(pivot._headersContainerElement.lastElementChild);
@@ -143,6 +147,7 @@ define([
                         var item = pivot._items.getAt(index);
 
                         var headerContainerEl = _Global.document.createElement("BUTTON");
+                        headerContainerEl.style.marginLeft = headerContainerEl.style.marginRight = headersStates.common.headerHorizontalMargin + "px";
                         _ElementUtilities.addClass(headerContainerEl, Pivot._ClassName.pivotHeader);
                         headerContainerEl._item = item;
                         headerContainerEl._pivotItemIndex = index;
@@ -170,6 +175,14 @@ define([
                         return headerContainerEl;
                     },
 
+                    freezeHeaderWidth: function headersState_freezeHeaderWidth(headerElement) {
+                        // Depending on whether a header is selected or not, its size grows and shrinks slightly due to different type ramps.
+                        // To prevent that from happening we freeze the header's size to its size at creation as if it was selected. We also
+                        // add a few pixels of padding to the computed size so that when it grows, it won't run into clipping issues.
+                        headerElement.style.width = "";
+                        headerElement.style.width = (headerElement.offsetWidth + headersStates.common.headerPadding) + "px";
+                    },
+
                     updateHeader: function headersState_updateHeader(pivot, item) {
                         // Updates the label of a header
                         var index = pivot.items.indexOf(item);
@@ -178,6 +191,8 @@ define([
 
                         var template = _ElementUtilities._syncRenderer(pivotDefaultHeaderTemplate);
                         template(item, headerElement);
+
+                        this.freezeHeaderWidth(headerElement);
                     },
 
                     setActiveHeader: function headersState_setActiveHeader(newSelectedHeader, currentSelectedHeader) {
@@ -211,14 +226,13 @@ define([
                         var start = 0;
                         var end = 0;
                         if (pivot._rtl) {
-                            start = selectedHeader.offsetLeft;
-                            start += selectedHeader.offsetWidth;
+                            start = selectedHeader.offsetLeft + selectedHeader.offsetWidth + headersStates.common.headerHorizontalMargin;
                             end = pivot._viewportWidth - headersStates.common.getCumulativeHeaderWidth(pivot, pivot.selectedIndex) - headersStates.common.headersContainerLeadingMargin;
                             end += parseFloat(pivot._headersContainerElement.style.marginLeft);
                         } else {
                             start = selectedHeader.offsetLeft;
-                            start += parseFloat(pivot._headersContainerElement.style.marginLeft);
-                            end = headersStates.common.getCumulativeHeaderWidth(pivot, pivot.selectedIndex) + headersStates.common.headersContainerLeadingMargin;
+                            start += parseFloat(pivot._headersContainerElement.style.marginLeft); // overflow state has a hidden first element that we need to account for
+                            end = headersStates.common.getCumulativeHeaderWidth(pivot, pivot.selectedIndex) + headersStates.common.headersContainerLeadingMargin + headersStates.common.headerHorizontalMargin;
                         }
                         var offset = start - end;
 
@@ -269,6 +283,7 @@ define([
                             for (var i = 0; i < pivot.items.length; i++) {
                                 var header = headersStates.common.renderHeader(pivot, i, true);
                                 pivot._headersContainerElement.appendChild(header);
+                                headersStates.common.freezeHeaderWidth(header);
 
                                 if (i === pivot.selectedIndex) {
                                     header.classList.add(Pivot._ClassName.pivotHeaderSelected);
@@ -331,11 +346,13 @@ define([
                         if (pivot._rtl) {
                             start = pivot._viewportWidth - headersStates.common.headersContainerLeadingMargin;
                             end = selectedHeader.offsetLeft;
+                            end += headersStates.common.headerHorizontalMargin;
                             end += selectedHeader.offsetWidth;
                             end += parseFloat(pivot._headersContainerElement.style.marginLeft);
                         } else {
                             start = headersStates.common.headersContainerLeadingMargin;
                             end = selectedHeader.offsetLeft;
+                            end -= headersStates.common.headerHorizontalMargin;
                             end += parseFloat(pivot._headersContainerElement.style.marginLeft);
                         }
                         var offset = start - end;
@@ -374,12 +391,12 @@ define([
                         _Dispose._disposeElement(pivot._headersContainerElement);
                         _ElementUtilities.empty(pivot._headersContainerElement);
 
-                        var maxHeaderWidth = (pivot._viewportWidth * 0.8) + "px";
 
                         if (pivot._items.length === 1) {
                             var header = headersStates.common.renderHeader(pivot, 0, true);
                             header.classList.add(Pivot._ClassName.pivotHeaderSelected);
                             pivot._headersContainerElement.appendChild(header);
+                            headersStates.common.freezeHeaderWidth(header);
 
                             pivot._viewportElement.style.overflow = "hidden";
                             pivot._headersContainerElement.style.marginLeft = "0px";
@@ -389,6 +406,7 @@ define([
                             // When going backwards, we render 2 additional headers, the first one as usual, and the second one for
                             // fading out the previous last header.
                             var numberOfHeadersToRender = pivot._items.length + (goPrevious ? 2 : 1);
+                            var maxHeaderWidth = pivot._viewportWidth * 0.8;
                             var indexToRender = pivot.selectedIndex - 1;
 
                             if (pivot._viewportElement.style.overflow) {
@@ -403,8 +421,15 @@ define([
                                 }
 
                                 var header = headersStates.common.renderHeader(pivot, indexToRender, true);
-                                header.style.maxWidth = maxHeaderWidth;
                                 pivot._headersContainerElement.appendChild(header);
+
+                                if (header.offsetWidth > maxHeaderWidth) {
+                                    header.style.textOverflow = "ellipsis";
+                                    header.style.width = maxHeaderWidth + "px";
+                                } else {
+                                    headersStates.common.freezeHeaderWidth(header);
+                                }
+
                                 if (indexToRender === pivot.selectedIndex) {
                                     header.classList.add(Pivot._ClassName.pivotHeaderSelected);
                                 }
@@ -432,15 +457,14 @@ define([
                             pivot._headersContainerElement.style.marginLeft = "0px";
                             pivot._headersContainerElement.style.marginRight = "0px";
                             var leadingMargin = pivot._rtl ? "marginRight" : "marginLeft";
-                            var trailingPadding = pivot._rtl ? "paddingLeft" : "paddingRight";
                             var firstHeader = pivot._headersContainerElement.children[0];
-                            var leadingSpace = firstHeader.offsetWidth + parseFloat(_Global.getComputedStyle(firstHeader)[leadingMargin]) - parseFloat(_Global.getComputedStyle(firstHeader)[trailingPadding]);
+                            var leadingSpace = _ElementUtilities.getTotalWidth(firstHeader);
                             if (firstHeader !== pivot._headersContainerElement.children[0]) {
-                                // Calling offsetWidth caused a layout which can trigger a synchronous resize which in turn
+                                // Calling getTotalWidth caused a layout which can trigger a synchronous resize which in turn
                                 // calls renderHeaders. We can ignore this one since its the old headers which are not in the DOM.
                                 return;
                             }
-                            pivot._headersContainerElement.style[leadingMargin] = (-1 * leadingSpace) + "px";
+                            pivot._headersContainerElement.style[leadingMargin] = (-1 * leadingSpace + headersStates.common.headersContainerLeadingMargin) + "px";
 
                             // Create header track nav button elements
                             pivot._prevButton = _Global.document.createElement("button");
@@ -581,13 +605,6 @@ define([
                 /// The new Pivot.
                 /// </returns>
                 /// </signature>
-
-                if (!ready) {
-                    ready = _ElementUtilities._detectSnapPointsSupport().then(function (value) {
-                        supportsSnap = value;
-                    });
-                }
-
                 element = element || _Global.document.createElement("DIV");
                 options = options || {};
 
@@ -607,6 +624,9 @@ define([
                 // Attaching JS control to DOM element
                 element.winControl = this;
                 this._element = element;
+                if (!supportsSnap) {
+                    _ElementUtilities.addClass(this.element, Pivot._ClassName.pivotNoSnap);
+                }
                 this._element.setAttribute('role', 'tablist');
                 if (!this._element.getAttribute("aria-label")) {
                     this._element.setAttribute('aria-label', strings.pivotAriaLabel);
@@ -920,19 +940,12 @@ define([
                     this._currentIndexOnScreen = 0;
                     this._firstLoad = true;
                     this._cachedRTL = _Global.getComputedStyle(this._element, null).direction === "rtl";
+                    headersStates.common.refreshHeadersState(this, true);
+                    this._pendingRefresh = false;
 
-                    var that = this;
-                    ready.done(function () {
-                        headersStates.common.refreshHeadersState(that, true);
-                        if (!supportsSnap) {
-                            _ElementUtilities.addClass(that.element, Pivot._ClassName.pivotNoSnap);
-                        }
-
-                        that._pendingRefresh = false;
-                        that.selectedIndex = Math.min(pendingIndexOnScreen, that.items.length - 1);
-                        that._firstLoad = false;
-                        that._recenterUI();
-                    });
+                    this.selectedIndex = Math.min(pendingIndexOnScreen, this.items.length - 1);
+                    this._firstLoad = false;
+                    this._recenterUI();
                 },
 
                 _attachItems: function pivot_attachItems() {
@@ -1073,7 +1086,7 @@ define([
                     }
 
                     var zooming = false;
-                    if (supportsSnap && _ElementUtilities._supportsZoomTo && this._currentManipulationState !== MSManipulationEventStates.MS_MANIPULATION_STATE_INERTIA) {
+                    if (supportsSnap && this._currentManipulationState !== MSManipulationEventStates.MS_MANIPULATION_STATE_INERTIA) {
                         if (this._firstLoad) {
                             _Log.log && _Log.log('_firstLoad index:' + this.selectedIndex + ' offset: ' + this._offsetFromCenter + ' scrollLeft: ' + this._currentScrollTargetLocation, "winjs pivot", "log");
                             _ElementUtilities.setScrollPosition(this._viewportElement, { scrollLeft: this._currentScrollTargetLocation });

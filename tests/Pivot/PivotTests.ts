@@ -29,13 +29,7 @@ module WinJSTests {
         initFuncName = "initPointerEvent";
     }
 
-    var snapPointsDetectionFunc = WinJS.Utilities._detectSnapPointsSupport.bind(WinJS.Utilities);
-    var supportsSnap = null;
-    WinJS.Utilities._detectSnapPointsSupport = function () {
-        return WinJS.Promise.timeout(50).then(function () {
-            return supportsSnap;
-        });
-    };
+    var supportsSnap = !!(WinJS.Utilities._supportsSnapPoints && HTMLElement.prototype.msZoomTo);
 
     var pivotWrapperEl;
 
@@ -195,7 +189,7 @@ module WinJSTests {
     }
 
     function runContentVisibilityTest(complete, rtl) {
-        var pivotItemCount = 3;
+        var pivotItemCount = 5;
         instances = 0;
         var pivotDiv = document.createElement("div");
         pivotDiv.dir = rtl ? "rtl" : "";
@@ -283,7 +277,7 @@ module WinJSTests {
     };
 
     function runHeaderTrackSwipeNavigation(complete, rtl) {
-        var itemCount = 3;
+        var itemCount = 5;
         var pivot = createAndAppendPivotWithItems(itemCount);
 
         if (!pivot.element.classList.contains(Pivot._ClassName.pivotNoSnap)) {
@@ -319,7 +313,7 @@ module WinJSTests {
     };
 
     function runContentSwipeNavigation(complete, rtl) {
-        var itemCount = 3;
+        var itemCount = 5;
         var pivot = createAndAppendPivotWithItems(itemCount);
 
         if (!pivot.element.classList.contains(Pivot._ClassName.pivotNoSnap)) {
@@ -406,18 +400,10 @@ module WinJSTests {
 
 
 
-        setUp(complete) {
+        setUp() {
             pivotWrapperEl = document.createElement('div');
-            pivotWrapperEl.style.cssText = "width: " + pivotWidth + "px; height: 480px; background-color: #777;"
-        document.body.appendChild(pivotWrapperEl);
-            if (supportsSnap === null) {
-                snapPointsDetectionFunc().done(function (value) {
-                    supportsSnap = value;
-                    complete();
-                });
-            } else {
-                complete();
-            }
+            pivotWrapperEl.style.cssText = "width: " + pivotWidth + "px; height: 480px; background-color: #777;";
+            document.body.appendChild(pivotWrapperEl);
         }
 
         tearDown() {
@@ -783,7 +769,7 @@ module WinJSTests {
         };
 
         testHeaderCount = function (complete, isWideTest) {
-            var pivotItemCount = 2;
+            var pivotItemCount = 5;
             instances = 0;
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(pivotItemCount))
@@ -883,14 +869,8 @@ module WinJSTests {
                 return;
             }
 
-            if (!WinJS.Utilities._supportsZoomTo) {
-                LiveUnit.LoggingCore.logComment("This test relies on ZoomTo APIs which are not supported on this platform.");
-                complete();
-                return;
-            }
-
             // Use zoomTo
-            var pivotItemCount = 3;
+            var pivotItemCount = 5;
             instances = 0;
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(pivotItemCount))
@@ -917,25 +897,31 @@ module WinJSTests {
                     pivot._viewportElement.msZoomTo({ contentX: WinJS.Utilities.getScrollPosition(pivot._viewportElement).scrollLeft + pivot._viewportElement.offsetWidth, contentY: 0, viewportX: 0, viewportY: 0 });
                     return waitForNextItemAnimationEnd(pivot);
                 }).then(function () {
+                    LiveUnit.Assert.areEqual(3, pivot.selectedIndex, "Correct selectedIndex");
+
+                    // Zoom next
+                    pivot._viewportElement.msZoomTo({ contentX: WinJS.Utilities.getScrollPosition(pivot._viewportElement).scrollLeft + pivot._viewportElement.offsetWidth, contentY: 0, viewportX: 0, viewportY: 0 });
+                    return waitForNextItemAnimationEnd(pivot);
+                }).then(function () {
+                    LiveUnit.Assert.areEqual(4, pivot.selectedIndex, "Correct selectedIndex");
+
+                    // Zoom next
+                    pivot._viewportElement.msZoomTo({ contentX: WinJS.Utilities.getScrollPosition(pivot._viewportElement).scrollLeft + pivot._viewportElement.offsetWidth, contentY: 0, viewportX: 0, viewportY: 0 });
+                    return waitForNextItemAnimationEnd(pivot);
+                }).then(function () {
                     LiveUnit.Assert.areEqual(0, pivot.selectedIndex, "Correct selectedIndex");
 
                     // Zoom previous
                     pivot._viewportElement.msZoomTo({ contentX: WinJS.Utilities.getScrollPosition(pivot._viewportElement).scrollLeft - pivot._viewportElement.offsetWidth, contentY: 0, viewportX: 0, viewportY: 0 });
                     return waitForNextItemAnimationEnd(pivot);
                 }).then(function () {
-                    LiveUnit.Assert.areEqual(2, pivot.selectedIndex, "Correct selectedIndex");
-
-                    // Zoom previous
-                    pivot._viewportElement.msZoomTo({ contentX: WinJS.Utilities.getScrollPosition(pivot._viewportElement).scrollLeft - pivot._viewportElement.offsetWidth, contentY: 0, viewportX: 0, viewportY: 0 });
-                    return waitForNextItemAnimationEnd(pivot);
-                }).then(function () {
-                    LiveUnit.Assert.areEqual(1, pivot.selectedIndex, "Correct selectedIndex");
+                    LiveUnit.Assert.areEqual(4, pivot.selectedIndex, "Correct selectedIndex");
 
                     // Zoom previous
                     pivot._viewportElement.msZoomTo({ contentX: WinJS.Utilities.getScrollPosition(pivot._viewportElement).scrollLeft - pivot._viewportElement.offsetWidth, contentY: 0, viewportX: 0, viewportY: 0 });
                     return waitForNextItemAnimationEnd(pivot);
                 }).done(function () {
-                    LiveUnit.Assert.areEqual(0, pivot.selectedIndex, "Correct selectedIndex");
+                    LiveUnit.Assert.areEqual(3, pivot.selectedIndex, "Correct selectedIndex");
 
                     complete();
                 });
@@ -943,7 +929,7 @@ module WinJSTests {
 
         // WPBlue: 272771 Test is not reliable in WebUnit. Should be run using Zeus.
         xtestFlipFlip = function testFlipFlip(complete) {
-            var pivotItemCount = 3;
+            var pivotItemCount = 5;
             instances = 0;
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(pivotItemCount))
@@ -976,7 +962,7 @@ module WinJSTests {
         };
 
         testNavigateViaAPI = function testNavigateViaAPI(complete) {
-            var pivotItemCount = 3;
+            var pivotItemCount = 5;
             instances = 0;
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(pivotItemCount))
@@ -1013,11 +999,6 @@ module WinJSTests {
         };
 
         testNavigateViaInertia = function testNavigateViaInertia(complete) {
-            if (!WinJS.Utilities._supportsZoomTo) {
-                LiveUnit.LoggingCore.logComment("This test simulates panning using msZoomTo which is not supported on this platform.");
-                complete();
-                return;
-            }
             if (!supportsSnap) {
                 LiveUnit.LoggingCore.logComment("This test relies on SnapPoints APIs which are not supported on this platform.");
                 complete();
@@ -1029,7 +1010,7 @@ module WinJSTests {
                 return;
             }
 
-            var pivotItemCount = 3;
+            var pivotItemCount = 5;
             instances = 0;
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(pivotItemCount))
@@ -1070,7 +1051,7 @@ module WinJSTests {
                 complete();
                 return;
             }
-            var pivotItemCount = 3;
+            var pivotItemCount = 5;
             instances = 0;
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(pivotItemCount))
@@ -1204,7 +1185,7 @@ module WinJSTests {
             waitForNextItemAnimationEnd(pivot).done(function () {
                 var headers = document.querySelectorAll("." + Pivot._ClassName.pivotHeader);
                 var longHeader = <HTMLElement>headers[1];
-                LiveUnit.Assert.areEqual(Math.floor(pivotWidth * 0.8), parseInt(longHeader.style.maxWidth));
+                LiveUnit.Assert.areEqual(Math.floor(pivotWidth * 0.8), parseInt(longHeader.style.width));
                 complete();
             });
         });
@@ -1296,10 +1277,10 @@ module WinJSTests {
                 firePointerEvent("pointerenter", pivot._headersContainerElement, 0, 0, PT_MOUSE);
                 LiveUnit.Assert.isTrue(pivot._headersContainerElement.classList.contains(Pivot._ClassName.pivotShowNavButtons));
 
-                var leftButton = <HTMLElement> document.elementFromPoint(pivot.element.offsetLeft + 10, pivot.element.offsetTop + 50);
+                var leftButton = <HTMLElement> document.elementFromPoint(pivot.element.offsetLeft + 20, pivot.element.offsetTop + 40);
                 LiveUnit.Assert.isTrue(leftButton.classList.contains(Pivot._ClassName.pivotNavButtonPrev));
 
-                var rightButton = <HTMLElement> document.elementFromPoint(pivot.element.offsetLeft + pivot.element.offsetWidth - 10, pivot.element.offsetTop + 50);
+                var rightButton = <HTMLElement> document.elementFromPoint(pivot.element.offsetLeft + pivot.element.offsetWidth - 20, pivot.element.offsetTop + 40);
                 LiveUnit.Assert.isTrue(rightButton.classList.contains(Pivot._ClassName.pivotNavButtonNext));
 
                 complete();
@@ -1411,7 +1392,7 @@ module WinJSTests {
             var headers;
             waitForNextItemAnimationEnd(pivot).then(function () {
                 monkeyPatch(pivot._headersState, "handleNavigation", function (goPrevious, index, oldIndex) {
-                    LiveUnit.Assert.areEqual(goPreviousExpected, goPrevious);
+                    LiveUnit.Assert.areEqual(!!goPreviousExpected, !!goPrevious);
                 });
 
                 headers = document.querySelectorAll(".win-pivot-header");
