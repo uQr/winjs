@@ -343,6 +343,10 @@ define([
     // However, this doesn't support the window object. If you need to listen to focus events on the window,
     // use the browser's events directly.
     //
+    // In order to send our custom focusin/focusout events synchronously on every browser, we feature detect for native 
+    // "focusin" and "focusout" since every browser that supports them, including IE fires them synchronously. 
+    // Every browser in our support matrix, except for IE, also fires focus/blur synchronously, we fall back to those
+    // events in browsers such as Firefox that do not have native support for focusin/focusout.
 
     function bubbleEvent(element, type, eventObject) {
         while (element) {
