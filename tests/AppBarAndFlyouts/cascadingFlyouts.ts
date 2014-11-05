@@ -13,7 +13,7 @@ module CorsicaTests {
     var cascadeManager = WinJS.UI.Flyout['_cascadeManager']; // TODO what's the right pattern for this (static) in TS?
     var chainCounter;
 
-    var DEFAULT_CHAIN_SIZE = 4; // default
+    var DEFAULT_CHAIN_SIZE = 6; // default
 
 
     function showFlyout(flyout: WinJS.UI.Flyout): WinJS.Promise<any> {
@@ -309,7 +309,27 @@ module CorsicaTests {
                 });
         }
 
-        xtestFlyoutAlwaysHidesSubFlyoutsWhenItReceivesFocus = function (complete) {
+        testFlyoutAlwaysHidesSubFlyoutsWhenItReceivesFocus = function (complete) {
+            // Verifies that upon receiving focusin, a Flyout will always hide any of any subFlyouts after it in the cascade.
+
+            var flyoutChain: Array<WinJS.UI.Flyout> = generateFlyoutChain(_rootAnchor),
+                requiredSize: number = 3;
+            LiveUnit.Assert.isTrue(flyoutChain.length >= requiredSize, "ERROR: Test requires input size of at least " + requiredSize);
+
+            return showFlyoutChain(flyoutChain).then(function () {
+                var index = 1,
+                    flyoutToFocus: WinJS.UI.Flyout = flyoutChain[index],
+                    expectedChain: Array<WinJS.UI.Flyout> = flyoutChain.slice(0, index + 1);
+
+                flyoutToFocus.addEventListener("afterhide", function afterHide() {
+                    flyoutToFocus.removeEventListener, ("afterhide", afterHide, false);
+                    verifyCascade(expectedChain);
+                    complete();
+                }, false);
+
+                flyoutToFocus.element.focus();
+            });
+
         }
 
         xtestEntireCascadeHidesWhenAllFlyoutsLoseFocus = function (complete) {
