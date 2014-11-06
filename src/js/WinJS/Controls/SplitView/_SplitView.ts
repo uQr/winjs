@@ -15,7 +15,8 @@ import Promise = require('../../Promise');
 import _Signal = require('../../_Signal');
 import _TransitionAnimation = require('../../Animations/_TransitionAnimation');
 
-require(["require-style!less/controls"]);
+require(["require-style!less/styles-splitview"]);
+require(["require-style!less/colors-splitview"]);
 
 "use strict";
 
@@ -44,7 +45,7 @@ var ClassNames = {
     // hidden/shown
     paneHidden: "win-splitview-pane-hidden",
     paneShown: "win-splitview-pane-shown",
-    
+
     _panePlaceholder: "win-splitview-paneplaceholder",
     _paneWrapper: "win-splitview-panewrapper",
     // placement
@@ -77,20 +78,20 @@ var ShownDisplayMode = {
     /// </field>
     inline: "inline"
 };
-var Placement = {
-    /// <field locid="WinJS.UI.SplitView.Placement.left" helpKeyword="WinJS.UI.SplitView.Placement.left">
+var PanePlacement = {
+    /// <field locid="WinJS.UI.SplitView.PanePlacement.left" helpKeyword="WinJS.UI.SplitView.PanePlacement.left">
     /// Pane is positioned left of the SplitView's content.
     /// </field>
     left: "left",
-    /// <field locid="WinJS.UI.SplitView.Placement.right" helpKeyword="WinJS.UI.SplitView.Placement.right">
+    /// <field locid="WinJS.UI.SplitView.PanePlacement.right" helpKeyword="WinJS.UI.SplitView.PanePlacement.right">
     /// Pane is positioned right of the SplitView's content.
     /// </field>
     right: "right",
-    /// <field locid="WinJS.UI.SplitView.Placement.top" helpKeyword="WinJS.UI.SplitView.Placement.top">
+    /// <field locid="WinJS.UI.SplitView.PanePlacement.top" helpKeyword="WinJS.UI.SplitView.PanePlacement.top">
     /// Pane is positioned above the SplitView's content.
     /// </field>
     top: "top",
-    /// <field locid="WinJS.UI.SplitView.Placement.bottom" helpKeyword="WinJS.UI.SplitView.Placement.bottom">
+    /// <field locid="WinJS.UI.SplitView.PanePlacement.bottom" helpKeyword="WinJS.UI.SplitView.PanePlacement.bottom">
     /// Pane is positioned below the SplitView's content.
     /// </field>
     bottom: "bottom"
@@ -98,11 +99,11 @@ var Placement = {
 var shownDisplayModeClassMap = {};
 shownDisplayModeClassMap[ShownDisplayMode.overlay] = ClassNames._overlayMode;
 shownDisplayModeClassMap[ShownDisplayMode.inline] = ClassNames._inlineMode;
-var placementClassMap = {};
-placementClassMap[Placement.left] = ClassNames._placementLeft;
-placementClassMap[Placement.right] = ClassNames._placementRight;
-placementClassMap[Placement.top] = ClassNames._placementTop;
-placementClassMap[Placement.bottom] = ClassNames._placementBottom;
+var panePlacementClassMap = {};
+panePlacementClassMap[PanePlacement.left] = ClassNames._placementLeft;
+panePlacementClassMap[PanePlacement.right] = ClassNames._placementRight;
+panePlacementClassMap[PanePlacement.top] = ClassNames._placementTop;
+panePlacementClassMap[PanePlacement.bottom] = ClassNames._placementBottom;
 
 // Versions of add/removeClass that are no ops when called with falsy class names.
 function addClass(element: HTMLElement, className: string): void {
@@ -132,7 +133,7 @@ function cancelablePromise(animationPromise: Promise<any>) {
     });
 }
 
-function showEdgeUI(elements: any, offsets: any): Promise<any> {    
+function showEdgeUI(elements: any, offsets: any): Promise<any> {
     return cancelablePromise(Animations.showEdgeUI(elements, offsets, { mechanism: "transition" }));
 }
 
@@ -204,7 +205,7 @@ interface ISplitViewState {
     enter(args: any): void;
     exit(): void;
     // SplitView's API surface
-    hidden: boolean; // readyonly. Writes go thru showPane/hidePane.
+    paneHidden: boolean; // readyonly. Writes go thru showPane/hidePane.
     showPane(): void;
     hidePane(): void;
     // Misc
@@ -231,47 +232,47 @@ module States {
     function updateDomImpl(): void {
         this.splitView._updateDomImpl();
     }
-    
+
     // Initial state. Initializes state on the SplitView shared by the various states.
     export class Init implements ISplitViewState {
-        private _hidden: boolean;
-        
+        private _paneHidden: boolean;
+
         splitView: SplitView;
         name = "Init";
         enter(options?: any) {
             interruptible(this, (ready) => {
                 return ready.then(() => {
                     options = options || {};
-        
+
                     this.splitView._cachedHiddenPaneThickness = null;
-        
-                    this.splitView.hidden = true;
+
+                    this.splitView.paneHidden = true;
                     this.splitView.shownDisplayMode = ShownDisplayMode.overlay;
-                    this.splitView.placement = Placement.left;
+                    this.splitView.panePlacement = PanePlacement.left;
                     _Control.setOptions(this.splitView, options);
-                    
+
                     return _ElementUtilities._inDom(this.splitView._dom.root).then(() => {
                         this.splitView._rtl = _Global.getComputedStyle(this.splitView._dom.root).direction === 'rtl';
-                        this.splitView._isShownMode = !this._hidden;
+                        this.splitView._isShownMode = !this._paneHidden;
                         this.splitView._updateDomImpl();
-                        this.splitView._setState(this._hidden ? Hidden : Shown);
+                        this.splitView._setState(this._paneHidden ? Hidden : Shown);
                     });
                 });
             });
         }
         exit = cancelInterruptibles;
-        get hidden(): boolean {
-            return this._hidden;
+        get paneHidden(): boolean {
+            return this._paneHidden;
         }
         showPane() {
-            this._hidden = false;
+            this._paneHidden = false;
         }
         hidePane() {
-            this._hidden = true;
+            this._paneHidden = true;
         }
         updateDom = _; // Postponed until immediately before we switch to another state
     }
-    
+
     // A rest state. The SplitView pane is hidden and is waiting for the app to call showPane.
     class Hidden implements ISplitViewState {
         splitView: SplitView;
@@ -283,14 +284,14 @@ module States {
             }
         }
         exit = _;
-        hidden = true;
+        paneHidden = true;
         showPane() {
             this.splitView._setState(BeforeShow);
         }
         hidePane = _;
         updateDom = updateDomImpl;
     }
-    
+
     // An event state. The SplitView fires the beforeshow event.
     class BeforeShow implements ISplitViewState {
         splitView: SplitView;
@@ -309,12 +310,12 @@ module States {
             });
         }
         exit = cancelInterruptibles;
-        hidden = true;
+        paneHidden = true;
         showPane = _;
         hidePane = _;
         updateDom = updateDomImpl;
     }
-    
+
     // An animation/event state. The SplitView plays its show animation and fires aftershow.
     class Showing implements ISplitViewState {
         private _hideIsPending: boolean;
@@ -325,10 +326,10 @@ module States {
             interruptible(this, (ready) => {
                 return ready.then(() => {
                     this._hideIsPending = false;
-                    
+
                     this.splitView._cachedHiddenPaneThickness = null;
                     var hiddenPaneThickness = this.splitView._getHiddenPaneThickness();
-                    
+
                     this.splitView._isShownMode = true;
                     this.splitView._updateDomImpl();
                     return this.splitView._playShowAnimation(hiddenPaneThickness);
@@ -341,7 +342,7 @@ module States {
             });
         }
         exit = cancelInterruptibles;
-        get hidden() {
+        get paneHidden() {
             return this._hideIsPending;
         }
         showPane() {
@@ -352,7 +353,7 @@ module States {
         }
         updateDom = _; // Postponed until immediately before we switch to another state
     }
-    
+
     // A rest state. The SplitView pane is shown and is waiting for the app to trigger hidePane.
     class Shown implements ISplitViewState {
         splitView: SplitView;
@@ -364,14 +365,14 @@ module States {
             }
         }
         exit = _;
-        hidden = false;
+        paneHidden = false;
         showPane = _;
         hidePane() {
             this.splitView._setState(BeforeHide);
         }
         updateDom = updateDomImpl;
     }
-    
+
     // An event state. The SplitView fires the beforehide event.
     class BeforeHide implements ISplitViewState {
         splitView: SplitView;
@@ -390,12 +391,12 @@ module States {
             });
         }
         exit = cancelInterruptibles;
-        hidden = false;
+        paneHidden = false;
         showPane = _;
         hidePane = _;
         updateDom = updateDomImpl;
     }
-    
+
     // An animation/event state. The SpitView plays the hide animation and fires the afterhide event.
     class Hiding implements ISplitViewState {
         private _showIsPending: boolean;
@@ -418,7 +419,7 @@ module States {
             });
         }
         exit = cancelInterruptibles;
-        get hidden() {
+        get paneHidden() {
             return !this._showIsPending;
         }
         showPane() {
@@ -436,7 +437,7 @@ module States {
         enter() {
         }
         exit = _;
-        hidden = true;
+        paneHidden = true;
         showPane = _;
         hidePane = _;
         updateDom = _;
@@ -467,13 +468,13 @@ export class SplitView {
     /// </field>
     static ShownDisplayMode = ShownDisplayMode;
 
-    /// <field locid="WinJS.UI.SplitView.Placement" helpKeyword="WinJS.UI.SplitView.Placement">
+    /// <field locid="WinJS.UI.SplitView.PanePlacement" helpKeyword="WinJS.UI.SplitView.PanePlacement">
     /// Placement options for a SplitView's pane.
     /// </field>
-    static Placement = Placement;
+    static PanePlacement = PanePlacement;
 
     static supportedForProcessing: boolean = true;
-    
+
     private static _ClassNames = ClassNames;
 
     private _disposed: boolean;
@@ -483,7 +484,7 @@ export class SplitView {
         pane: HTMLElement;
         paneWrapper: HTMLElement; // Shouldn't have any margin, padding, or border.
         panePlaceholder: HTMLElement; // Shouldn't have any margin, padding, or border.
-        content: HTMLElement; 
+        content: HTMLElement;
     };
     _isShownMode: boolean; // Is ClassNames.paneShown present on the SplitView?
     _rtl: boolean;
@@ -555,28 +556,28 @@ export class SplitView {
         }
     }
 
-    private _placement: string;
-    /// <field type="String" oamOptionsDatatype="WinJS.UI.SplitView.Placement" locid="WinJS.UI.SplitView.placement" helpKeyword="WinJS.UI.SplitView.placement">
+    private _panePlacement: string;
+    /// <field type="String" oamOptionsDatatype="WinJS.UI.SplitView.PanePlacement" locid="WinJS.UI.SplitView.panePlacement" helpKeyword="WinJS.UI.SplitView.panePlacement">
     /// Gets or sets the placement of the SplitView's pane.
     /// </field>
-    get placement(): string {
-        return this._placement;
+    get panePlacement(): string {
+        return this._panePlacement;
     }
-    set placement(value: string) {
-        if (Placement[value] && this._placement !== value) {
-            this._placement = value;
+    set panePlacement(value: string) {
+        if (PanePlacement[value] && this._panePlacement !== value) {
+            this._panePlacement = value;
             this._cachedHiddenPaneThickness = null;
             this._state.updateDom();
         }
     }
-    
-    /// <field type="Boolean" hidden="true" locid="WinJS.UI.SplitView.hidden" helpKeyword="WinJS.UI.SplitView.hidden">
+
+    /// <field type="Boolean" hidden="true" locid="WinJS.UI.SplitView.paneHidden" helpKeyword="WinJS.UI.SplitView.paneHidden">
     /// Gets or sets whether the SpitView's pane is currently collapsed.
     /// </field>
-    get hidden(): boolean {
-        return this._state.hidden;
+    get paneHidden(): boolean {
+        return this._state.paneHidden;
     }
-    set hidden(value: boolean) {
+    set paneHidden(value: boolean) {
         if (value) {
             this.hidePane();
         } else {
@@ -616,12 +617,21 @@ export class SplitView {
         /// </signature>
         this._state.hidePane();
     }
+    
+    togglePane(): void {
+        /// <signature helpKeyword="WinJS.UI.SplitView.togglePane">
+        /// <summary locid="WinJS.UI.SplitView.togglePane">
+        /// Toggles the SplitView's pane, hiding it if it's currently shown and showing it if it's currently hidden.
+        /// </summary>
+        /// </signature>
+        this.paneHidden = !this.paneHidden;
+    }
 
     private _initializeDom(root: HTMLElement): void {
         // The first child is the pane
         var paneEl = <HTMLElement>root.firstElementChild || _Global.document.createElement("div");
         _ElementUtilities.addClass(paneEl, ClassNames.pane);
-        
+
         // All other children are members of the content
         var contentEl = _Global.document.createElement("div");
         _ElementUtilities.addClass(contentEl, ClassNames.content);
@@ -631,19 +641,19 @@ export class SplitView {
             contentEl.appendChild(child);
             child = sibling;
         }
-        
+
         // paneWrapper's purpose is to clip the pane during the pane resize animation
         var paneWrapperEl = _Global.document.createElement("div");
         paneWrapperEl.className = ClassNames._paneWrapper;
         paneWrapperEl.appendChild(paneEl);
-        
+
         var panePlaceholderEl = _Global.document.createElement("div");
         panePlaceholderEl.className = ClassNames._panePlaceholder;
 
         root["winControl"] = this;
         _ElementUtilities.addClass(root, ClassNames.splitView);
         _ElementUtilities.addClass(root, "win-disposable");
-        
+
         this._dom = {
             root: root,
             pane: paneEl,
@@ -658,12 +668,12 @@ export class SplitView {
             paneIsFirst: undefined,
             isShownMode: undefined,
             shownDisplayMode: undefined,
-            placement: undefined,
+            panePlacement: undefined,
             panePlaceholderWidth: undefined,
             panePlaceholderHeight: undefined
         };
     }
-    
+
     private _measureElement(element: HTMLElement): IRect {
         var style = getComputedStyle(element);
         var position = _ElementUtilities._getPositionRelativeTo(element, this._dom.root);
@@ -678,7 +688,7 @@ export class SplitView {
             totalHeight: _ElementUtilities.getTotalHeight(element)
         };
     }
-    
+
     private _setContentRect(contentRect: IRect) {
         var contentStyle = this._dom.content.style;
         contentStyle.left = contentRect.left + "px";
@@ -686,7 +696,7 @@ export class SplitView {
         contentStyle.height = contentRect.contentHeight + "px";
         contentStyle.width = contentRect.contentWidth + "px";
     }
-    
+
     // Overridden by tests.
     private _prepareAnimation(paneRect: IRect, contentRect: IRect): void {
         var paneWrapperStyle = this._dom.paneWrapper.style;
@@ -695,12 +705,12 @@ export class SplitView {
         paneWrapperStyle.top = paneRect.top + "px";
         paneWrapperStyle.height = paneRect.totalHeight + "px";
         paneWrapperStyle.width = paneRect.totalWidth + "px";
-        
+
         var contentStyle = this._dom.content.style;
         contentStyle.position = "absolute";
         this._setContentRect(contentRect);
     }
-    
+
     // Overridden by tests.
     private _clearAnimation(): void {
         var paneWrapperStyle = this._dom.paneWrapper.style;
@@ -710,7 +720,7 @@ export class SplitView {
         paneWrapperStyle.height = "";
         paneWrapperStyle.width = "";
         paneWrapperStyle[transformNames.scriptName] = "";
-        
+
         var contentStyle = this._dom.content.style;
         contentStyle.position = "";
         contentStyle.left = "";
@@ -718,19 +728,19 @@ export class SplitView {
         contentStyle.height = "";
         contentStyle.width = "";
         contentStyle[transformNames.scriptName] = "";
-        
+
         var paneStyle = this._dom.pane.style;
         paneStyle.height = "";
         paneStyle.width = "";
         paneStyle[transformNames.scriptName] = "";
     }
-    
+
     private _getHiddenContentRect(shownContentRect: IRect, hiddenPaneThickness: IThickness, shownPaneThickness: IThickness): IRect {
         if (this.shownDisplayMode === ShownDisplayMode.overlay) {
             return shownContentRect;
         } else {
-            var placementRight = this._rtl ? Placement.left : Placement.right;
-            var multiplier = this.placement === placementRight || this.placement === Placement.bottom ? 0 : 1;
+            var placementRight = this._rtl ? PanePlacement.left : PanePlacement.right;
+            var multiplier = this.panePlacement === placementRight || this.panePlacement === PanePlacement.bottom ? 0 : 1;
             var paneDiff = {
                 content: shownPaneThickness.content - hiddenPaneThickness.content,
                 total: shownPaneThickness.total - hiddenPaneThickness.total
@@ -752,18 +762,18 @@ export class SplitView {
             }
         }
     }
-    
+
     private _getAnimationOffsets(shownPaneRect: IRect): { top: string; left: string; } {
-        var placementLeft = this._rtl ? Placement.right : Placement.left;
+        var placementLeft = this._rtl ? PanePlacement.right : PanePlacement.left;
         return this._horizontal ? {
-            left: (this.placement === placementLeft ? -1 : 1) * shownPaneRect.totalWidth + "px",
+            left: (this.panePlacement === placementLeft ? -1 : 1) * shownPaneRect.totalWidth + "px",
             top: "0px"
         } : {
             left: "0px",
-            top: (this.placement === Placement.top ? -1 : 1) * shownPaneRect.totalHeight + "px"
+            top: (this.panePlacement === PanePlacement.top ? -1 : 1) * shownPaneRect.totalHeight + "px"
         };
     }
-    
+
     private _paneSlideIn(shownPaneRect: IRect): Promise<any> {
         return showEdgeUI(this._dom.paneWrapper, this._getAnimationOffsets(shownPaneRect));
     }
@@ -777,9 +787,9 @@ export class SplitView {
     //
 
     get _horizontal(): boolean {
-        return this.placement === Placement.left || this.placement === Placement.right;
+        return this.panePlacement === PanePlacement.left || this.panePlacement === PanePlacement.right;
     }
-    
+
     _setState(NewState: any, arg0?: any) {
         if (!this._disposed) {
             this._state && this._state.exit();
@@ -830,7 +840,7 @@ export class SplitView {
 
         return this._cachedHiddenPaneThickness;
     }
-    
+
     // Should be called while SplitView is rendered in its shown mode
     // Overridden by tests.
     _playShowAnimation(hiddenPaneThickness: IThickness): Promise<any> {
@@ -840,43 +850,43 @@ export class SplitView {
         var shownPaneThickness = rectToThickness(shownPaneRect, dim);
         var hiddenContentRect = this._getHiddenContentRect(shownContentRect, hiddenPaneThickness, shownPaneThickness);
         this._prepareAnimation(shownPaneRect, hiddenContentRect);
-        
+
         var playPaneAnimation = (): Promise<any> => {
             var peek = hiddenPaneThickness.total > 0;
-            
+
             if (peek) {
-                var placementRight = this._rtl ? Placement.left : Placement.right;
+                var placementRight = this._rtl ? PanePlacement.left : PanePlacement.right;
                 return resizeTransition(this._dom.paneWrapper, this._dom.pane, {
                     from: hiddenPaneThickness,
                     to: shownPaneThickness,
                     dimension: dim,
-                    anchorTrailingEdge: this.placement === placementRight || this.placement === Placement.bottom
+                    anchorTrailingEdge: this.panePlacement === placementRight || this.panePlacement === PanePlacement.bottom
                 });
             } else {
                 return this._paneSlideIn(shownPaneRect);
             }
         };
-        
+
         var playShowAnimation = (): Promise<any> => {
             if (this.shownDisplayMode === ShownDisplayMode.overlay) {
                 return playPaneAnimation();
             } else {
                 var fadeInDelay = 350 * _TransitionAnimation._animationFactor;
-                
+
                 var contentAnimation = Promise.timeout(fadeInDelay).then(() => {
                     this._setContentRect(shownContentRect);
                     return fadeIn(this._dom.content);
                 });
-                
+
                 return Promise.join([contentAnimation, playPaneAnimation()]);
             }
         };
-        
+
         return playShowAnimation().then(() => {
             this._clearAnimation();
         });
     }
-    
+
     // Should be called while SplitView is rendered in its shown mode
     // Overridden by tests.
     _playHideAnimation(hiddenPaneThickness: IThickness): Promise<any> {
@@ -886,54 +896,54 @@ export class SplitView {
         var shownPaneThickness = rectToThickness(shownPaneRect, dim);
         var hiddenContentRect = this._getHiddenContentRect(shownContentRect, hiddenPaneThickness, shownPaneThickness);
         this._prepareAnimation(shownPaneRect, shownContentRect);
-        
+
         var playPaneAnimation = (): Promise<any> => {
             var peek = hiddenPaneThickness.total > 0;
-            
+
             if (peek) {
-                var placementRight = this._rtl ? Placement.left : Placement.right;
+                var placementRight = this._rtl ? PanePlacement.left : PanePlacement.right;
                 return resizeTransition(this._dom.paneWrapper, this._dom.pane, {
                     from: shownPaneThickness,
                     to: hiddenPaneThickness,
                     dimension: dim,
-                    anchorTrailingEdge: this.placement === placementRight || this.placement === Placement.bottom
+                    anchorTrailingEdge: this.panePlacement === placementRight || this.panePlacement === PanePlacement.bottom
                 });
             } else {
                 return this._paneSlideOut(shownPaneRect);
             }
         };
-        
+
         var playHideAnimation = (): Promise<any> => {
             if (this.shownDisplayMode === ShownDisplayMode.overlay) {
                 return playPaneAnimation();
-            } else {                
+            } else {
                 var fadeInDelay = 267 * _TransitionAnimation._animationFactor;
-                
+
                 var contentAnimation = Promise.timeout(fadeInDelay).then(() => {
                     this._setContentRect(hiddenContentRect);
                     return fadeIn(this._dom.content);
                 });
-                
+
                 return Promise.join([contentAnimation, playPaneAnimation()]);
             }
         };
 
-        
+
         return playHideAnimation().then(() => {
             this._clearAnimation();
         });
     }
-    
+
     private _rendered: {
         paneIsFirst: boolean;
         isShownMode: boolean;
         shownDisplayMode: string;
-        placement: string;
+        panePlacement: string;
         panePlaceholderWidth: string;
         panePlaceholderHeight: string;
     }
     _updateDomImpl(): void {
-        var paneShouldBeFirst = this.placement === Placement.left || this.placement === Placement.top;
+        var paneShouldBeFirst = this.panePlacement === PanePlacement.left || this.panePlacement === PanePlacement.top;
         if (paneShouldBeFirst !== this._rendered.paneIsFirst) {
             // TODO: restore focus
             if (paneShouldBeFirst) {
@@ -947,7 +957,7 @@ export class SplitView {
             }
         }
         this._rendered.paneIsFirst = paneShouldBeFirst;
-        
+
         if (this._rendered.isShownMode !== this._isShownMode) {
             if (this._isShownMode) {
                 _ElementUtilities.removeClass(this._dom.root, ClassNames.paneHidden);
@@ -958,11 +968,11 @@ export class SplitView {
             }
         }
         this._rendered.isShownMode = this._isShownMode;
-        
-        if (this._rendered.placement !== this.placement) {
-            removeClass(this._dom.root, placementClassMap[this._rendered.placement]);
-            addClass(this._dom.root, placementClassMap[this.placement]);
-            this._rendered.placement = this.placement;
+
+        if (this._rendered.panePlacement !== this.panePlacement) {
+            removeClass(this._dom.root, panePlacementClassMap[this._rendered.panePlacement]);
+            addClass(this._dom.root, panePlacementClassMap[this.panePlacement]);
+            this._rendered.panePlacement = this.panePlacement;
         }
 
         if (this._rendered.shownDisplayMode !== this.shownDisplayMode) {
@@ -970,7 +980,7 @@ export class SplitView {
             addClass(this._dom.root, shownDisplayModeClassMap[this.shownDisplayMode]);
             this._rendered.shownDisplayMode = this.shownDisplayMode;
         }
-        
+
         // panePlaceholder's purpose is to take up the amount of space occupied by the
         // hidden pane while the pane is shown in overlay mode. Without this, the content
         // would shift as the pane shows and hides in overlay mode.
