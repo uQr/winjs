@@ -196,6 +196,9 @@ define([
                     }
 
                     this._showCommands(commands, true);
+                    if (!this.hidden) {
+                        this._checkMenuCommands();
+                    }
                 },
 
                 hideCommands: function (commands) {
@@ -213,6 +216,9 @@ define([
                     }
 
                     this._hideCommands(commands, true);
+                    if (!this.hidden) {
+                        this._checkMenuCommands();
+                    }
                 },
 
                 showOnlyCommands: function (commands) {
