@@ -181,7 +181,7 @@ define([
 
                     this._showCommands(commands, true);
                     if (!this.hidden) {
-                        this._checkToggle();
+                        this._checkMenuCommands();
                     }
                 },
 
@@ -201,7 +201,7 @@ define([
 
                     this._hideCommands(commands, true);
                     if (!this.hidden) {
-                        this._checkToggle();
+                        this._checkMenuCommands();
                     }
                 },
 
