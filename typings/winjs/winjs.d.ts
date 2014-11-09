@@ -4461,11 +4461,11 @@ declare module WinJS.UI {
 
         /**
          * Shows the Flyout, if hidden, regardless of other states.
-         * @param anchor Required. The DOM element to anchor the Flyout.
+         * @param anchor. DOM element to temporarily anchor the position of the Flyout to. This is optional if Flyout.anchor has already been set.
          * @param placement The placement of the Flyout to the anchor: the string literal "top", "bottom", "left", or "right".
          * @param alignment For "top" or "bottom" placement, the alignment of the Flyout to the anchor's edge: the string literal "center", "left", or "right".
         **/
-        show(anchor: HTMLElement, placement?: string, alignment?: string): void;
+        show(anchor?: HTMLElement, placement?: string, alignment?: string): void;
 
         //#endregion Methods
 

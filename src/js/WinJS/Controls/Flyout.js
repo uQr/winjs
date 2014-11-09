@@ -51,6 +51,125 @@ define([
                 get badAlignment() { return "Invalid argument: Flyout alignment should be 'center' (default), 'left', or 'right'."; }
             };
 
+
+            // Singleton class for managing cascading flyouts
+            var _CascadeManager = _Base.Class.define(function _CascadeManager_ctor() {
+                this._cascadingStack = [];
+                this._handleFocusIntoCascade_bound = this._handleFocusIntoCascade.bind(this);
+                this._handleFocusOutOfCascade_bound = this._handleFocusOutOfCascade.bind(this);
+                this._handleKeyDown_bound = this._handleKeyDown.bind(this);
+            },
+            {
+                appendFlyout: function _CascadeManager_appendFlyout(flyoutToAdd) {
+                    // IF the anchor element for flyoutToAdd is contained within another flyout, 
+                    // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
+                    //  Remove from the cascadingStack, any subflyout descendants of the parent flyout.
+                    // ELSE flyoutToAdd isn't part of the existing cascade
+                    //  Collapse the entire cascadingStack to start a new cascade.
+                    // FINALLY: 
+                    //  add flyoutToAdd to the end of the cascading stack. Monitor it for events.
+                    var indexOfParentFlyout = this.indexOfElement(flyoutToAdd._currentAnchor);
+                    if (indexOfParentFlyout >= 0) {
+                        this.collapseFlyout(this.getAt(indexOfParentFlyout + 1));
+                    } else {
+                        this.collapseAll();
+                    }
+
+                    _ElementUtilities._addEventListener(flyoutToAdd.element, "focusin", this._handleFocusIntoCascade_bound, false);
+                    _ElementUtilities._addEventListener(flyoutToAdd.element, "focusout", this._handleFocusOutOfCascade_bound, false);
+                    flyoutToAdd.element.addEventListener("keydown", this._handleKeyDown_bound, false);
+                    this._cascadingStack.push(flyoutToAdd);
+                },
+                collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
+                    // Removes flyout param and its subflyout descendants from the _cascadingStack.
+                    if (!this._reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
+                        this._reentrancyLock = true;
+
+                        var subFlyout;
+                        while (this.length && flyout !== subFlyout) {
+                            subFlyout = this._cascadingStack.pop();
+                            _ElementUtilities._removeEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
+                            _ElementUtilities._removeEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
+                            subFlyout.element.removeEventListener("keydown", this._handleKeyDown_bound, false);
+                            subFlyout.hide();
+                        }
+
+                        this._reentrancyLock = false;
+                    }
+                },
+                collapseAll: function _CascadeManager_collapseAll() {
+                    // Empties the _cascadingStack and hides all flyouts.
+                    this.collapseFlyout(this.getAt(0));
+                },
+                indexOf: function _CascadeManager_indexOf(flyout) {
+                    return this._cascadingStack.indexOf(flyout);
+                },
+                indexOfElement: function _CascadeManager_indexOfElement(el) {
+                    // Returns an index cooresponding to the Flyout in the cascade whose element contains the element in question.
+                    // Returns -1 if the element is not contained by any Flyouts in the cascade.
+                    var indexOfAssociatedFlyout = -1;
+                    for (var i = 0, len = this.length; i < len; i++) {
+                        var currentFlyout = this.getAt(i);
+                        if (currentFlyout.element.contains(el)) {
+                            indexOfAssociatedFlyout = i;
+                            break;
+                        }
+                    }
+                    return indexOfAssociatedFlyout;
+                },
+                length: {
+                    get: function _CascadeManager_getLength() {
+                        return this._cascadingStack.length;
+                    }
+                },
+                getAt: function _CascadeManager_getAt(index) {
+                    return this._cascadingStack[index];
+                },
+                _handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(event) {
+                    /*jshint validthis: true */
+
+                    // When a flyout in the cascade recieves focus, we close all subflyouts beneath it.
+                    if (!event._handled) {
+                        var index = this.indexOfElement(event.target);
+                        if (index >= 0) {
+                            var subFlyout = this.getAt(index + 1);
+                            this.collapseFlyout(subFlyout);
+                        }
+                    }
+                },
+                _handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(event) {
+                    /*jshint validthis: true */
+
+                    // Hide the entire cascade if focus has moved somewhere outside of it
+                    if (!event._handled) {
+                        if (this.indexOfElement(event.relatedTarget) < 0) {
+                            this.collapseAll();
+                        }
+                    }
+                },
+                _handleKeyDown: function _CascadeManager_handleKeyDown(event) {
+                    /*jshint validthis: true */
+
+                    var rtl = _Global.getComputedStyle(event.target).direction === "rtl",
+                        leftKey = rtl ? Key.rightArrow : Key.leftArrow,
+                        target = event.target;
+
+                    if (event.keyCode === leftKey) {
+                        // Left key press in a SubFlyout will close that subFlyout and any subFlyouts cascading from it. 
+                        var index = this.indexOfElement(target);
+                        if (index >= 1) {
+                            var subFlyout = this.getAt(index);
+                            // Show a focus rect where focus is restored.
+                            subFlyout._keyboardInvoked = true;
+                            this.collapseFlyout(subFlyout);
+                            event.preventDefault();
+                        }
+                    } else if (event.keyCode === Key.alt || event.keyCode === Key.F10) {
+                        this.collapseAll();
+                    }
+                },
+            });
+
             var Flyout = _Base.Class.derive(_Overlay._Overlay, function Flyout_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.Flyout.Flyout">
                 /// <summary locid="WinJS.UI.Flyout.constructor">
@@ -127,6 +246,9 @@ define([
                     // Base animation is popIn, but our flyout has different arguments
                     this._currentAnimateIn = this._flyoutAnimateIn;
                     this._currentAnimateOut = this._flyoutAnimateOut;
+
+                    _ElementUtilities._addEventListener(this.element, "focusin", this._handleFocusChange.bind(this), false);
+                    _ElementUtilities._addEventListener(this.element, "focusout", this._handleFocusChange.bind(this), false);
 
                     // Make sure additional _Overlay event handlers are hooked up
                     this._handleOverlayEventsForFlyoutOrSettingsFlyout();
@@ -226,6 +348,10 @@ define([
                 },
 
                 _hide: function Flyout_hide() {
+
+                    // Also close all subflyout descendants in the cascade.
+                    Flyout._cascadeManager.collapseFlyout(this);
+
                     if (this._baseHide()) {
                         // Return focus if this or the flyout CED has focus
                         var active = _Global.document.activeElement;
@@ -281,6 +407,7 @@ define([
                     if (this.disabled) {
                         return;
                     }
+
                     // Pick up defaults
                     if (!anchor) {
                         anchor = this._anchor;
@@ -358,8 +485,7 @@ define([
                             finalDiv.tabIndex = _ElementUtilities._getHighestTabIndexInList(_elms);
                         }
 
-                        // Hide all other flyouts
-                        this._hideAllOtherFlyouts(this);
+                        Flyout._cascadeManager.appendFlyout(this);
 
                         // Store what had focus before showing the Flyout.
                         // This must happen after we hide all other flyouts so that we store the correct element.
@@ -857,6 +983,13 @@ define([
                     }
                 },
 
+                _handleFocusChange: function Flyout_handleFocusChange(event) {
+                    if (this.element.contains(event.relatedTarget)) {
+                        // Focus is only moving between elements in the flyout. Doesn't need to be handled by cascadeManager.
+                        event._handled = true;
+                    }
+                },
+
                 // Create and add a new first div as the first child
                 _addFirstDiv: function Flyout_addFirstDiv() {
                     var firstDiv = _Global.document.createElement("div");
@@ -896,6 +1029,13 @@ define([
                 _writeProfilerMark: function Flyout_writeProfilerMark(text) {
                     _WriteProfilerMark("WinJS.UI.Flyout:" + this._id + ":" + text);
                 }
+            },
+            {
+                _cascadeManager: new _CascadeManager(),
+                _lightDismissFlyouts: function Flyout_lightDismissFlyouts() {
+                    Flyout._cascadeManager.collapseAll();
+                }
+
             });
             return Flyout;
         })

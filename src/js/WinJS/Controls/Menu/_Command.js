@@ -7,12 +7,11 @@ define([
     '../../Core/_Base',
     '../../Core/_ErrorFromName',
     '../../Core/_Resources',
-    '../../Promise',
     '../../Utilities/_Control',
     '../../Utilities/_ElementUtilities',
     '../AppBar/_Constants',
     '../Flyout/_Overlay'
-], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, Promise, _Control, _ElementUtilities, _Constants, _Overlay) {
+], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, _Control, _ElementUtilities, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -39,26 +38,6 @@ define([
                 get badHrElement() { return "Invalid argument: For a separator, the element must be null or an hr element"; },
                 get badButtonElement() { return "Invalid argument: For a button, toggle, or flyout command, the element must be null or a button element"; }
             };
-
-            function invokeFlyout(menuCommand) {
-                var flyout = menuCommand._flyout;
-                if (flyout) {
-                    // Flyout may not have processAll'd, so this may be a DOM object
-                    if (typeof flyout === "string") {
-                        flyout = _Global.document.getElementById(flyout);
-                    }
-                    if (!flyout.show) {
-                        flyout = flyout.winControl;
-                    }
-                    if (flyout && flyout.show) {
-                        if (menuCommand._parentFlyout) {
-                            flyout.show(menuCommand._parentFlyout._currentAnchor, menuCommand._parentFlyout._currentPlacement, menuCommand._parentFlyout._currentAlignment);
-                        } else {
-                            flyout.show(menuCommand.element);
-                        }
-                    }
-                }
-            }
 
             return _Base.Class.define(function MenuCommand_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.AppBarCommand.MenuCommand">
@@ -119,7 +98,7 @@ define([
                 if (options.onclick) {
                     this.onclick = options.onclick;
                 }
-                options.onclick = this._handleMenuClick.bind(this);
+                options.onclick = this._handleClick.bind(this);
 
                 _Control.setOptions(this, options);
 
@@ -143,9 +122,9 @@ define([
                     }
                 }
 
-                this._handleMouseMoveBound = this._handleMouseMove.bind(this);
-                this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
-                this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
+                //this._handleMouseMoveBound = this._handleMouseMove.bind(this);
+                //this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
+                //this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
             }, {
                 /// <field type="String" locid="WinJS.UI.MenuCommand.id" helpKeyword="WinJS.UI.MenuCommand.id" isAdvanced="true">
                 /// Gets the  ID of the MenuCommand.
@@ -369,9 +348,7 @@ define([
                         return;
                     }
                     this._disposed = true;
-                    if (this._hoverPromise) {
-                        this._hoverPromise.cancel();
-                    }
+
                     if (this._flyout) {
                         this._flyout.dispose();
                     }
@@ -431,10 +408,10 @@ define([
                         }
                     }
 
-                    this._element.innerHTML = 
-                        '<span class="win-toggleicon" tabindex="-1" aria-hidden="true"></span>' +
-                        '<span class="win-label" tabindex="-1" aria-hidden="true"></span>' +
-                        '<span class="win-flyouticon" tabindex="-1" aria-hidden="true"></span>';
+                    this._element.innerHTML =
+                        '<span class="win-toggleicon" aria-hidden="true"></span>' +
+                        '<span class="win-label" aria-hidden="true"></span>' +
+                        '<span class="win-flyouticon" aria-hidden="true"></span>';
                     this._element.type = "button";
 
                     this._toggleSpan = this._element.querySelector(".win-toggleicon");
@@ -444,26 +421,32 @@ define([
                     // Label 'textContent' is added later by caller
                 },
 
-                _handleMenuClick: function MenuCommand_handleMenuClick(event) {
+                _sendEvent: function MenuCommand_sendEvent(eventName, detail) {
+                    if (!this._disposed) {
+                        var event = _Global.document.createEvent("CustomEvent");
+                        event.initCustomEvent(eventName, true, true, (detail || {}));
+                        this._element.dispatchEvent(event);
+                    }
+                },
+
+                _handleClick: function MenuCommand_handleClick(event) {
                     /*jshint validthis: true */
                     var command = this;
                     if (command) {
-                        var hideParent = true;
+                        var actionCommitted = true;
 
                         if (command._type === _Constants.typeToggle) {
                             command.selected = !command.selected;
                         } else if (command._type === _Constants.typeFlyout && command._flyout) {
-                            var hideParent = false;
-                            invokeFlyout(command);
+                            actionCommitted = false;
                         }
 
                         if (command.onclick) {
                             command.onclick(event);
                         }
-                        // Dismiss parent flyout
-                        if (hideParent && command._parentFlyout) {
-                            command._parentFlyout.hide();
-                        }
+
+                        // Bubble private 'invoked' event to Menu
+                        this._sendEvent(_Constants.menuCommandInvokedEvent, { actionCommitted: actionCommitted });
                     }
                 },
 
@@ -473,77 +456,90 @@ define([
                         rightKey = rtl ? Key.leftArrow : Key.rightArrow;
 
                     if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
-                        invokeFlyout(this);
+
+                        // Bubble private 'invoked' event to Menu
+                        this._sendEvent(_Constants.menuCommandInvokedEvent, { actionCommitted: false });
 
                         // Prevent the page from scrolling
                         event.preventDefault();
                     }
                 },
-                _hoverPromise: null,
-                _handleMouseOver: function MenuCommand_handleMouseOver(event) {
-                    /*jshint validthis: true */
-                    var that = this;
-                    if (this && this.element && this.element.focus) {
-                        this.element.focus();
 
-                        if (this.type === _Constants.typeFlyout && this.flyout && this.flyout.hidden) {
-                            this._hoverPromise = this._hoverPromise || Promise.timeout(_Constants.menuCommandHoverDelay).then(
-                                function () {
-                                    if (!that._parentFlyout || !that._parentFlyout.hidden) {
-                                        invokeFlyout(that);
-                                    }
-                                    that._hoverPromise = null;
-                                },
-                                function () {
-                                    that._hoverPromise = null;
-                                });
-                        }
 
-                        this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
-                    }
-                },
+                //_hoverPromise: null,
+                //_handleMouseOver: function MenuCommand_handleMouseOver(event) {
+                //    /*jshint validthis: true */
+                //    var that = this;
+                //    if (this && this.element && this.element.focus) {
+                //        this.element.focus();
 
-                _handleMouseMove: function MenuCommand_handleMouseMove() {
-                    /*jshint validthis: true */
-                    if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
-                        this.element.focus();
-                    }
-                },
+                //        if (this.type === _Constants.typeFlyout && this.flyout && this.flyout.hidden) {
+                //            this._hoverPromise = this._hoverPromise || Promise.timeout(_Constants.menuCommandHoverDelay).then(
+                //                function () {
+                //                    if (!that._parentFlyout || !that._parentFlyout.hidden) {
+                //                        invokeFlyout(that);
+                //                    }
+                //                    that._hoverPromise = null;
+                //                },
+                //                function () {
+                //                    that._hoverPromise = null;
+                //                });
+                //        }
 
-                _handleMouseOut: function MenuCommand_handleMouseOut() {
-                    /*jshint validthis: true */
-                    var parentFlyout = this._getParentFlyout(this.element);
-                    if (parentFlyout
-                     && this.element === _Global.document.activeElement
-                     && _ElementUtilities.hasClass(parentFlyout, _Constants.menuClass)
-                     && parentFlyout.focus) {
-                        // Menu gives focus to the menu itself
-                        parentFlyout.focus();
-                    } else if (parentFlyout
-                            && this.element === _Global.document.activeElement
-                            && parentFlyout.children
-                            && parentFlyout.children.length > 0
-                            && parentFlyout.children[0]
-                            && _ElementUtilities.hasClass(parentFlyout.children[0], _Constants.firstDivClass)
-                            && parentFlyout.children[0].focus) {
-                        // Flyout gives focus to firstDiv
-                        parentFlyout.children[0].focus();
-                    }
+                //        this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
+                //    }
+                //},
 
-                    this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
-                    if (this._hoverPromise) {
-                        this._hoverPromise.cancel();
-                    }
-                },
+                //_handleMouseMove: function MenuCommand_handleMouseMove() {
+                //    /*jshint validthis: true */
+                //    if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
+                //        this.element.focus();
+                //    }
+                //},
 
-                _getParentFlyout: function MenuCommand_getParentFlyout(element) {
-                    while (element && !_ElementUtilities.hasClass(element, _Constants.flyoutClass)) {
-                        element = element.parentElement;
-                    }
+                //_handleMouseOut: function MenuCommand_handleMouseOut() {
+                //    /*jshint validthis: true */
+                //    var parentMenuEl = this._getParentMenu(this.element).element;
+                //    if (parentMenuEl
+                //     && this.element === _Global.document.activeElement
+                //     && parentMenuEl.focus) {
+                //        // Menu gives focus to the menu itself
+                //        parentMenuEl.focus();
+                //    }
+                //    this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
+                //    if (this._hoverPromise) {
+                //        this._hoverPromise.cancel();
+                //    }
+                //},
 
-                    return element;
-                }
+                ////_getParentMenu: function MenuCommand_getParentMenu(element) {
+                ////    while (element && !_ElementUtilities.hasClass(element, _Constants.menuClass)) {
+                ////        element = element.parentElement;
+                ////    }
 
+                ////    return element;
+                ////},
+
+                ////_handleFocusIn: function MenuCommand_handleFocusIn (e) {
+                ////    if (this.flyout.element.contains(e.relatedTerget)) {
+                ////        if (flyout.hidden) {
+                ////            // The assumption is that focus is coming back into the menuCommand because 
+                ////            // its submenu flyout was closed and focus has been restored to this MenuCommand
+                ////            clearSelectionStyles();
+                ////        }
+                ////    }
+                ////},
+                ////_handleFocusOut: function MenuCommand_handleFocusOut(e) {
+                ////    if (!this.flyout.element.contains(e.relatedTerget)) {
+                ////        // If focus isn't going into the flyout, clear selection and hide the flyout.
+                ////        // The assumption is that the user has moved the mouse off of the currentMenuCommand
+                ////        clearSelectionStyles();
+                ////        this.flyout.hide();
+                ////    } else {
+                ////        // Focus is going into the flyout
+                ////        applySelectionStyles();
+                ////    }
+                ////},
             });
         })
     });

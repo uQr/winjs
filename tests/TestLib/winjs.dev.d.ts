@@ -483,6 +483,8 @@ declare module WinJS {
 
         class PrivateFlyout extends Flyout {
             _disposed;
+
+            static _cascadeManager;
         }
 
         class PrivateMenuCommand extends MenuCommand {
