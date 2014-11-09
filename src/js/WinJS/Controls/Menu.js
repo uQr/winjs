@@ -261,9 +261,6 @@ define([
                 },
 
                 _show: function Menu_show(anchor, placement, alignment) {
-                    //// Before we show, we also need to check for children flyouts needing anchors
-                    //this._checkForFlyoutCommands();
-
                     // Call flyout show
                     this._baseFlyoutShow(anchor, placement, alignment);
 

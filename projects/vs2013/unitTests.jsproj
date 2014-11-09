@@ -73,7 +73,6 @@
     <TypeScriptCompile Include="..\..\tests\**\*.ts">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </TypeScriptCompile>
-    <TypeScriptCompile Include="AppBarAndFlyouts\CascadingFlyouts.ts" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\$(WMSJSProjectDirectory)\Microsoft.VisualStudio.$(WMSJSProject).targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets')" />
