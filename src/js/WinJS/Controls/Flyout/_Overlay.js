@@ -1185,17 +1185,14 @@ define([
 
                 _lightDismissFlyouts: function _Overlay_lightDismissFlyouts() {
                     _Overlay._hideClickEatingDivFlyout();
-                    //_Flyout._lightDismissFlyouts();
 
                     var elements = _Global.document.body.querySelectorAll("." + _Constants.flyoutClass);
                     var len = elements.length;
                     for (var i = 0; i < len; i++) {
-                        var element = elements[i];
-                        if (element.style.visibility !== "hidden") {
-                            var flyout = element.winControl;
-                            if (flyout && (!flyout._sticky)) {
-                                flyout._hideOrDismiss();
-                            }
+                        var flyout = elements[i].winControl;
+                        if (flyout && flyout._isLightDismissible()) {
+                            flyout._lightDismiss();
+                            break;
                         }
                     }
                 },
