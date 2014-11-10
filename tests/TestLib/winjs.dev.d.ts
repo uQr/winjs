@@ -489,6 +489,9 @@ declare module WinJS {
 
         class PrivateMenuCommand extends MenuCommand {
             _disposed;
+            _toggleSpan;
+            _labelSpan;
+            _flyoutSpan;
         }
 
         class PrivateMenu extends Menu {

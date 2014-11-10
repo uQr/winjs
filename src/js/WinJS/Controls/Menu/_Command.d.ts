@@ -41,7 +41,6 @@ export declare class MenuCommand {
     **/
     removeEventListener(type: string, listener: Function, useCapture?: boolean): void;
 
-
     /**
      * Handles the menu click event
     **/

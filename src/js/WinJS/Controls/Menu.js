@@ -195,9 +195,6 @@ define([
                     }
 
                     this._showCommands(commands, true);
-                    if (!this.hidden) {
-                        this._checkMenuCommands();
-                    }
                 },
 
                 hideCommands: function (commands) {
@@ -215,9 +212,6 @@ define([
                     }
 
                     this._hideCommands(commands, true);
-                    if (!this.hidden) {
-                        this._checkMenuCommands();
-                    }
                 },
 
                 showOnlyCommands: function (commands) {
@@ -264,8 +258,9 @@ define([
                     // Call flyout show
                     this._baseFlyoutShow(anchor, placement, alignment);
 
-                    // We need to check for toggles after we send the beforeshow event,
-                    // so the developer has a chance to show or hide more commands.
+                    // We need to adjust MenuCommand layouts based on the various types of 
+                    // commands visible in our Menu, but only after we send the beforeshow 
+                    // event, so the developer has a chance to show or hide more commands.
                     // Flyout's _findPosition will make that call.
                 },
 
@@ -295,8 +290,14 @@ define([
 
                 },
 
-                // Called by flyout's _findPosition so that application can update it status
-                // we do the test and we can then fix this last-minute before showing.
+                _commandsUpdated: function Menu_commandsUpdated(){
+                    if (!this.hidden) {
+                        this._checkMenuCommands();
+                    }
+                },
+
+                // Called when we add or show commands or by flyout's _findPosition when the Menu is showing.
+                // so that application can update it status we do the test and we can then fix this last-minute before showing.
                 _checkMenuCommands: function Menu_checkMenuCommands() {
                     var menuCommands = this._element.querySelectorAll(".win-command"),
                         hasToggleCommands = false,
@@ -397,17 +398,17 @@ define([
                                     });
                             }
 
-                            //this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
+                            this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
                         }
                     }
                 },
 
-                //_handleMouseMove: function Menu_handleMouseMove() {
-                //    /*jshint validthis: true */
-                //    if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
-                //        this.element.focus();
-                //    }
-                //},
+                _handleMouseMove: function Menu_handleMouseMove() {
+                    /*jshint validthis: true */
+                    if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
+                        this.element.focus();
+                    }
+                },
 
                 _handleMouseOut: function Menu_handleMouseOut(event) {
                     /*jshint validthis: true */
@@ -421,7 +422,7 @@ define([
                         if (this._hoverPromise) {
                             this._hoverPromise.cancel();
                         }
-                        //this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
+                        this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
                     }
                 },
 
