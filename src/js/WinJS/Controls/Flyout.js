@@ -508,10 +508,12 @@ define([
                     }
                 },
 
+                _isLightDismissible: function Flyout_isLightDismissible() {
+                    return (!this.hidden);
+                },
+
                 _lightDismiss: function Flyout_lightDismiss() {
-                    if (this._isLightDismissible()) {
-                        _Overlay._Overlay._lightDismissFlyouts();
-                    }
+                    Flyout._cascadeManager.collapseAll();
                 },
 
                 // Find our new flyout position.
@@ -1032,10 +1034,6 @@ define([
             },
             {
                 _cascadeManager: new _CascadeManager(),
-                _lightDismissFlyouts: function Flyout_lightDismissFlyouts() {
-                    Flyout._cascadeManager.collapseAll();
-                }
-
             });
             return Flyout;
         })

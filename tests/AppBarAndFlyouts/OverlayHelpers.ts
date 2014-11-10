@@ -5,7 +5,6 @@ module OverlayHelpers {
     "use strict";
 
      export function show(overlay): WinJS.Promise<any> {
-         //return Helper.waitForFocusWithin(overlay.element, function () { overlay.show(); });
          return new WinJS.Promise(function (c, e, p): void {
              function afterShow(): void {
                  overlay.removeEventListener("aftershow", afterShow, false);

@@ -14,7 +14,7 @@ module CorsicaTests {
         cascadeManager = WinJS.UI.Flyout['_cascadeManager'], // TODO what's the right pattern for this (static) in TS?
         chainCounter;
 
-    var DEFAULT_CHAIN_SIZE = 6; // default
+    var DEFAULT_CHAIN_SIZE = 6;
 
 
     function showFlyout(flyout: WinJS.UI.Flyout): WinJS.Promise<any> {

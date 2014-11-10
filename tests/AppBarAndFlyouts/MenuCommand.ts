@@ -11,8 +11,6 @@ module CorsicaTests {
 
     "use strict";
 
-    var _Constants = Helper.require("WinJS/Controls/AppBar/_Constants");
-
     export class MenuCommandTests {
 
         tearDown() {
@@ -232,88 +230,6 @@ module CorsicaTests {
             var mc = new WinJS.UI.MenuCommand(button);
             LiveUnit.Assert.isFalse(button.querySelector("#testMenuCommandRemovesOldInnerHTML"), "MenuCommand buttons should lose previous innerHTML on control Instantiation");
 
-        }
-
-        // Tests that all visible commands in a menu adjust their layout relative to what other types of commands are also visible in the menu.
-        testMenuCommandsInMenu = function (complete) {
-
-            var verifyCommandsInMenu = function verifyCommandsInMenu(menu, buttonCommands = [], toggleCommands = [], flyoutCommands = [], separatorCommands = []) {
-                return new WinJS.Promise(function (completePromise) {
-
-                    var allCommands = buttonCommands.concat(toggleCommands).concat(flyoutCommands).concat(separatorCommands);
-                    menu.showOnlyCommands(allCommands);
-
-                    function menu_onaftershow() {
-                        allCommands.forEach(function (command) {
-                            if (command.type !== _Constants.typeSeparator) {
-                                var toggleSpanStyle = getComputedStyle(command._toggleSpan);
-                                var flyoutSpanStyle = getComputedStyle(command._flyoutSpan);
-
-                                if (toggleCommands && toggleCommands.length) {
-                                    LiveUnit.Assert.areNotEqual(toggleSpanStyle.display, "none",
-                                        "When a menu contains a visible toggle command, EVERY command should reserve extra width for the toggle span");
-                                    if (command.type === _Constants.typeToggle && command.selected) {
-                                        LiveUnit.Assert.areEqual(toggleSpanStyle.visibility, "visible");
-                                    } else {
-                                        LiveUnit.Assert.areEqual(toggleSpanStyle.visibility, "hidden");
-                                    }
-                                } else {
-                                    LiveUnit.Assert.isTrue(toggleSpanStyle.display === "none",
-                                        "When a menu does not contain visible toggle commands, NO command should reserve space for the toggle span");
-                                }
-
-                                if (flyoutCommands && flyoutCommands.length) {
-                                    LiveUnit.Assert.areNotEqual(flyoutSpanStyle.display, "none",
-                                        "When a menu contains a visible flyout command, EVERY command should reserve extra width for the flyout span");
-                                    if (command.type === _Constants.typeFlyout) {
-                                        LiveUnit.Assert.areEqual(flyoutSpanStyle.visibility, "visible");
-                                    } else {
-                                        LiveUnit.Assert.areEqual(flyoutSpanStyle.visibility, "hidden");
-                                    }
-                                } else {
-                                    LiveUnit.Assert.isTrue(flyoutSpanStyle.display === "none",
-                                        "When a menu does not contain visible flyout commands, NO command should reserve space for the flyout span");
-                                }
-                            }
-                        });
-                        menu.onafterhide = completePromise;
-                        menu.hide();
-
-                    };
-                    menu.onaftershow = menu_onaftershow;
-                    menu.show(menu.element);
-                });
-            }
-
-            // commands
-            var b1 = new WinJS.UI.MenuCommand(null, { type: 'button' }),
-                t1 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected: true }),
-                t2 = new WinJS.UI.MenuCommand(null, { type: 'toggle', selected: false }),
-                f1 = new WinJS.UI.MenuCommand(null, { type: 'flyout' }),
-                s1 = new WinJS.UI.MenuCommand(null, { type: 'separator' }),
-                commands = [b1, t1, t2, f1, s1];
-
-            var menu = new WinJS.UI.Menu(null, { commands: commands });
-            document.body.appendChild(menu.element);
-
-            verifyCommandsInMenu(menu, [], [], [], []).then(function () {
-                return verifyCommandsInMenu(menu, [b1], [t1, t2], [f1], [s1]);
-            }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [], [], [s1]);
-                }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t1], [], []);
-                }).then(function () {
-                    return verifyCommandsInMenu(menu, [], [t2], [f1], []);
-                }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [t2], [f1], [s1]);
-                }).then(function () {
-                    return verifyCommandsInMenu(menu, [b1], [], [f1], []);
-                }).then(function () {
-                    return verifyCommandsInMenu(menu, [], [t1], [f1], []);
-                }).done(function () {
-                    OverlayHelpers.disposeAndRemove(menu.element);
-                    complete();
-                });
         }
     }
 }

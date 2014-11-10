@@ -122,9 +122,6 @@ define([
                     }
                 }
 
-                //this._handleMouseMoveBound = this._handleMouseMove.bind(this);
-                //this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
-                //this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
             }, {
                 /// <field type="String" locid="WinJS.UI.MenuCommand.id" helpKeyword="WinJS.UI.MenuCommand.id" isAdvanced="true">
                 /// Gets the  ID of the MenuCommand.
@@ -456,7 +453,6 @@ define([
                         rightKey = rtl ? Key.leftArrow : Key.rightArrow;
 
                     if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
-
                         // Bubble private 'invoked' event to Menu
                         this._sendEvent(_Constants.menuCommandInvokedEvent, { actionCommitted: false });
 
@@ -464,82 +460,6 @@ define([
                         event.preventDefault();
                     }
                 },
-
-
-                //_hoverPromise: null,
-                //_handleMouseOver: function MenuCommand_handleMouseOver(event) {
-                //    /*jshint validthis: true */
-                //    var that = this;
-                //    if (this && this.element && this.element.focus) {
-                //        this.element.focus();
-
-                //        if (this.type === _Constants.typeFlyout && this.flyout && this.flyout.hidden) {
-                //            this._hoverPromise = this._hoverPromise || Promise.timeout(_Constants.menuCommandHoverDelay).then(
-                //                function () {
-                //                    if (!that._parentFlyout || !that._parentFlyout.hidden) {
-                //                        invokeFlyout(that);
-                //                    }
-                //                    that._hoverPromise = null;
-                //                },
-                //                function () {
-                //                    that._hoverPromise = null;
-                //                });
-                //        }
-
-                //        this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
-                //    }
-                //},
-
-                //_handleMouseMove: function MenuCommand_handleMouseMove() {
-                //    /*jshint validthis: true */
-                //    if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
-                //        this.element.focus();
-                //    }
-                //},
-
-                //_handleMouseOut: function MenuCommand_handleMouseOut() {
-                //    /*jshint validthis: true */
-                //    var parentMenuEl = this._getParentMenu(this.element).element;
-                //    if (parentMenuEl
-                //     && this.element === _Global.document.activeElement
-                //     && parentMenuEl.focus) {
-                //        // Menu gives focus to the menu itself
-                //        parentMenuEl.focus();
-                //    }
-                //    this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
-                //    if (this._hoverPromise) {
-                //        this._hoverPromise.cancel();
-                //    }
-                //},
-
-                ////_getParentMenu: function MenuCommand_getParentMenu(element) {
-                ////    while (element && !_ElementUtilities.hasClass(element, _Constants.menuClass)) {
-                ////        element = element.parentElement;
-                ////    }
-
-                ////    return element;
-                ////},
-
-                ////_handleFocusIn: function MenuCommand_handleFocusIn (e) {
-                ////    if (this.flyout.element.contains(e.relatedTerget)) {
-                ////        if (flyout.hidden) {
-                ////            // The assumption is that focus is coming back into the menuCommand because 
-                ////            // its submenu flyout was closed and focus has been restored to this MenuCommand
-                ////            clearSelectionStyles();
-                ////        }
-                ////    }
-                ////},
-                ////_handleFocusOut: function MenuCommand_handleFocusOut(e) {
-                ////    if (!this.flyout.element.contains(e.relatedTerget)) {
-                ////        // If focus isn't going into the flyout, clear selection and hide the flyout.
-                ////        // The assumption is that the user has moved the mouse off of the currentMenuCommand
-                ////        clearSelectionStyles();
-                ////        this.flyout.hide();
-                ////    } else {
-                ////        // Focus is going into the flyout
-                ////        applySelectionStyles();
-                ////    }
-                ////},
             });
         })
     });
