@@ -126,10 +126,8 @@ define([
                     return this._cascadingStack[index];
                 },
                 _handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(event) {
-                    /*jshint validthis: true */
-
                     // When a flyout in the cascade recieves focus, we close all subflyouts beneath it.
-                    if (!event._handled) {
+                    if (!event._winHandled) {
                         var index = this.indexOfElement(event.target);
                         if (index >= 0) {
                             var subFlyout = this.getAt(index + 1);
@@ -138,18 +136,14 @@ define([
                     }
                 },
                 _handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(event) {
-                    /*jshint validthis: true */
-
                     // Hide the entire cascade if focus has moved somewhere outside of it
-                    if (!event._handled) {
+                    if (!event._winHandled) {
                         if (this.indexOfElement(event.relatedTarget) < 0) {
                             this.collapseAll();
                         }
                     }
                 },
                 _handleKeyDown: function _CascadeManager_handleKeyDown(event) {
-                    /*jshint validthis: true */
-
                     var rtl = _Global.getComputedStyle(event.target).direction === "rtl",
                         leftKey = rtl ? Key.rightArrow : Key.leftArrow,
                         target = event.target;
@@ -162,6 +156,7 @@ define([
                             // Show a focus rect where focus is restored.
                             subFlyout._keyboardInvoked = true;
                             this.collapseFlyout(subFlyout);
+                            // Prevent document scrolling
                             event.preventDefault();
                         }
                     } else if (event.keyCode === Key.alt || event.keyCode === Key.F10) {
@@ -988,7 +983,7 @@ define([
                 _handleFocusChange: function Flyout_handleFocusChange(event) {
                     if (this.element.contains(event.relatedTarget)) {
                         // Focus is only moving between elements in the flyout. Doesn't need to be handled by cascadeManager.
-                        event._handled = true;
+                        event._winHandled = true;
                     }
                 },
 

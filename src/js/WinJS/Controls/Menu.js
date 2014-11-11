@@ -59,6 +59,12 @@ define([
                 }
             }
 
+            function isCommandInMenu(object) {
+                // Verifies that we have a menuCommand element and that it is in a Menu.
+                var element = object.element || object;
+                return _ElementUtilities._matchesSelector(element, "." + _Constants.menuClass + " " + "." + _Constants.menuCommandClass);
+            }
+
             var Menu = _Base.Class.derive(Flyout.Flyout, function Menu_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.Menu.Menu">
                 /// <summary locid="WinJS.UI.Menu.constructor">
@@ -290,14 +296,13 @@ define([
 
                 },
 
-                _commandsUpdated: function Menu_commandsUpdated(){
+                _commandsUpdated: function Menu_commandsUpdated() {
                     if (!this.hidden) {
                         this._checkMenuCommands();
                     }
                 },
 
-                // Called when we add or show commands or by flyout's _findPosition when the Menu is showing.
-                // so that application can update it status we do the test and we can then fix this last-minute before showing.
+                // Called when we show/hide commands or by flyout's _findPosition when the Menu is showing.
                 _checkMenuCommands: function Menu_checkMenuCommands() {
                     var menuCommands = this._element.querySelectorAll(".win-command"),
                         hasToggleCommands = false,
@@ -320,15 +325,7 @@ define([
                     _ElementUtilities[hasFlyoutCommands ? 'addClass' : 'removeClass'](this._element, _Constants.menuContainsFlyoutCommandClass);
                 },
 
-                _isCommandInMenu: function Menu_isCommandInMenu(object) {
-                    // Verifies that we have a menuCommand element and that it is in a Menu.
-                    var element = object.element || object;
-                    return _ElementUtilities._matchesSelector(element, "." + _Constants.menuClass + " " + "." + _Constants.menuCommandClass);
-                },
-
                 _handleKeyDown: function Menu_handleKeyDown(event) {
-                    /*jshint validthis: true */
-
                     if (event.keyCode === Key.escape) {
                         // Show a focus rect on what we move focus to
                         this._keyboardInvoked = true;
@@ -352,12 +349,9 @@ define([
                     }
                 },
 
-                /******* START MENUCOMMAND HANDLERS.... NEED TO ADD EVENT LISTENER THESE  */
-
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
-                    /*jshint validthis: true */
                     var target = event.target;
-                    if (this._isCommandInMenu(target)) {
+                    if (isCommandInMenu(target)) {
                         var command = target.winControl;
                         if (command) {
                             if (command._type === _Constants.typeFlyout && command._flyout) {
@@ -374,10 +368,8 @@ define([
 
                 _hoverPromise: null,
                 _handleMouseOver: function Menu_handleMouseOver(event) {
-                    /*jshint validthis: true */
-
                     var target = event.target;
-                    if (this._isCommandInMenu(target)) {
+                    if (isCommandInMenu(target)) {
                         var command = target.winControl,
                             that = this;
 
@@ -404,17 +396,14 @@ define([
                 },
 
                 _handleMouseMove: function Menu_handleMouseMove() {
-                    /*jshint validthis: true */
                     if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
                         this.element.focus();
                     }
                 },
 
                 _handleMouseOut: function Menu_handleMouseOut(event) {
-                    /*jshint validthis: true */
-
                     var target = event.target;
-                    if (this._isCommandInMenu(target)) {
+                    if (isCommandInMenu(target)) {
                         if (target === _Global.document.activeElement) {
                             // Menu gives focus to the menu itself
                             this.element.focus();

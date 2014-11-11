@@ -427,7 +427,6 @@ define([
                 },
 
                 _handleClick: function MenuCommand_handleClick(event) {
-                    /*jshint validthis: true */
                     var command = this;
                     if (command) {
                         var actionCommitted = true;
