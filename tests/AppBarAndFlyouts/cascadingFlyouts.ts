@@ -277,7 +277,7 @@ module CorsicaTests {
                     otherFlyout = generateFlyoutChain(anchor, 1)[0];
 
                 showFlyout(otherFlyout).then(() => {
-                    var expectedCascade = flyoutChain.slice(0, requiredSize).concat(otherFlyout);
+                    var expectedCascade = flyoutChain.slice(0, requiredSize - 1).concat(otherFlyout);
                     verifyCascade(expectedCascade);
                     complete();
                 });
