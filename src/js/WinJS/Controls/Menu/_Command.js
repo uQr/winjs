@@ -441,7 +441,7 @@ define([
 
                     //Bubble private 'invoked' event to Menu
                     this._sendEvent(_Constants.menuCommandInvokedEvent, {
-                        command: command,
+                        command: this,
                         delegate: this.onclick ? delegateClick : null
                     });
                 },

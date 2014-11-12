@@ -409,7 +409,7 @@ define([
 
                 _handleMouseOut: function Menu_handleMouseOut(event) {
                     var target = event.target;
-                    if (isCommandInMenu(target)) {
+                    if (isCommandInMenu(target) && !target.contains(event.relatedTarget)) {
                         if (target === _Global.document.activeElement) {
                             // Menu gives focus to the menu itself
                             this.element.focus();

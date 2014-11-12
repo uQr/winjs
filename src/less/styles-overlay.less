@@ -567,71 +567,74 @@ Menu control.
 Menu commands.
 */
 .win-menu button.win-command {
-    #flex > .display-flex();
-    #flex > .flex-direction(row);
-    #flex > .flex-wrap(nowrap);
-    #flex > .align-items(center);
-        
+    display: block;
     padding-top: 11px; 
     padding-bottom: 13px;
     min-height: 44px;
     margin-left: 0;
     margin-right: 0;
-    width: 100%;
     text-align: left;
     .win-type-body();
 
     &:focus {
         outline: none;
     }
+
+    .win-menucommand-liner {
+        #flex > .display-flex();
+        #flex > .flex-direction(row);
+        #flex > .flex-wrap(nowrap);
+        #flex > .align-items(center);
+        width:100%;
     
-    .win-toggleicon, .win-flyouticon {
-        #flex > .flex(0; 0; auto);
-        display: none;
-        visibility: hidden;
-        font-size: 16px;
-        font-family: "Segoe UI Symbol", "Symbols";
-    }
-    .win-toggleicon {
-        margin-left: 12px;
-        &::before {
-            content: "\E0E7";
+        .win-toggleicon, .win-flyouticon {
+            #flex > .flex(0; 0; auto);
+            display: none;
+            visibility: hidden;
+            font-size: 16px;
+            font-family: "Segoe UI Symbol", "Symbols";
         }
-    }
-    .win-flyouticon {
-        margin-left: 12px;
-        margin-right: 16px;
-        &::before {
-            content: "\E26B"; 
-        }
-    }
-    .win-label {
-        #flex > .flex(1; 1; auto);
-        font-size: 15px;
-        line-height: inherit;
-        min-width: 112px;
-        max-width: none;
-        white-space: nowrap;
-        text-overflow: clip;
-        margin: 0px;
-        padding: 0px 12px;
-    }
-
-    .RTL({
-        text-align: right;
-
         .win-toggleicon {
-            margin-left: 0px;
-            margin-right: 12px;
-        }
-        .win-flyouticon {
-            margin-left: 16px;
-            margin-right: 12px;
+            margin-left: 12px;
             &::before {
-                content: "\E26C"; 
+                content: "\E0E7";
             }
         }
-    });
+        .win-flyouticon {
+            margin-left: 12px;
+            margin-right: 16px;
+            &::before {
+                content: "\E26B"; 
+            }
+        }
+        .win-label {
+            #flex > .flex(1; 1; auto);
+            font-size: 15px;
+            line-height: inherit;
+            min-width: 112px;
+            max-width: none;
+            white-space: nowrap;
+            text-overflow: clip;
+            margin: 0px;
+            padding: 0px 12px;
+        }
+
+        .RTL({
+            text-align: right;
+
+            .win-toggleicon {
+                margin-left: 0px;
+                margin-right: 12px;
+            }
+            .win-flyouticon {
+                margin-left: 16px;
+                margin-right: 12px;
+                &::before {
+                    content: "\E26C"; 
+                }
+            }
+        });
+     }
 }
 
 .win-menu hr.win-command {
@@ -646,12 +649,12 @@ Menu commands.
 /*
 Menu toggle and flyout commands.
 */
-.win-menu-containstogglecommand button.win-command .win-toggleicon,
-.win-menu-containsflyoutcommand button.win-command .win-flyouticon {
+.win-menu-containstogglecommand button.win-command .win-menucommand-liner .win-toggleicon,
+.win-menu-containsflyoutcommand button.win-command .win-menucommand-liner .win-flyouticon {
     display: inline-block;
 }
-.win-menu-containstogglecommand button.win-command-toggle[aria-checked=true] .win-toggleicon,
-.win-menu-containsflyoutcommand button.win-command-flyout .win-flyouticon {
+.win-menu-containstogglecommand button.win-command-toggle[aria-checked=true] .win-menucommand-liner .win-toggleicon,
+.win-menu-containsflyoutcommand button.win-command-flyout .win-menucommand-liner .win-flyouticon {
     visibility: visible;
 }
 
