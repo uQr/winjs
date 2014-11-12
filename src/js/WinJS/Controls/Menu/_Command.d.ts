@@ -44,7 +44,7 @@ export declare class MenuCommand {
     /**
      * Handles the menu click event
     **/
-    _handleMenuClick(event: any): void;
+    _handleClick(event: any): void;
 
 
     /**

@@ -232,33 +232,33 @@ module CorsicaTests {
                 return hideFlyout(flyout);
 
             }).then(() => {
-                    verifyCascade(expectedCascadeAfterHiding);
-                    LiveUnit.Assert.areEqual(document.activeElement, expectedFocusTarget, "The flyout specified to hide should have put focus on whatever element it had originally taken it from.");
+                verifyCascade(expectedCascadeAfterHiding);
+                LiveUnit.Assert.areEqual(document.activeElement, expectedFocusTarget, "The flyout specified to hide should have put focus on whatever element it had originally taken it from.");
 
-                    // Hide Flyout in the middle of the cascade
-                    index = Math.floor(flyoutChain.length / 2)
-                    flyout = flyoutChain[index];
-                    expectedFocusTarget = flyout._previousFocus; // TODO what's the right pattern for this in TS?
-                    expectedCascadeAfterHiding = flyoutChain.slice(0, index);
-                    return hideFlyout(flyout);
+                // Hide Flyout in the middle of the cascade
+                index = Math.floor(flyoutChain.length / 2)
+                flyout = flyoutChain[index];
+                expectedFocusTarget = flyout._previousFocus; // TODO what's the right pattern for this in TS?
+                expectedCascadeAfterHiding = flyoutChain.slice(0, index);
+                return hideFlyout(flyout);
 
-                }).then(() => {
-                    verifyCascade(expectedCascadeAfterHiding);
-                    LiveUnit.Assert.areEqual(document.activeElement, expectedFocusTarget, "The flyout specified to hide should have put focus on whatever element it had originally taken it from.");
+            }).then(() => {
+                verifyCascade(expectedCascadeAfterHiding);
+                LiveUnit.Assert.areEqual(document.activeElement, expectedFocusTarget, "The flyout specified to hide should have put focus on whatever element it had originally taken it from.");
 
-                    // Hide Flyout at the beginning of the cascade
-                    index = 0;
-                    flyout = flyoutChain[index];
-                    expectedFocusTarget = _rootAnchor;
-                    expectedCascadeAfterHiding = flyoutChain.slice(0, index);
-                    return hideFlyout(flyout);
+                // Hide Flyout at the beginning of the cascade
+                index = 0;
+                flyout = flyoutChain[index];
+                expectedFocusTarget = _rootAnchor;
+                expectedCascadeAfterHiding = flyoutChain.slice(0, index);
+                return hideFlyout(flyout);
 
-                }).then(() => {
-                    verifyCascade(expectedCascadeAfterHiding);
-                    LiveUnit.Assert.areEqual(document.activeElement, expectedFocusTarget, "The flyout specified to hide should have put focus on whatever element it had originally taken it from.");
+            }).then(() => {
+                verifyCascade(expectedCascadeAfterHiding);
+                LiveUnit.Assert.areEqual(document.activeElement, expectedFocusTarget, "The flyout specified to hide should have put focus on whatever element it had originally taken it from.");
 
-                    complete();
-                });
+                complete();
+            });
         }
 
         testShowingAFlyout_AnchoredToAFlyoutInTheMiddleOfTheCascade_HidesOtherSubFlyouts = function (complete) {
@@ -302,10 +302,10 @@ module CorsicaTests {
             }).then(() => {
                     verifyCascade([otherFlyout]);
                     return hideFlyout(otherFlyout);
-                }).done(() => {
-                    LiveUnit.Assert.isTrue(_rootAnchor.contains(<HTMLElement>document.activeElement), "Hiding all flyouts in the cascade should return focus to the element that originally had it.");
-                    complete();
-                });
+            }).done(() => {
+                LiveUnit.Assert.isTrue(_rootAnchor.contains(<HTMLElement>document.activeElement), "Hiding all flyouts in the cascade should return focus to the element that originally had it.");
+                complete();
+            });
         }
 
         testFlyoutAlwaysHidesSubFlyoutsWhenItReceivesFocus = function (complete) {

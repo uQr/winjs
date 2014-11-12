@@ -343,14 +343,14 @@ module CorsicaTests {
             }
 
             function testCommandUpdates(commands: Array<WinJS.UI.PrivateMenuCommand>) {
-                    menu.showOnlyCommands(commands, false);
-                    verifyCommandLayouts(); 
+                menu.showOnlyCommands(commands, false);
+                verifyCommandLayouts();
 
-                    menu.hideCommands(commands);
-                    verifyCommandLayouts(); 
+                menu.hideCommands(commands);
+                verifyCommandLayouts();
 
-                    menu.showCommands(commands);
-                    verifyCommandLayouts(); 
+                menu.showCommands(commands);
+                verifyCommandLayouts();
             };
 
             // commands

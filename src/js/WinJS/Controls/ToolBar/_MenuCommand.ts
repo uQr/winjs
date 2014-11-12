@@ -14,8 +14,8 @@ export class _MenuCommand extends _MenuCommandBase.MenuCommand {
         super(element, options);
     }
 
-    _handleMenuClick(event: any) {
+    _handleClick(event: any) {
         this._beforeOnClick && this._beforeOnClick(event);
-        super._handleMenuClick(event);
+        super._handleClick(event);
     }
 }

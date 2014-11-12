@@ -405,17 +405,24 @@ define([
                         }
                     }
 
+                    // Create our inner HTML. We will set aria values on the button itself further down in the constructor.
                     this._element.innerHTML =
-                        '<span class="win-toggleicon" aria-hidden="true"></span>' +
-                        '<span class="win-label" aria-hidden="true"></span>' +
-                        '<span class="win-flyouticon" aria-hidden="true"></span>';
+                        '<div class="win-menucommand-liner">' +
+                            '<span class="win-toggleicon" aria-hidden="true"></span>' +
+                            '<span class="win-label" aria-hidden="true"></span>' +
+                            '<span class="win-flyouticon" aria-hidden="true"></span>' +
+                        '</div>';
                     this._element.type = "button";
 
-                    this._toggleSpan = this._element.querySelector(".win-toggleicon");
-                    this._labelSpan = this._element.querySelector(".win-label");
-                    this._flyoutSpan = this._element.querySelector(".win-flyouticon");
+                    // The purpose of menuCommandLiner is to lay out the MenuCommand's children in a flexbox. Ideally, this flexbox would
+                    // be on MenuCommand.element. However, firefox lays out buttons with display:flex differently.
+                    // Firefox bug 1014285 (Button with display:inline-flex doesn't layout properly)
+                    // https://bugzilla.mozilla.org/show_bug.cgi?id=1014285
+                    this._menuCommandLiner = this._element.firstElementChild;
+                    this._toggleSpan = this._menuCommandLiner.firstElementChild;
+                    this._labelSpan = this._toggleSpan.nextElementSibling;
+                    this._flyoutSpan = this._labelSpan.nextElementSibling;
 
-                    // Label 'textContent' is added later by caller
                 },
 
                 _sendEvent: function MenuCommand_sendEvent(eventName, detail) {
@@ -426,24 +433,17 @@ define([
                     }
                 },
 
-                _handleClick: function MenuCommand_handleClick(event) {
-                    var command = this;
-                    if (command) {
-                        var actionCommitted = true;
-
-                        if (command._type === _Constants.typeToggle) {
-                            command.selected = !command.selected;
-                        } else if (command._type === _Constants.typeFlyout && command._flyout) {
-                            actionCommitted = false;
-                        }
-
-                        if (command.onclick) {
-                            command.onclick(event);
-                        }
-
-                        // Bubble private 'invoked' event to Menu
-                        this._sendEvent(_Constants.menuCommandInvokedEvent, { actionCommitted: actionCommitted });
+                _handleClick: function MenuCommand_handleClick(clickEvent) {
+                    var that = this;
+                    function delegateClick() {
+                        that.onclick(clickEvent);
                     }
+
+                    //Bubble private 'invoked' event to Menu
+                    this._sendEvent(_Constants.menuCommandInvokedEvent, {
+                        command: command,
+                        delegate: this.onclick ? delegateClick : null
+                    });
                 },
 
                 _handleKeyDown: function MenuCommand_handleKeyDown(event) {
@@ -453,7 +453,7 @@ define([
 
                     if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
                         // Bubble private 'invoked' event to Menu
-                        this._sendEvent(_Constants.menuCommandInvokedEvent, { actionCommitted: false });
+                        this._sendEvent(_Constants.menuCommandInvokedEvent, { command: this });
 
                         // Prevent the page from scrolling
                         event.preventDefault();

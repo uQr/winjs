@@ -350,19 +350,26 @@ define([
                 },
 
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
-                    var target = event.target;
-                    if (isCommandInMenu(target)) {
-                        var command = target.winControl;
-                        if (command) {
-                            if (command._type === _Constants.typeFlyout && command._flyout) {
-                                invokeSubFlyout(command);
-                            }
+                    var command = event.detail.command;
+                    if (isCommandInMenu(command)) {
 
-                            // Close menu after command invoke
-                            if (event.detail.actionCommitted) {
-                                this.hide();
-                            }
+                        var shouldHide = true;
+
+                        if (command._type === _Constants.typeToggle) {
+                            command.selected = !command.selected;
+                        } else if (command._type === _Constants.typeFlyout && command._flyout) {
+                            invokeSubFlyout(command);
+                            shouldHide = false;
                         }
+
+                        if (event.delegate) {
+                            event.delegate();
+                        }
+
+                        if (shouldHide) {
+                            this.hide();
+                        }
+
                     }
                 },
 
@@ -373,7 +380,6 @@ define([
                         var command = target.winControl,
                             that = this;
 
-                        // var that = this;
                         if (target.focus) {
                             target.focus();
 
