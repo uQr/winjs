@@ -82,7 +82,6 @@ declare module WinJS {
 
         function _setHasWinRT(value: boolean);
         var _selectionPartsSelector;
-        var _supportsTouchActionCrossSlide;
 
         function _writeProfilerMark(mark: string);
 
@@ -725,7 +724,6 @@ declare module WinJS {
         var _RIGHT_MSPOINTER_BUTTON;
         var _selectedClass;
         var _keyboardSeenLast;
-        var _swipeableClass;
         var _itemFocusOutlineClass;
         var _itemBoxClass;
         var _itemClass;
@@ -744,7 +742,6 @@ declare module WinJS {
         var _progressClass;
         var _nonDraggableClass;
         var _nonSelectableClass;
-        var _nonSwipeableClass;
         var _INVALID_INDEX;
 
         var _seenUrlsMaxSize: number;
