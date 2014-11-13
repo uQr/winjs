@@ -61,10 +61,12 @@ define([
             },
             {
                 appendFlyout: function _CascadeManager_appendFlyout(flyoutToAdd) {
+                    // PRECONDITION: flyoutToAdd must not already be in the cascade.
+
                     // IF the anchor element for flyoutToAdd is contained within another flyout, 
                     // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
                     //  Remove from the cascadingStack, any subflyout descendants of the parent flyout.
-                    // ELSE flyoutToAdd isn't part of the existing cascade
+                    // ELSE flyoutToAdd isn't anchored to any of the Flyouts in the existing cascade
                     //  Collapse the entire cascadingStack to start a new cascade.
                     // FINALLY: 
                     //  add flyoutToAdd to the end of the cascading stack. Monitor it for events.
