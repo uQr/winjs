@@ -447,9 +447,9 @@ define([
                         _Overlay._Overlay._showClickEatingDivFlyout();
                     }
 
-                    // If we're animating (eg baseShow is going to fail), then don't mess up our current state.
-                    // Queue us up to wait for current animation to finish first.
-                    if (this._element.winAnimating) {
+                    // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of a updating the cascade,
+                    // then don't mess up our current state. Queue us up to wait for current operation to finish first.
+                    if (this._element.winAnimating || Flyout._cascadeManager._reentrancyLock) {
                         this._doNext = "show";
                         this._retryLast = true;
                         return;
