@@ -91,15 +91,19 @@ define([
                             _ElementUtilities._removeEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
                             _ElementUtilities._removeEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
                             subFlyout.element.removeEventListener("keydown", this._handleKeyDown_bound, false);
-                            subFlyout.hide();
+                            subFlyout._hide();
                         }
 
                         this._reentrancyLock = false;
                     }
                 },
-                collapseAll: function _CascadeManager_collapseAll() {
+                collapseAll: function _CascadeManager_collapseAll(keyboardInvoked) {
                     // Empties the _cascadingStack and hides all flyouts.
-                    this.collapseFlyout(this.getAt(0));
+                    var headFlyout = this.getAt(0);
+                    if (headFlyout) {
+                        headFlyout._keyboardInvoked = keyboardInvoked;
+                        this.collapseFlyout(headFlyout);
+                    }
                 },
                 indexOf: function _CascadeManager_indexOf(flyout) {
                     return this._cascadingStack.indexOf(flyout);
@@ -160,7 +164,8 @@ define([
                             event.preventDefault();
                         }
                     } else if (event.keyCode === Key.alt || event.keyCode === Key.F10) {
-                        this.collapseAll();
+                        // Show a focus rect where focus is restored.
+                        this.collapseAll(true);
                     }
                 },
             });
