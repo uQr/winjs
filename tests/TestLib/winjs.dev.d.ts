@@ -289,6 +289,7 @@ declare module WinJS {
             _repeaterElement: HTMLDivElement;
 
             _inputOrImeChangeHandler(eventArg: Event);
+            _tryGetInputContext(): MSInputMethodContext;
 
             static _sortAndMergeHits(hitsProvided?);
             static _EventNames: {
@@ -767,6 +768,10 @@ declare module WinJS {
         var _LISTVIEW_PROGRESS_DELAY;
         var _Overlay;
         var _AppBarCommandsLayout;
+
+        module AutoFocus {
+            function _autoFocus(direction: string, referenceRect?: IRect): void;
+        }
 
         module Pages {
             function _remove(frag);
