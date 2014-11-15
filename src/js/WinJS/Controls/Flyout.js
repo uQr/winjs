@@ -61,7 +61,7 @@ define([
             },
             {
                 appendFlyout: function _CascadeManager_appendFlyout(flyoutToAdd) {
-                    // PRECONDITION: flyoutToAdd must not already be in the cascade.
+                    // PRECONDITION: flyoutToAdd must not already be in the cascade. To do otherwise is undefined.
 
                     // IF the anchor element for flyoutToAdd is contained within another flyout, 
                     // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
@@ -249,8 +249,8 @@ define([
                     this._currentAnimateIn = this._flyoutAnimateIn;
                     this._currentAnimateOut = this._flyoutAnimateOut;
 
-                    _ElementUtilities._addEventListener(this.element, "focusin", this._handleFocusChange.bind(this), false);
-                    _ElementUtilities._addEventListener(this.element, "focusout", this._handleFocusChange.bind(this), false);
+                    _ElementUtilities._addEventListener(this.element, "focusin", this._handleFocusIn.bind(this), false);
+                    _ElementUtilities._addEventListener(this.element, "focusout", this._handleFocusOut.bind(this), false);
 
                     // Make sure additional _Overlay event handlers are hooked up
                     this._handleOverlayEventsForFlyoutOrSettingsFlyout();
@@ -351,7 +351,7 @@ define([
 
                 _hide: function Flyout_hide() {
 
-                    // Also close all subflyout descendants in the cascade.
+                    // Removes all subflyout descendants of this Flyout from the cascade.
                     Flyout._cascadeManager.collapseFlyout(this);
 
                     if (this._baseHide()) {
@@ -490,24 +490,24 @@ define([
                         Flyout._cascadeManager.appendFlyout(this);
 
                         // Store what had focus before showing the Flyout.
-                        // This must happen after we hide all other flyouts so that we store the correct element.
+                        // This must happen after we've appended this Flyout to the cascade.
                         this._previousFocus = _Global.document.activeElement;
+
+                        if (!_ElementUtilities.hasClass(this.element, _Constants.menuClass)) {
+                            // Put focus on the first child in the Flyout
+                            this._focusOnFirstFocusableElementOrThis();
+                        } else {
+                            // Make sure the menu has focus, but don't show a focus rect
+                            _Overlay._Overlay._trySetActive(this._element);
+                        }
                     }
                 },
 
                 _endShow: function Flyout_endShow() {
                     // Remember if the IHM was up since we may need to hide it when the flyout hides.
-                    // This check needs to happen after the IHM has a chance to hide itself after we force hide
-                    // all other visible Flyouts.
+                    // This check needs to happen after we've hidden any other visible flyouts from 
+                    // the cascasde as aresult of showing this flyout.
                     this._keyboardWasUp = _Overlay._Overlay._keyboardInfo._visible;
-
-                    if (!_ElementUtilities.hasClass(this.element, _Constants.menuClass)) {
-                        // Put focus on the first child in the Flyout
-                        this._focusOnFirstFocusableElementOrThis();
-                    } else {
-                        // Make sure the menu has focus, but don't show a focus rect
-                        _Overlay._Overlay._trySetActive(this._element);
-                    }
                 },
 
                 _isLightDismissible: function Flyout_isLightDismissible() {
@@ -977,6 +977,7 @@ define([
                          && (this === _Global.document.activeElement)) {
                         event.preventDefault();
                         event.stopPropagation();
+                        this.winControl._keyboardInvoked = true;
                         this.winControl.hide();
                     } else if (event.shiftKey && event.keyCode === Key.tab
                           && this === _Global.document.activeElement
@@ -987,11 +988,20 @@ define([
                     }
                 },
 
-                _handleFocusChange: function Flyout_handleFocusChange(event) {
+                _handleFocusChange: function Flyout_handleFocusChange(event){
+                    // Universal focusin/focusout handler for Flyouts.
                     if (this.element.contains(event.relatedTarget)) {
-                        // Focus is only moving between elements in the flyout. Doesn't need to be handled by cascadeManager.
+                        // Focus is only moving internally between elements in the flyout. Doesn't need to be handled by cascadeManager.
                         event._winHandled = true;
                     }
+
+                    // Else we let cascadeManager handle it.
+                },
+                _handleFocusIn: function Flyout_handleFocusIn(event) {
+                    this._handleFocusChange(event);
+                },
+                _handleFocusOut: function Flyout_handleFocusOut(event) {
+                    this._handleFocusChange(event);
                 },
 
                 // Create and add a new first div as the first child

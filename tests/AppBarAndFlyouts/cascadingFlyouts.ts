@@ -15,6 +15,8 @@ module CorsicaTests {
         cascadeManager = Flyout._cascadeManager,
         chainCounter;
 
+    var Menu = <typeof WinJS.UI.Menu> WinJS.UI.Menu;
+
     var DEFAULT_CHAIN_SIZE = 6;
 
 
@@ -421,6 +423,10 @@ module CorsicaTests {
             verifyKeyCollapsesTheCascade(Key.alt, "alt").then(() => {
                 return verifyKeyCollapsesTheCascade(Key.F10, "F10");
             }).done(complete);
+        }
+
+        testInvokingSubMenuAppliesSelectionOnMenuCommand = function (complete) {
+
         }
     }
 }

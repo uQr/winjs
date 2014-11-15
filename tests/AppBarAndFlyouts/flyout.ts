@@ -9,10 +9,11 @@
 module CorsicaTests {
     "use strict";
 
-    var _element;
+    var Key = WinJS.Utilities.Key,
+        _element;
 
-    var expectedDistanceFromAnchor = 5;
-    var anchorStyling = "position:absolute; top:50%; left:50%; height:10px; width:10px; background-color: red;"
+    var expectedDistanceFromAnchor = 5,
+        anchorStyling = "position:absolute; top:50%; left:50%; height:10px; width:10px; background-color: red;"
 
     export class FlyoutTests {
 
@@ -503,6 +504,23 @@ module CorsicaTests {
             flyout.show(document.body);
         };
 
+        testEscapeKeyClosesFlyout = function (complete) {
+            // Verifies that ESC key hides a Flyout
+
+            function afterHide() {
+                flyout.removeEventListener, ("afterhide", afterHide, false);
+                complete();
+            }
+
+            var flyout = new WinJS.UI.Flyout(_element, {anchor: document.body});
+            flyout.addEventListener("afterhide", afterHide, false);
+
+            OverlayHelpers.show(flyout).then(() => {
+                var msg = "ESC key should hide the flyout.";
+                LiveUnit.LoggingCore.logComment("Test: " + msg);
+                Helper.keydown(flyout.element, Key.escape);
+            });
+        };
     }
 }
 // register the object as a test class by passing in the name

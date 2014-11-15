@@ -48,14 +48,27 @@ define([
                 get nullCommand() { return "Invalid argument: command must not be null"; },
             };
 
-            function invokeSubFlyout(menuCommand) {
-                var subFlyout = menuCommand._flyout;
+            function expandSubFlyout(menuCommand) {
+                var subFlyout = menuCommand.flyout;
                 if (subFlyout) {
                     // Flyout may not have processAll'd, so this may be a DOM object
-                    subFlyout = subFlyout.winControl || subFlyout;
-                    if (subFlyout && subFlyout.show) {
+                    if (subFlyout && subFlyout.hidden && subFlyout.show) {
+                        _ElementUtilities.addClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
+                        subFlyout.addEventListener("beforehide", function beforeHide() {
+                            subFlyout.removeEventListener("beforehide", beforeHide, false);
+                            _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
+                        }, false);
                         subFlyout.show(menuCommand, "right");
                     }
+                }
+            }
+
+            function collapseSubFlyout(menuCommand) {
+                var subFlyout = menuCommand.flyout;
+                // Flyout may not have processAll'd, so this may be a DOM object
+                if (subFlyout && !subFlyout.hidden && subFlyout.hide) {
+                    _ElementUtilities.removeClass(commandElement, _Constants.menuCommandFlyoutActivatedClass);
+                    subFlyout.hide();
                 }
             }
 
@@ -349,27 +362,34 @@ define([
                     }
                 },
 
+                _handleFocusIn: function handleFocusIn(event) {
+                    var target = event.target;
+                    if (isCommandInMenu(target)) {
+                        var command = target.winControl;
+                        if (_ElementUtilities.hasClass(this.element, _Constants.menuCommandFlyoutActivatedClass)) {
+                            // TODO: Comment This better.
+                            event._winHandled = true; // Don't let the cascadeManager handle this.
+                            command.flyout.element.focus(); // Move focus to subMenu and let the cascadeManager hide the subSubMenu instead.
+                        } else {
+                            // collapse subFlyouts
+                            // TODO: Comment this better.
+                            Array.prototype.forEach.call(this.element.querySelectorAll(".win-command"), function (commandElement) {
+                                if (command.type === _Constants.typeFlyout && commandElement !== command.element) {
+                                    var siblingCommand = commandElement.winControl;
+                                    collapseSubFlyout(siblingCommand);
+                                }
+                            });
+                        }
+                    } else {
+
+                        return Flyout.Flyout.prototype._handleFocusIn.call(event)
+                    }
+                },
+
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
                     var command = event.detail.command;
-                    if (isCommandInMenu(command)) {
-
-                        var shouldHide = true;
-
-                        if (command._type === _Constants.typeToggle) {
-                            command.selected = !command.selected;
-                        } else if (command._type === _Constants.typeFlyout && command._flyout) {
-                            invokeSubFlyout(command);
-                            shouldHide = false;
-                        }
-
-                        if (event.delegate) {
-                            event.delegate();
-                        }
-
-                        if (shouldHide) {
-                            this.hide();
-                        }
-
+                    if (command._type !== _Constants.typeFlyout) {
+                        this.hide();
                     }
                 },
 
@@ -387,7 +407,7 @@ define([
                                 this._hoverPromise = this._hoverPromise || Promise.timeout(_Constants.menuCommandHoverDelay).then(
                                     function () {
                                         if (!that.hidden && !that._disposed) {
-                                            invokeSubFlyout(command);
+                                            expandSubFlyout(command);
                                         }
                                         that._hoverPromise = null;
                                     },

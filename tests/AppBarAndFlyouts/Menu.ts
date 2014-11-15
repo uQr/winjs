@@ -9,7 +9,8 @@ module CorsicaTests {
 
     "use strict";
 
-    var _Constants = Helper.require("WinJS/Controls/AppBar/_Constants");
+    var _Constants = Helper.require("WinJS/Controls/AppBar/_Constants"),
+        Key = WinJS.Utilities.Key;
 
     export class MenuTests {
 
@@ -50,9 +51,6 @@ module CorsicaTests {
         }
 
 
-
-
-
     // Test Menu Instantiation with null element
     testMenuNullInstantiation = function () {
             LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu with null element");
@@ -60,20 +58,12 @@ module CorsicaTests {
             LiveUnit.Assert.isNotNull(Menu, "Menu instantiation was null when sent a null Menu element.");
         }
 
-
-
-
-
     // Test Menu Instantiation with no options
     testMenuEmptyInstantiation = function () {
             LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu with empty constructor");
             var menu = new WinJS.UI.Menu();
             LiveUnit.Assert.isNotNull(menu, "Menu instantiation was null when sent a Empty Menu element.");
         }
-
-
-
-
 
     // Test multiple instantiation of the same Menu DOM element
         testMenuMultipleInstantiation() {
@@ -93,10 +83,6 @@ module CorsicaTests {
                 OverlayHelpers.disposeAndRemove(menuElement);
             }
         }
-
-
-
-
 
 
         // Test Menu parameters
@@ -160,10 +146,6 @@ module CorsicaTests {
             testBadInitOption("placement", 12, "WinJS.UI.Flyout.BadPlacement", badPlacement);
             testBadInitOption("placement", {}, "WinJS.UI.Flyout.BadPlacement", badPlacement);
         }
-
-
-
-
 
     testDefaultMenuParameters = function () {
             // Get the Menu element from the DOM
@@ -268,6 +250,7 @@ module CorsicaTests {
                 // Application.stop() kills all listeners on the Application object.
                 // Reset all global _Overlay eventhandlers to reattach our listener to the Application "backclick" event.
                 WinJS.UI._Overlay._globalEventListeners.reset();
+                OverlayHelpers.disposeAndRemove(menuElement);
                 complete();
             }
 
@@ -280,6 +263,29 @@ module CorsicaTests {
             var menu = new WinJS.UI.Menu(menuElement);
             menu.addEventListener("aftershow", simulateBackClick, false);
             menu.show(document.body);
+    };
+
+        testEscapeKeyClosesMenu = function (complete) {
+            // Verifies that ESC key hides a Menu
+
+            function afterHide() {
+                menu.removeEventListener, ("afterhide", afterHide, false);
+                OverlayHelpers.disposeAndRemove(menuElement);
+                complete();
+            }
+
+            // Get the menu element from the DOM
+            var menuElement = document.createElement("div");
+            document.body.appendChild(menuElement);
+            var menu = new WinJS.UI.Menu(menuElement, { anchor: document.body });
+
+            menu.addEventListener("afterhide", afterHide, false);
+
+            OverlayHelpers.show(menu).then(() => {
+                var msg = "ESC key should hide the menu.";
+                LiveUnit.LoggingCore.logComment("Test: " + msg);
+                Helper.keydown(menu.element, Key.escape);
+            });
         };
 
 
@@ -361,8 +367,9 @@ module CorsicaTests {
                 s1 = <WinJS.UI.PrivateMenuCommand> new WinJS.UI.MenuCommand(null, { type: 'separator' }),
                 commands = [b1, t1, t2, f1, s1];
 
-            var menu = <WinJS.UI.PrivateMenu> new WinJS.UI.Menu(null, { commands: commands });
-            document.body.appendChild(menu.element);
+            var menuElement = document.createElement("DIV");
+            document.body.appendChild(menuElement);
+            var menu = <WinJS.UI.PrivateMenu> new WinJS.UI.Menu(menuElement, { commands: commands });
 
             function menu_onaftershow() {
                 menu.removeEventListener("aftershow", menu_onaftershow, false);
@@ -376,6 +383,8 @@ module CorsicaTests {
                 testCommandUpdates([b1, t2, f1, s1]);
                 testCommandUpdates([b1, f1]);
                 testCommandUpdates([t1, f1]);
+
+                OverlayHelpers.disposeAndRemove(menuElement);
                 complete();
             }
 

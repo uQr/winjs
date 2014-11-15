@@ -433,17 +433,34 @@ define([
                     }
                 },
 
-                _handleClick: function MenuCommand_handleClick(clickEvent) {
-                    var that = this;
-                    function delegateClick() {
-                        that.onclick(clickEvent);
+                _invoke: function MenuCOmmand_invoke(event){
+
+                    if (command._type === _Constants.typeToggle) {
+                        command.selected = !command.selected;
+                    } else if (command._type === _Constants.typeFlyout && command._flyout) {
+                        expandSubFlyout(command);
                     }
 
-                    //Bubble private 'invoked' event to Menu
-                    this._sendEvent(_Constants.menuCommandInvokedEvent, {
-                        command: this,
-                        delegate: this.onclick ? delegateClick : null
-                    });
+                    if (event.type === "click") {
+                        this.onclick(event);
+                    }
+
+                    // Bubble private 'invoked' event to Menu
+                    this._sendEvent(_Constants.menuCommandInvokedEvent, {command: this});
+                },
+
+                _handleClick: function MenuCommand_handleClick(event) {
+                    //var that = this;
+                    //function delegateClick() {
+                    //    that.onclick(event);
+                    //}
+
+                    ////Bubble private 'invoked' event to Menu
+                    //this._sendEvent(_Constants.menuCommandInvokedEvent, {
+                    //    command: this,
+                    //    delegate: this.onclick ? delegateClick : null
+                    //});
+                    this._invoke(event);
                 },
 
                 _handleKeyDown: function MenuCommand_handleKeyDown(event) {
@@ -452,8 +469,7 @@ define([
                         rightKey = rtl ? Key.leftArrow : Key.rightArrow;
 
                     if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
-                        // Bubble private 'invoked' event to Menu
-                        this._sendEvent(_Constants.menuCommandInvokedEvent, { command: this });
+                        this._invoke(event);
 
                         // Prevent the page from scrolling
                         event.preventDefault();
