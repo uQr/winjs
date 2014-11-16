@@ -425,9 +425,9 @@ module CorsicaTests {
             }).done(complete);
         }
 
-        testInvokingSubMenuAppliesSelectionOnMenuCommand = function (complete) {
-
-        }
+        //testInvokingSubMenuAppliesSelectionOnMenuCommand = function (complete) {
+        //    complete();
+        //}
     }
 }
 

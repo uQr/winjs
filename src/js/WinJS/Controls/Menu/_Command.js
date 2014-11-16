@@ -39,7 +39,7 @@ define([
                 get badButtonElement() { return "Invalid argument: For a button, toggle, or flyout command, the element must be null or a button element"; }
             };
 
-            return _Base.Class.define(function MenuCommand_ctor(element, options) {
+            var MenuCommand = _Base.Class.define(function MenuCommand_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.AppBarCommand.MenuCommand">
                 /// <summary locid="WinJS.UI.MenuCommand.constructor">
                 /// Creates a new MenuCommand object.
@@ -433,33 +433,25 @@ define([
                     }
                 },
 
-                _invoke: function MenuCOmmand_invoke(event){
+                _invoke: function MenuC0mmand_invoke(event) {
 
-                    if (command._type === _Constants.typeToggle) {
-                        command.selected = !command.selected;
-                    } else if (command._type === _Constants.typeFlyout && command._flyout) {
-                        expandSubFlyout(command);
+                    if (!this.hidden && !this.disabled && !this._disposed) {
+                        if (this._type === _Constants.typeToggle) {
+                            this.selected = !this.selected;
+                        } else if (this._type === _Constants.typeFlyout) {
+                            MenuCommand._activateFlyoutCommand(this);
+                        }
+
+                        if (event.type === "click") {
+                            this.onclick(event);
+                        }
+
+                        // Bubble private 'invoked' event to Menu
+                        this._sendEvent(_Constants.menuCommandInvokedEvent, { command: this });
                     }
-
-                    if (event.type === "click") {
-                        this.onclick(event);
-                    }
-
-                    // Bubble private 'invoked' event to Menu
-                    this._sendEvent(_Constants.menuCommandInvokedEvent, {command: this});
                 },
 
                 _handleClick: function MenuCommand_handleClick(event) {
-                    //var that = this;
-                    //function delegateClick() {
-                    //    that.onclick(event);
-                    //}
-
-                    ////Bubble private 'invoked' event to Menu
-                    //this._sendEvent(_Constants.menuCommandInvokedEvent, {
-                    //    command: this,
-                    //    delegate: this.onclick ? delegateClick : null
-                    //});
                     this._invoke(event);
                 },
 
@@ -475,7 +467,31 @@ define([
                         event.preventDefault();
                     }
                 },
+            }, {
+                // Statics
+                _activateFlyoutCommand: function MenuCommand_activateFlyoutCommand(menuCommand) {
+                    var subFlyout = menuCommand.flyout;
+                    // Flyout may not have processAll'd, so this may be a DOM object
+                    if (subFlyout && subFlyout.hidden && subFlyout.show) {
+                        _ElementUtilities.addClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
+                        subFlyout.addEventListener("beforehide", function beforeHide() {
+                            subFlyout.removeEventListener("beforehide", beforeHide, false);
+                            _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
+                        }, false);
+                        subFlyout.show(menuCommand, "right");
+                    }
+                },
+
+                _deactivateFlyoutCommand: function MenuCommand_deactivateFlyoutCommand(menuCommand) {
+                    var subFlyout = menuCommand.flyout;
+                    // Flyout may not have processAll'd, so this may be a DOM object
+                    if (subFlyout && !subFlyout.hidden && subFlyout.hide) {
+                        _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
+                        subFlyout.hide();
+                    }
+                },
             });
+            return MenuCommand;
         })
     });
 
