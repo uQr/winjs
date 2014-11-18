@@ -54,6 +54,17 @@ define([
                 return _ElementUtilities._matchesSelector(element, "." + _Constants.menuClass + " " + "." + _Constants.menuCommandClass);
             }
 
+                        subFlyout.show(menuCommand, "right");
+                    }
+                }
+            }
+
+            function isCommandInMenu(object) {
+                // Verifies that we have a menuCommand element and that it is in a Menu.
+                var element = object.element || object;
+                return _ElementUtilities._matchesSelector(element, "." + _Constants.menuClass + " " + "." + _Constants.menuCommandClass);
+            }
+
             var Menu = _Base.Class.derive(Flyout.Flyout, function Menu_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.Menu.Menu">
                 /// <summary locid="WinJS.UI.Menu.constructor">
@@ -103,7 +114,7 @@ define([
 
                 // Handle "esc" & "up/down" key presses
                 this._element.addEventListener("keydown", this._handleKeyDown.bind(this), true);
-                this._element.addEventListener(_Constants.menuCommandInvokedEvent, this._handleCommandInvoked.bind(this), false);
+                this._element.addEventListener(_Constants._menuCommandInvokedEvent, this._handleCommandInvoked.bind(this), false);
                 this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
                 this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
                 //this._handleMouseMoveBound = this._handleMouseMove.bind(this);
@@ -257,6 +268,13 @@ define([
                     // commands visible in our Menu, but only after we send the beforeshow 
                     // event, so the developer has a chance to show or hide more commands.
                     // Flyout's _findPosition will make that call.
+                },
+
+                _hide: function Menu_hide() {
+                    if (this._hoverPromise) {
+                        this._hoverPromise.cancel();
+                    }
+                    Flyout.Flyout.prototype._hide.call(this);
                 },
 
                 _addCommand: function Menu_addCommand(command) {

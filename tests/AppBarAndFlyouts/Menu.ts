@@ -250,6 +250,7 @@ module CorsicaTests {
                 // Application.stop() kills all listeners on the Application object.
                 // Reset all global _Overlay eventhandlers to reattach our listener to the Application "backclick" event.
                 WinJS.UI._Overlay._globalEventListeners.reset();
+
                 OverlayHelpers.disposeAndRemove(menuElement);
                 complete();
             }
@@ -263,7 +264,7 @@ module CorsicaTests {
             var menu = new WinJS.UI.Menu(menuElement);
             menu.addEventListener("aftershow", simulateBackClick, false);
             menu.show(document.body);
-    };
+        };
 
         testEscapeKeyClosesMenu = function (complete) {
             // Verifies that ESC key hides a Menu
@@ -287,7 +288,6 @@ module CorsicaTests {
                 Helper.keydown(menu.element, Key.escape);
             });
         };
-
 
         testMenuCommandsInMenu = function (complete) {
             // Verifies that layout is adjusted for all visible commands in a menu depending on what other types of commands are also visible in the menu.
@@ -367,7 +367,7 @@ module CorsicaTests {
                 s1 = <WinJS.UI.PrivateMenuCommand> new WinJS.UI.MenuCommand(null, { type: 'separator' }),
                 commands = [b1, t1, t2, f1, s1];
 
-            var menuElement = document.createElement("DIV");
+            var menuElement = document.createElement("div");
             document.body.appendChild(menuElement);
             var menu = <WinJS.UI.PrivateMenu> new WinJS.UI.Menu(menuElement, { commands: commands });
 

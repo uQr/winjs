@@ -424,17 +424,12 @@ define([
                     this._flyoutSpan = this._labelSpan.nextElementSibling;
 
                 },
-
                 _sendEvent: function MenuCommand_sendEvent(eventName, detail) {
                     if (!this._disposed) {
                         var event = _Global.document.createEvent("CustomEvent");
                         event.initCustomEvent(eventName, true, true, (detail || {}));
                         this._element.dispatchEvent(event);
-                    }
-                },
-
                 _invoke: function MenuCommand_invoke(event) {
-
                     if (!this.hidden && !this.disabled && !this._disposed) {
                         if (this._type === _Constants.typeToggle) {
                             this.selected = !this.selected;
@@ -444,15 +439,19 @@ define([
 
                         if (event.type === "click") {
                             this.onclick(event);
+                        this._element.dispatchEvent(event);
                         }
 
                         // Bubble private 'invoked' event to Menu
-                        this._sendEvent(_Constants.menuCommandInvokedEvent, { command: this });
+                        this._sendEvent(_Constants._menuCommandInvokedEvent, { command: this });
                     }
                 },
 
                 _handleClick: function MenuCommand_handleClick(event) {
                     this._invoke(event);
+                        command: this,
+                        delegate: this.onclick ? delegateClick : null
+                    });
                 },
 
                 _handleKeyDown: function MenuCommand_handleKeyDown(event) {

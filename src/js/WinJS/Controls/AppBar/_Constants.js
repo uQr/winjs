@@ -60,7 +60,7 @@ define([
         menuCommandFlyoutClass: "win-command-flyout",
         menuCommandFlyoutActivatedClass: "win-command-flyout-activated",
         menuCommandSeparatorClass: "win-command-separator",
-        menuCommandInvokedEvent: "_invoked", // Private event
+        _menuCommandInvokedEvent: "_invoked", // Private event
         menuClass: "win-menu",
         menuContainsToggleCommandClass: "win-menu-containstogglecommand",
         menuContainsFlyoutCommandClass: "win-menu-containsflyoutcommand",
