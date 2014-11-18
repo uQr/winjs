@@ -433,7 +433,7 @@ define([
                     }
                 },
 
-                _invoke: function MenuC0mmand_invoke(event) {
+                _invoke: function MenuCommand_invoke(event) {
 
                     if (!this.hidden && !this.disabled && !this._disposed) {
                         if (this._type === _Constants.typeToggle) {
