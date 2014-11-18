@@ -56,9 +56,7 @@ define([
             // Singleton class for managing cascading flyouts
             var _CascadeManager = _Base.Class.define(function _CascadeManager_ctor() {
                 this._cascadingStack = [];
-                //this._handleFocusIntoCascade_bound = this._handleFocusIntoCascade.bind(this);
-                //this._handleFocusOutOfCascade_bound = this._handleFocusOutOfCascade.bind(this);
-                //this._handleKeyDownInCascade_bound = this._handleKeyDownInCascade.bind(this);
+                this._handleKeyDownInCascade_bound = this._handleKeyDownInCascade.bind(this);
             },
             {
                 appendFlyout: function _CascadeManager_appendFlyout(flyoutToAdd) {
@@ -81,9 +79,7 @@ define([
                         this.collapseAll();
                     }
 
-                    //_ElementUtilities._addEventListener(flyoutToAdd.element, "focusin", this._handleFocusIntoCascade_bound, false);
-                    //_ElementUtilities._addEventListener(flyoutToAdd.element, "focusout", this._handleFocusOutOfCascade_bound, false);
-                    //flyoutToAdd.element.addEventListener("keydown", this._handleKeyDownInCascade_bound, false);
+                    flyoutToAdd.element.addEventListener("keydown", this._handleKeyDownInCascade_bound, false);
                     this._cascadingStack.push(flyoutToAdd);
                 },
                 collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
@@ -94,9 +90,7 @@ define([
                         var subFlyout;
                         while (this.length && flyout !== subFlyout) {
                             subFlyout = this._cascadingStack.pop();
-                            //_ElementUtilities._removeEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
-                            //_ElementUtilities._removeEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
-                            //subFlyout.element.removeEventListener("keydown", this._handleKeyDown_bound, false);
+                            subFlyout.element.removeEventListener("keydown", this._handleKeyDownInCascade_bound, false);
                             subFlyout._hide();
                         }
 
@@ -135,7 +129,7 @@ define([
                 getAt: function _CascadeManager_getAt(index) {
                     return this._cascadingStack[index];
                 },
-                handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(event) {
+                handleFocusIntoFlyout: function _CascadeManager_handleFocusIntoFlyout(event) {
                     // When a flyout in the cascade recieves focus, we close all subflyouts beneath it.
                     var index = this.indexOfElement(event.target);
                     if (index >= 0) {
@@ -149,7 +143,7 @@ define([
                         this.collapseAll();
                     }
                 },
-                handleKeyDownInCascade: function _CascadeManager_handleKeyDownInCascade(event) {
+                _handleKeyDownInCascade: function _CascadeManager_handleKeyDownInCascade(event) {
                     var rtl = _Global.getComputedStyle(event.target).direction === "rtl",
                         leftKey = rtl ? Key.rightArrow : Key.leftArrow,
                         target = event.target;
@@ -985,13 +979,11 @@ define([
                         event.stopPropagation();
                         this.winControl._focusOnLastFocusableElementOrThis();
                     }
-
-                    Flyout._cascadeManager.handleKeyDownInCascade(event);
                 },
 
                 _handleFocusIn: function Flyout_handleFocusIn(event) {
                     if (!this.element.contains(event.relatedTarget)) {
-                        Flyout._cascadeManager.handleFocusIntoCascade(event);
+                        Flyout._cascadeManager.handleFocusIntoFlyout(event);
                     }
                     // Else focus is only moving between elements in the flyout. 
                     // Doesn't need to be handled by cascadeManager.

@@ -354,8 +354,6 @@ define([
                     } else if (event.keyCode === Key.tab) {
                         event.preventDefault();
                     }
-
-                    Flyout.Flyout._cascadeManager.handleKeyDownInCascade(event);
                 },
 
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
