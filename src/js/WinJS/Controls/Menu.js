@@ -114,7 +114,7 @@ define([
 
                 // Handle "esc" & "up/down" key presses
                 this._element.addEventListener("keydown", this._handleKeyDown.bind(this), true);
-                this._element.addEventListener(_Constants.menuCommandInvokedEvent, this._handleCommandInvoked.bind(this), false);
+                this._element.addEventListener(_Constants._menuCommandInvokedEvent, this._handleCommandInvoked.bind(this), false);
                 this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
                 this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
                 //this._handleMouseMoveBound = this._handleMouseMove.bind(this);
@@ -270,6 +270,13 @@ define([
                     // Flyout's _findPosition will make that call.
                 },
 
+                _hide: function Menu_hide() {
+                    if (this._hoverPromise) {
+                        this._hoverPromise.cancel();
+                    }
+                    Flyout.Flyout.prototype._hide.call(this);
+                },
+
                 _addCommand: function Menu_addCommand(command) {
                     if (!command) {
                         throw new _ErrorFromName("WinJS.UI.Menu.NullCommand", strings.nullCommand);
@@ -347,6 +354,8 @@ define([
                     } else if (event.keyCode === Key.tab) {
                         event.preventDefault();
                     }
+
+                    Flyout.Flyout._cascadeManager.handleKeyDownInCascade(event);
                 },
 
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {

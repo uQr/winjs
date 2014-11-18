@@ -6,6 +6,7 @@ define([
     '../Core/_Base',
     '../Core/_BaseUtils',
     '../Core/_ErrorFromName',
+    '../Core/_Log',
     '../Core/_Resources',
     '../Core/_WriteProfilerMark',
     '../Animations',
@@ -14,7 +15,7 @@ define([
     '../Utilities/_Hoverable',
     './AppBar/_Constants',
     './Flyout/_Overlay'
-], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Resources, _WriteProfilerMark, Animations, _Dispose, _ElementUtilities, _Hoverable, _Constants, _Overlay) {
+], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Log, _Resources, _WriteProfilerMark, Animations, _Dispose, _ElementUtilities, _Hoverable, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -55,13 +56,16 @@ define([
             // Singleton class for managing cascading flyouts
             var _CascadeManager = _Base.Class.define(function _CascadeManager_ctor() {
                 this._cascadingStack = [];
-                this._handleFocusIntoCascade_bound = this._handleFocusIntoCascade.bind(this);
-                this._handleFocusOutOfCascade_bound = this._handleFocusOutOfCascade.bind(this);
-                this._handleKeyDown_bound = this._handleKeyDown.bind(this);
+                //this._handleFocusIntoCascade_bound = this._handleFocusIntoCascade.bind(this);
+                //this._handleFocusOutOfCascade_bound = this._handleFocusOutOfCascade.bind(this);
+                //this._handleKeyDownInCascade_bound = this._handleKeyDownInCascade.bind(this);
             },
             {
                 appendFlyout: function _CascadeManager_appendFlyout(flyoutToAdd) {
                     // PRECONDITION: flyoutToAdd must not already be in the cascade.
+                    _Log.log && this.indexOF(flyoutToAdd) >= 0 && _Log.log('_CascadeManager is attempting to append a Flyout that is already in the cascade.', "winjs _CascadeManager", "Error");
+                    // PRECONDITION: this.reentrancyLock must be false.
+                    _Log.log && this.reentrancyLock && _Log.log('_CascadeManager is attempting to append a Flyout through reentrancy.', "winjs _CascadeManager", "Error");
 
                     // IF the anchor element for flyoutToAdd is contained within another flyout, 
                     // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
@@ -77,26 +81,26 @@ define([
                         this.collapseAll();
                     }
 
-                    _ElementUtilities._addEventListener(flyoutToAdd.element, "focusin", this._handleFocusIntoCascade_bound, false);
-                    _ElementUtilities._addEventListener(flyoutToAdd.element, "focusout", this._handleFocusOutOfCascade_bound, false);
-                    flyoutToAdd.element.addEventListener("keydown", this._handleKeyDown_bound, false);
+                    //_ElementUtilities._addEventListener(flyoutToAdd.element, "focusin", this._handleFocusIntoCascade_bound, false);
+                    //_ElementUtilities._addEventListener(flyoutToAdd.element, "focusout", this._handleFocusOutOfCascade_bound, false);
+                    //flyoutToAdd.element.addEventListener("keydown", this._handleKeyDownInCascade_bound, false);
                     this._cascadingStack.push(flyoutToAdd);
                 },
                 collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
                     // Removes flyout param and its subflyout descendants from the _cascadingStack.
-                    if (!this._reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
-                        this._reentrancyLock = true;
+                    if (!this.reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
+                        this.reentrancyLock = true;
 
                         var subFlyout;
                         while (this.length && flyout !== subFlyout) {
                             subFlyout = this._cascadingStack.pop();
-                            _ElementUtilities._removeEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
-                            _ElementUtilities._removeEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
-                            subFlyout.element.removeEventListener("keydown", this._handleKeyDown_bound, false);
+                            //_ElementUtilities._removeEventListener(subFlyout.element, "focusin", this._handleFocusIntoCascade_bound, false);
+                            //_ElementUtilities._removeEventListener(subFlyout.element, "focusout", this._handleFocusOutOfCascade_bound, false);
+                            //subFlyout.element.removeEventListener("keydown", this._handleKeyDown_bound, false);
                             subFlyout._hide();
                         }
 
-                        this._reentrancyLock = false;
+                        this.reentrancyLock = false;
                     }
                 },
                 collapseAll: function _CascadeManager_collapseAll(keyboardInvoked) {
@@ -131,25 +135,21 @@ define([
                 getAt: function _CascadeManager_getAt(index) {
                     return this._cascadingStack[index];
                 },
-                _handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(event) {
+                handleFocusIntoCascade: function _CascadeManager_handleFocusIntoCascade(event) {
                     // When a flyout in the cascade recieves focus, we close all subflyouts beneath it.
-                    if (!event._winHandled) {
-                        var index = this.indexOfElement(event.target);
-                        if (index >= 0) {
-                            var subFlyout = this.getAt(index + 1);
-                            this.collapseFlyout(subFlyout);
-                        }
+                    var index = this.indexOfElement(event.target);
+                    if (index >= 0) {
+                        var subFlyout = this.getAt(index + 1);
+                        this.collapseFlyout(subFlyout);
                     }
                 },
-                _handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(event) {
+                handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(event) {
                     // Hide the entire cascade if focus has moved somewhere outside of it
-                    if (!event._winHandled) {
-                        if (this.indexOfElement(event.relatedTarget) < 0) {
-                            this.collapseAll();
-                        }
+                    if (this.indexOfElement(event.relatedTarget) < 0) {
+                        this.collapseAll();
                     }
                 },
-                _handleKeyDown: function _CascadeManager_handleKeyDown(event) {
+                handleKeyDownInCascade: function _CascadeManager_handleKeyDownInCascade(event) {
                     var rtl = _Global.getComputedStyle(event.target).direction === "rtl",
                         leftKey = rtl ? Key.rightArrow : Key.leftArrow,
                         target = event.target;
@@ -249,8 +249,8 @@ define([
                     this._currentAnimateIn = this._flyoutAnimateIn;
                     this._currentAnimateOut = this._flyoutAnimateOut;
 
-                    _ElementUtilities._addEventListener(this.element, "focusin", this._handleFocusChange.bind(this), false);
-                    _ElementUtilities._addEventListener(this.element, "focusout", this._handleFocusChange.bind(this), false);
+                    _ElementUtilities._addEventListener(this.element, "focusin", this._handleFocusIn.bind(this), false);
+                    _ElementUtilities._addEventListener(this.element, "focusout", this._handleFocusOut.bind(this), false);
 
                     // Make sure additional _Overlay event handlers are hooked up
                     this._handleOverlayEventsForFlyoutOrSettingsFlyout();
@@ -451,7 +451,7 @@ define([
 
                     // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of a updating the cascade,
                     // then don't mess up our current state. Queue us up to wait for current operation to finish first.
-                    if (this._element.winAnimating || Flyout._cascadeManager._reentrancyLock) {
+                    if (this._element.winAnimating || Flyout._cascadeManager.reentrancyLock) {
                         this._doNext = "show";
                         this._retryLast = true;
                         return;
@@ -985,13 +985,23 @@ define([
                         event.stopPropagation();
                         this.winControl._focusOnLastFocusableElementOrThis();
                     }
+
+                    Flyout._cascadeManager.handleKeyDownInCascade(event);
                 },
 
-                _handleFocusChange: function Flyout_handleFocusChange(event) {
-                    if (this.element.contains(event.relatedTarget)) {
-                        // Focus is only moving between elements in the flyout. Doesn't need to be handled by cascadeManager.
-                        event._winHandled = true;
+                _handleFocusIn: function Flyout_handleFocusIn(event) {
+                    if (!this.element.contains(event.relatedTarget)) {
+                        Flyout._cascadeManager.handleFocusIntoCascade(event);
                     }
+                    // Else focus is only moving between elements in the flyout. 
+                    // Doesn't need to be handled by cascadeManager.
+                },
+                _handleFocusOut: function Flyout_handleFocusOut(event) {
+                    if (!this.element.contains(event.relatedTarget)) {
+                        Flyout._cascadeManager.handleFocusOutOfCascade(event);
+                    }
+                    // Else focus is only moving between elements in the flyout.
+                    // Doesn't need to be handled by cascadeManager.
                 },
 
                 // Create and add a new first div as the first child

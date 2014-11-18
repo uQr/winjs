@@ -376,26 +376,30 @@ module CorsicaTests {
             var flyoutElement = document.createElement("div");
             document.body.appendChild(flyoutElement);
             var flyout = new Flyout(flyoutElement, { anchor: _rootAnchor });
+            var msg = "Left arrow key should not hide the current flyout if it is not the subFlyout of another shown flyout.";
+
+            function beforeHide() {
+                flyout.removeEventListener("beforehide", beforeHide, false);
+                LiveUnit.Assert.fail(msg);
+            }
 
             showFlyout(flyout).then(() => {
 
                 verifyCascade([flyout]);
 
-                flyout.addEventListener("beforehide", function beforeHide() {
-                    flyout.removeEventListener, ("beforehide", beforeHide, false);
-                    LiveUnit.Assert.fail(msg);
-                }, false);
-
-                var msg = "Left arrow key should not hide the current flyout if it is not the subFlyout of another shown flyout.";
-                LiveUnit.LoggingCore.logComment("Test: " + msg);
+                LiveUnit.LoggingCore.logComment("Test: " + msg);               
+                flyout.addEventListener("beforehide", beforeHide, false);
                 Helper.keydown(flyout.element, Key.leftArrow);
 
-                return WinJS.Promise.timeout(0);
-            }).done(complete);
+                return WinJS.Promise.timeout(100);
+            }).done(function () {
+                flyout.removeEventListener("beforehide", beforeHide, false);
+                complete();
+            });
         }
 
         testAltAndF10WillCollapseTheEntireCascade = function (complete) {
-            // Verifies that bith "alt" and "F10" keys when pressed inside a flyout will collapse the entire cascade.
+            // Verifies that both "alt" and "F10" keys when pressed inside a flyout will collapse the entire cascade.
             var flyoutChain = generateFlyoutChain(_rootAnchor);
 
             function verifyKeyCollapsesTheCascade(keyCode: number, keyName: string) {

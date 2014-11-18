@@ -440,7 +440,7 @@ define([
                     }
 
                     //Bubble private 'invoked' event to Menu
-                    this._sendEvent(_Constants.menuCommandInvokedEvent, {
+                    this._sendEvent(_Constants._menuCommandInvokedEvent, {
                         command: this,
                         delegate: this.onclick ? delegateClick : null
                     });
@@ -453,7 +453,7 @@ define([
 
                     if (event.keyCode === rightKey && this.type === _Constants.typeFlyout) {
                         // Bubble private 'invoked' event to Menu
-                        this._sendEvent(_Constants.menuCommandInvokedEvent, { command: this });
+                        this._sendEvent(_Constants._menuCommandInvokedEvent, { command: this });
 
                         // Prevent the page from scrolling
                         event.preventDefault();
