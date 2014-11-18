@@ -61,9 +61,9 @@ define([
             {
                 appendFlyout: function _CascadeManager_appendFlyout(flyoutToAdd) {
                     // PRECONDITION: flyoutToAdd must not already be in the cascade.
-                    _Log.log && this.indexOF(flyoutToAdd) >= 0 && _Log.log('_CascadeManager is attempting to append a Flyout that is already in the cascade.', "winjs _CascadeManager", "Error");
-                    // PRECONDITION: this.reentrancyLock must be false.
-                    _Log.log && this.reentrancyLock && _Log.log('_CascadeManager is attempting to append a Flyout through reentrancy.', "winjs _CascadeManager", "Error");
+                    _Log.log && this.indexOF(flyoutToAdd) >= 0 && _Log.log('_CascadeManager is attempting to append a Flyout that is already in the cascade.', "winjs _CascadeManager", "error");
+                    // PRECONDITION: this.reentrancyLock must be false. appendFlyout should only be called from baseFlyoutShow() which is the function responsible for preventing reentrancy.
+                    _Log.log && this.reentrancyLock && _Log.log('_CascadeManager is attempting to append a Flyout through reentrancy.', "winjs _CascadeManager", "error");
 
                     // IF the anchor element for flyoutToAdd is contained within another flyout, 
                     // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
@@ -85,13 +85,13 @@ define([
                 collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
                     // Removes flyout param and its subflyout descendants from the _cascadingStack.
                     if (!this.reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
-                        this.reentrancyLock = true;
+                        this.reentrancyLock = true; 
 
                         var subFlyout;
                         while (this.length && flyout !== subFlyout) {
                             subFlyout = this._cascadingStack.pop();
                             subFlyout.element.removeEventListener("keydown", this._handleKeyDownInCascade_bound, false);
-                            subFlyout._hide();
+                            subFlyout._hide(); // We use the reentrancyLock to prevent reentrancy here.
                         }
 
                         this.reentrancyLock = false;
@@ -345,7 +345,8 @@ define([
 
                 _hide: function Flyout_hide() {
 
-                    // Also close all subflyout descendants in the cascade.
+                    // First close all subflyout descendants in the cascade.
+                    // Calls made through reentrancy are expected to nop.
                     Flyout._cascadeManager.collapseFlyout(this);
 
                     if (this._baseHide()) {
