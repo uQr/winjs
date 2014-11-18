@@ -391,8 +391,8 @@ module CorsicaTests {
                 flyout.addEventListener("beforehide", beforeHide, false);
                 Helper.keydown(flyout.element, Key.leftArrow);
 
-                return WinJS.Promise.timeout(100);
-            }).done(function () {
+                return WinJS.Promise.timeout();
+            }).then(function () {
                 flyout.removeEventListener("beforehide", beforeHide, false);
                 complete();
             });

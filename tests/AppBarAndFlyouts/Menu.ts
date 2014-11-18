@@ -268,6 +268,8 @@ module CorsicaTests {
                 // Application.stop() kills all listeners on the Application object.
                 // Reset all global _Overlay eventhandlers to reattach our listener to the Application "backclick" event.
                 WinJS.UI._Overlay._globalEventListeners.reset();
+
+                OverlayHelpers.disposeAndRemove(menuElement);
                 complete();
             }
 
@@ -361,8 +363,9 @@ module CorsicaTests {
                 s1 = <WinJS.UI.PrivateMenuCommand> new WinJS.UI.MenuCommand(null, { type: 'separator' }),
                 commands = [b1, t1, t2, f1, s1];
 
-            var menu = <WinJS.UI.PrivateMenu> new WinJS.UI.Menu(null, { commands: commands });
-            document.body.appendChild(menu.element);
+            var menuElement = document.createElement("div");
+            document.body.appendChild(menuElement);
+            var menu = <WinJS.UI.PrivateMenu> new WinJS.UI.Menu(menuElement, { commands: commands });
 
             function menu_onaftershow() {
                 menu.removeEventListener("aftershow", menu_onaftershow, false);
@@ -376,6 +379,8 @@ module CorsicaTests {
                 testCommandUpdates([b1, t2, f1, s1]);
                 testCommandUpdates([b1, f1]);
                 testCommandUpdates([t1, f1]);
+
+                OverlayHelpers.disposeAndRemove(menuElement);
                 complete();
             }
 
