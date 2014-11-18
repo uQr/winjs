@@ -429,6 +429,9 @@ define([
                         var event = _Global.document.createEvent("CustomEvent");
                         event.initCustomEvent(eventName, true, true, (detail || {}));
                         this._element.dispatchEvent(event);
+                    }
+                },
+
                 _invoke: function MenuCommand_invoke(event) {
                     if (!this.hidden && !this.disabled && !this._disposed) {
                         if (this._type === _Constants.typeToggle) {
@@ -449,9 +452,6 @@ define([
 
                 _handleClick: function MenuCommand_handleClick(event) {
                     this._invoke(event);
-                        command: this,
-                        delegate: this.onclick ? delegateClick : null
-                    });
                 },
 
                 _handleKeyDown: function MenuCommand_handleKeyDown(event) {

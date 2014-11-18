@@ -54,17 +54,6 @@ define([
                 return _ElementUtilities._matchesSelector(element, "." + _Constants.menuClass + " " + "." + _Constants.menuCommandClass);
             }
 
-                        subFlyout.show(menuCommand, "right");
-                    }
-                }
-            }
-
-            function isCommandInMenu(object) {
-                // Verifies that we have a menuCommand element and that it is in a Menu.
-                var element = object.element || object;
-                return _ElementUtilities._matchesSelector(element, "." + _Constants.menuClass + " " + "." + _Constants.menuCommandClass);
-            }
-
             var Menu = _Base.Class.derive(Flyout.Flyout, function Menu_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.Menu.Menu">
                 /// <summary locid="WinJS.UI.Menu.constructor">
