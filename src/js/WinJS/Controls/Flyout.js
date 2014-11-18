@@ -346,7 +346,7 @@ define([
                 _hide: function Flyout_hide() {
 
                     // First close all subflyout descendants in the cascade.
-                    // Calls made through reentrancy are expected to nop.
+                    // Any calls to collapseFlyout through reentrancy should nop.
                     Flyout._cascadeManager.collapseFlyout(this);
 
                     if (this._baseHide()) {
