@@ -371,7 +371,7 @@ define([
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
                     var command = event.detail.command;
                     if (command._type !== _Constants.typeFlyout) {
-                        this.hide();
+                        Flyout.Flyout._cascadeManager.collapseAll();
                     }
                 },
 
