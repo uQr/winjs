@@ -345,7 +345,7 @@ define([
                     }
                 },
 
-                _handleFocusIn: function handleFocusIn(event) {
+                _handleFocusIn: function Menu_handleFocusIn(event) {
                     var target = event.target;
                     if (isCommandInMenu(target)) {
                         var command = target.winControl;
@@ -356,8 +356,8 @@ define([
                         } else {
                             // collapse subFlyouts
                             // TODO: Comment this scenario better.
-                            Array.prototype.forEach.call(this.element.querySelectorAll(".win-command"), function (commandElement) {
-                                if (command.type === _Constants.typeFlyout && commandElement !== command.element) {
+                            Array.prototype.forEach.call(this.element.querySelectorAll("." + _Constants.menuCommandFlyoutClass), function (commandElement) {
+                                if (commandElement !== command.element) {
                                     var siblingCommand = commandElement.winControl;
                                     _Command.MenuCommand._deactivateFlyoutCommand(siblingCommand);
                                 }
@@ -384,6 +384,7 @@ define([
 
                         if (target.focus) {
                             target.focus();
+                            _ElementUtilities.removeClass(target, "win-keyboard");
 
                             if (command.type === _Constants.typeFlyout && command.flyout && command.flyout.hidden) {
                                 this._hoverPromise = this._hoverPromise || Promise.timeout(_Constants.menuCommandHoverDelay).then(

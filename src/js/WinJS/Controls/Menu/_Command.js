@@ -469,6 +469,7 @@ define([
             }, {
                 // Statics
                 _activateFlyoutCommand: function MenuCommand_activateFlyoutCommand(menuCommand) {
+                    menuCommand = menuCommand.winControl || menuCommand;
                     var subFlyout = menuCommand.flyout;
                     // Flyout may not have processAll'd, so this may be a DOM object
                     if (subFlyout && subFlyout.hidden && subFlyout.show) {
@@ -482,6 +483,7 @@ define([
                 },
 
                 _deactivateFlyoutCommand: function MenuCommand_deactivateFlyoutCommand(menuCommand) {
+                    menuCommand = menuCommand.winControl || menuCommand;
                     var subFlyout = menuCommand.flyout;
                     // Flyout may not have processAll'd, so this may be a DOM object
                     if (subFlyout && !subFlyout.hidden && subFlyout.hide) {

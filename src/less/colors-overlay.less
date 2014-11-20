@@ -245,6 +245,20 @@
             color:@textColorActive;
         }
 
+        &.win-menu button.win-command-flyout-activated:after,
+        .win-menu button.win-command-flyout-activated:after {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            background-color: @listSelectRest;
+            border: @listSelectRest 1px solid;
+            content: "";
+            top: -1px; /* -1px to account for the focus rect border */
+            left: -1px; /* -1px to account for the focus rect border */
+            z-index: -1;
+            box-sizing: content-box;
+        }
+
         &.win-menu button[aria-checked=true].win-command:after,
         .win-menu button[aria-checked=true].win-command:after {
             background-color: transparent;
@@ -321,6 +335,7 @@
 }
 
 .Colors(@theme) {
+    .colorDefinitions(@theme);
     #win-overlay > .stylesForTheme(@theme);
 }
 
