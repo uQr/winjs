@@ -440,7 +440,7 @@ define([
                             MenuCommand._activateFlyoutCommand(this);
                         }
 
-                        if (event.type === "click") {
+                        if (event.type === "click" && this.onclick) {
                             this.onclick(event);
                         }
 
