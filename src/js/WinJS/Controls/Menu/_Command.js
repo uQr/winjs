@@ -442,7 +442,6 @@ define([
 
                         if (event.type === "click") {
                             this.onclick(event);
-                        this._element.dispatchEvent(event);
                         }
 
                         // Bubble private 'invoked' event to Menu
