@@ -15,6 +15,22 @@ module CorsicaTests {
         Menu = <typeof WinJS.UI.PrivateMenu> WinJS.UI.Menu,
         Flyout = <typeof WinJS.UI.PrivateFlyout> WinJS.UI.Flyout;
 
+    function verifyAllCommandsDeactivated(commands: Array<WinJS.UI.PrivateMenuCommand>, msg: string = "") {
+        commands.forEach((command) => {
+            verifyDeactivation(command, msg);
+        });
+    }
+
+    function verifyDeactivation(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
+        LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
+        LiveUnit.Assert.isTrue(!command.flyout || command.flyout.hidden, msg);
+    }
+
+    function verifyActivation(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
+        LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
+        LiveUnit.Assert.isFalse(command.flyout.hidden, msg);
+    }
+
     export class MenuTests {
 
         tearDown() {
@@ -397,14 +413,15 @@ module CorsicaTests {
 
         testFocusChangeBetweenCommandDeactivatesFlyoutCommands = function (complete) {
             // Moving focus between commands in a Menu will deactivate any Flyout typed commands in the menu each time.
-            // Menus apply focus to MenuCommands on "mouseover" so this should verify that mousing over a
+            // Menu's will apply focus to MenuCommands on "mouseover" so this should verifies the scenario where an
+            // activated flyout command will deactivate when mousing over other commands in the Menu.
 
             var msg = "";
 
             var menuElement = document.createElement('div');
             menuElement.id = "menu";
             document.body.appendChild(menuElement);
-            var menu = new Menu(menuElement, {anchor: menuElement});
+            var menu = new Menu(menuElement, { anchor: menuElement });
 
             var subMenuElement = document.createElement('div');
             subMenuElement.id = "subMenuElement";
@@ -422,28 +439,12 @@ module CorsicaTests {
             var commands = [b1, f1, f2];
             menu.commands = commands;
 
-            function verifyAllCommandsDeactivated(commands: Array<WinJS.UI.PrivateMenuCommand>, msg: string = "") {
-                commands.forEach((command) => {
-                    verifyDeactivation(command, msg);
-                });
-            }
-
-            function verifyDeactivation(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
-                LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
-                LiveUnit.Assert.isTrue(!command.flyout || f1.flyout.hidden, msg);
-            }
-
-            function verifyActivation(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
-                LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
-                LiveUnit.Assert.isFalse(command.flyout.hidden, msg);
-            }
-
-            OverlayHelpers.show(menu).then(() => { 
+            OverlayHelpers.show(menu).then(() => {
                 msg = "All commands should start out deactivated";
                 LiveUnit.LoggingCore.logComment("Sanity Check: " + msg);
                 verifyAllCommandsDeactivated(commands, msg);
 
-               return  MenuCommand._activateFlyoutCommand(f1)
+                return MenuCommand._activateFlyoutCommand(f1);
             }).then(() => {
                 verifyActivation(f1, "TEST ERROR: command needs to be activated before continuing");
 
@@ -471,6 +472,57 @@ module CorsicaTests {
                 OverlayHelpers.disposeAndRemove(subFlyoutElement);
                 complete();
             });
+        };
+        
+        testCommandsDeactivateWhenContainingMenuHides = function (complete) {
+            // TODO Comment
+            var msg = "";
+
+            var menu1Element = document.createElement('div');
+            menu1Element.id = "menu1";
+            document.body.appendChild(menu1Element);
+            var menu1 = new Menu(menu1Element, { anchor: menu1Element });
+
+            var menu2Element = document.createElement('div');
+            menu2Element.id = "menu2";
+            document.body.appendChild(menu2Element);
+            var menu2 = new Menu(menu2Element);
+
+            var menu3Element = document.createElement('div');
+            menu3Element.id = "menu3";
+            document.body.appendChild(menu3Element);
+            var menu3 = new Menu(menu3Element);
+
+            var c3 = new MenuCommand(null, { id: 'menu3Cmd', type: 'button' }),
+                c2 = new MenuCommand(null, { id: 'menu2Cmd', type: 'flyout', flyout: menu3 }),
+                c1 = new MenuCommand(null, { id: 'menu1Cmd', type: 'flyout', flyout: menu2 });
+
+            menu1.commands = [c1];
+            menu2.commands = [c2];
+            menu3.commands = [c3]; // Stopped here ...
+
+            OverlayHelpers.show(menu1).then(() => {
+                return MenuCommand._activateFlyoutCommand(c1);
+                verifyActivation(c1, "TEST ERROR: command needs to be activated before continuing");
+            }).then(() => {
+                    return MenuCommand._activateFlyoutCommand(c2);
+                }).then(() => {
+                    verifyActivation(c2, "TEST ERROR: command needs to be activated before continuing");
+
+                    // verify focus in menu 3
+
+                    // verify focusing c1 deactivates c2, hides menu3 and focuses menu2
+
+                    //msg = "Changing focus from an activated 'flyout' typed command in a Menu, to any other command in that Menu, should deactivate all commands.";
+                    //LiveUnit.LoggingCore.logComment("Test: " + msg);
+                    //b1.element.focus();
+                    //verifyAllCommandsDeactivated(commands, msg);
+
+                    OverlayHelpers.disposeAndRemove(menu1Element);
+                    OverlayHelpers.disposeAndRemove(menu2Element);
+                    OverlayHelpers.disposeAndRemove(menu3Element);
+                    complete();
+                });
         };
     }
 }

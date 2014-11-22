@@ -503,13 +503,13 @@ define([
                 _deactivateFlyoutCommand: function MenuCommand_deactivateFlyoutCommand(menuCommand) {
                     // Deactivates the associated Flyout command and returns a promise once complete.
                     // A command is considered to be deactivated once the proper CSS class has been applied and its associated flyout has begun to hide. 
-                    var p = new WinJS.Promise(function (c, e) {
-
+                    var p = new WinJS.Promise(function (c) {
                         menuCommand = menuCommand.winControl || menuCommand;
+                        _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
+
                         var subFlyout = menuCommand.flyout;
                         // Flyout may not have processAll'd, so this may be a DOM object
                         if (subFlyout && !subFlyout.hidden && subFlyout.hide) {
-                            _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
 
                             subFlyout.addEventListener("beforehide", function beforeHide() {
                                 subFlyout.removeEventListener("beforehide", beforeHide, false);
@@ -518,8 +518,8 @@ define([
 
                             subFlyout.hide();
                         } else {
-                            // Could not change command to activated state.
-                            e();
+                            // subFlyout does not need to be hidden.
+                            c();
                         }
                     });
                     return p;
