@@ -351,10 +351,9 @@ define([
                         var command = target.winControl;
                         if (_ElementUtilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass)) {
                             // TODO: Comment this scenario better.
-                            event._winHandled = true; // Don't let the cascadeManager handle this.
                             command.flyout.element.focus(); // Move focus to subMenu and let the cascadeManager hide the subSubMenu instead.
                         } else {
-                            // collapse subFlyouts
+                            // Deactivate any other flyout commands in the Menu.
                             // TODO: Comment this scenario better.
                             Array.prototype.forEach.call(this.element.querySelectorAll("." + _Constants.menuCommandFlyoutClass), function (commandElement) {
                                 if (commandElement !== command.element) {
