@@ -238,7 +238,7 @@ module CorsicaTests {
                 // Hide Flyout in the middle of the cascade
                 index = Math.floor(flyoutChain.length / 2)
                 flyout = flyoutChain[index];
-                expectedFocusTarget = flyout._previousFocus; // TODO what's the right pattern for this in TS?
+                expectedFocusTarget = flyout._previousFocus;
                 expectedCascadeAfterHiding = flyoutChain.slice(0, index);
                 return hideFlyout(flyout);
 
