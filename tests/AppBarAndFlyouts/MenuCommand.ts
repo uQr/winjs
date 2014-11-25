@@ -254,7 +254,8 @@ module CorsicaTests {
             LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(menuCommandElement, _Constants.menuCommandFlyoutActivatedClass), msg);
 
 
-            function afterShow() {
+            function afterSubMenuShow() {
+                subMenu.removeEventListener("aftershow", afterSubMenuShow, false);
                 LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(menuCommandElement, _Constants.menuCommandFlyoutActivatedClass), msg);
 
                 var msg = "Hiding a Flyout MenuCommand's associated flyout, by any means, should deactivate the MenuCommand."
@@ -262,7 +263,8 @@ module CorsicaTests {
                 subMenu.hide();
             };
 
-            function afterHide() {
+            function afterSubMenuHide() {
+                subMenu.removeEventListener("afterhide", afterSubMenuHide, false);
                 LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(menuCommandElement, _Constants.menuCommandFlyoutActivatedClass), msg);
 
                 OverlayHelpers.disposeAndRemove(subMenuElement);
@@ -270,8 +272,8 @@ module CorsicaTests {
                 complete();
             };
 
-            subMenu.addEventListener("aftershow", afterShow, false);
-            subMenu.addEventListener("afterhide", afterHide, false);
+            subMenu.addEventListener("aftershow", afterSubMenuShow, false);
+            subMenu.addEventListener("afterhide", afterSubMenuHide, false);
 
             var msg = "Invoking a Flyout MenuCommand, by any means, should activate it and show its associated Flyout."
             LiveUnit.LoggingCore.logComment("Test: " + msg);

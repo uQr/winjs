@@ -521,6 +521,54 @@ module CorsicaTests {
                 Helper.keydown(flyout.element, Key.escape);
             });
         };
+
+        testShowAndHideMovesFocusWithoutWaitingForAnimationToComplete = function (complete) {
+            // Verifies Flyout.show and Flyout.hide moves focus synchronously after beginning the animation.
+            var button = document.createElement("button");
+            document.body.appendChild(button);
+
+            var flyout = new WinJS.UI.Flyout(_element, {anchor: document.body});
+
+            var msg = "",
+                test1Ran = false,
+                test2Ran = false;
+
+            button.focus();
+            LiveUnit.Assert.areEqual(document.activeElement, button, "TEST ERROR: button should have focus");
+
+            function beforeShow() {
+                flyout.removeEventListener("beforeshow", beforeShow, false);
+                WinJS.Promise.timeout(0).then(() => {
+                    LiveUnit.Assert.areEqual(document.activeElement, _element, msg);
+                    test1Ran = true;
+                });
+            };
+            flyout.addEventListener("beforeshow", beforeShow, false);
+
+            function beforeHide() {
+                flyout.removeEventListener("beforehide", beforeHide, false);
+                WinJS.Promise.timeout(0).then(() => {
+                    LiveUnit.Assert.areEqual(document.activeElement, button, msg);
+                    test2Ran = true;
+                });
+            }
+            flyout.addEventListener("beforehide", beforeHide, false);
+
+            msg = "Flyout.show should take focus synchronously after the 'beforeshow' event";
+            LiveUnit.LoggingCore.logComment("Test: " + msg);
+            OverlayHelpers.show(flyout).then(() => {
+                LiveUnit.Assert.isTrue(test1Ran, "TEST ERROR: Test 1 did not run.");
+
+                msg = "Flyout.show should take focus synchronously after the 'beforeshow' event";
+                LiveUnit.LoggingCore.logComment("Test: " + msg);
+                return OverlayHelpers.hide(flyout);
+            }).then(() => {
+                LiveUnit.Assert.isTrue(test2Ran, "TEST ERROR: Test 2 did not run.");
+                
+                OverlayHelpers.disposeAndRemove(flyoutElement);
+                complete();
+            });
+        }
     }
 }
 // register the object as a test class by passing in the name

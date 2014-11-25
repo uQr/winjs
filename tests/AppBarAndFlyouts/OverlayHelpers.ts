@@ -4,7 +4,7 @@
 module OverlayHelpers {
     "use strict";
 
-     export function show(overlay): WinJS.Promise<any> {
+    export function show(overlay): WinJS.Promise<any> {
          return new WinJS.Promise(function (c, e, p): void {
              function afterShow(): void {
                  overlay.removeEventListener("aftershow", afterShow, false);
@@ -12,6 +12,17 @@ module OverlayHelpers {
              };
              overlay.addEventListener("aftershow", afterShow, false);
              overlay.show();
+         });
+    };
+
+    export function hide(overlay): WinJS.Promise<any> {
+         return new WinJS.Promise(function (c, e, p): void {
+             function afterHide(): void {
+                 overlay.removeEventListener("afterhide", afterHide, false);
+                 c();
+             };
+             overlay.addEventListener("afterhide", afterHide, false);
+             overlay._hideOrDismiss();
          });
     };
 
