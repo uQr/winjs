@@ -564,8 +564,6 @@ module CorsicaTests {
                 return OverlayHelpers.hide(flyout);
             }).then(() => {
                 LiveUnit.Assert.isTrue(test2Ran, "TEST ERROR: Test 2 did not run.");
-                
-                OverlayHelpers.disposeAndRemove(flyoutElement);
                 complete();
             });
         }

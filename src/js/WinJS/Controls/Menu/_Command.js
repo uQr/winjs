@@ -227,6 +227,7 @@ define([
                         return flyout;
                     },
                     set: function (value) {
+
                         // Need to update aria-owns with the new ID.
                         var id = value;
                         if (id && typeof id !== "string") {
@@ -247,6 +248,10 @@ define([
                         }
                         if (typeof id === "string") {
                             this._element.setAttribute("aria-owns", id);
+                        }
+
+                        if(this._flyout !== value) {
+                            MenuCommand._deactivateFlyoutCommand(this);
                         }
 
                         // Remember it
@@ -288,7 +293,11 @@ define([
                         return !!this._element.disabled;
                     },
                     set: function (value) {
-                        this._element.disabled = !!value;
+                        value = !!value;
+                        if (value && this.type === _Constants.typeFlyout) {
+                            MenuCommand._deactivateFlyoutCommand(this);
+                        }
+                        this._element.disabled = value;
                     }
                 },
 
@@ -309,6 +318,9 @@ define([
 
                         var style = this._element.style;
                         if (value) {
+                            if (this.type === _Constants.typeFlyout) {
+                                MenuCommand._deactivateFlyoutCommand(this);
+                            }
                             style.visibility = "hidden";
                             style.display = "none";
                         } else {

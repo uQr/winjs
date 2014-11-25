@@ -4,6 +4,8 @@
 module OverlayHelpers {
     "use strict";
 
+    var _Constants = Helper.require("WinJS/Controls/AppBar/_Constants");
+
     export function show(overlay): WinJS.Promise<any> {
          return new WinJS.Promise(function (c, e, p): void {
              function afterShow(): void {
@@ -82,6 +84,17 @@ module OverlayHelpers {
                         complete();
                     });
             });
+        }
+
+        export function verifyMenuFlyoutCommandDeactivated(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
+            // Deactivated is defined as a MenuCommand that does not have the activated class and whose subFlyout is hidden or falsey.
+            LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
+            LiveUnit.Assert.isTrue(!command.flyout || command.flyout.hidden, msg);
+        }
+
+        export function verifyMenuFlyoutCommandActivated(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
+            LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
+            LiveUnit.Assert.isFalse(command.flyout.hidden, msg);
         }
     }
 }

@@ -13,10 +13,7 @@ module CorsicaTests {
 
     var MenuCommand = <typeof WinJS.UI.PrivateMenuCommand> WinJS.UI.MenuCommand,
         Menu = <typeof WinJS.UI.PrivateMenu> WinJS.UI.Menu,
-        _Constants;
-    WinJS.Utilities._require(["WinJS/Controls/AppBar/_Constants"], function (constants) {
-        _Constants = constants;
-    })
+        _Constants = Helper.require("WinJS/Controls/AppBar/_Constants");
 
     export class MenuCommandTests {
 
@@ -277,8 +274,92 @@ module CorsicaTests {
 
             var msg = "Invoking a Flyout MenuCommand, by any means, should activate it and show its associated Flyout."
             LiveUnit.LoggingCore.logComment("Test: " + msg);
-            menuCommand._invoke(); 
+            menuCommand._invoke();
         }
+
+        
+        // Tests that ... 
+        testHiddenPropertyDeactivatesFlyoutCommands = function (complete) {
+            var subMenuElement = document.createElement('div');
+            document.body.appendChild(subMenuElement);
+            var subMenu = new Menu(subMenuElement);
+
+            var menuCommandElement = document.createElement('button');
+            document.body.appendChild(menuCommandElement);
+            var menuCommand = new MenuCommand(menuCommandElement, { type: 'flyout', flyout: subMenu });
+
+            MenuCommand._activateFlyoutCommand(menuCommand).then(() => {
+
+                var msg = "";
+                LiveUnit.LoggingCore.logComment("Test: " + msg);
+
+                menuCommand.flyout.onafterhide = () => {
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand);
+
+                    menuCommand.flyout.onafterhide = null;
+                    OverlayHelpers.disposeAndRemove(subMenuElement);
+                    OverlayHelpers.disposeAndRemove(menuCommandElement);
+                    complete();
+                }
+                menuCommand.hidden = true;
+            });
+
+        }
+
+        // Tests that ... 
+        testDisabledPropertyDeactivatesFlyoutCommands = function (complete) {
+            var subMenuElement = document.createElement('div');
+            document.body.appendChild(subMenuElement);
+            var subMenu = new Menu(subMenuElement);
+
+            var menuCommandElement = document.createElement('button');
+            document.body.appendChild(menuCommandElement);
+            var menuCommand = new MenuCommand(menuCommandElement, { type: 'flyout', flyout: subMenu });
+
+            MenuCommand._activateFlyoutCommand(menuCommand).then(() => {
+
+                var msg = "";
+                LiveUnit.LoggingCore.logComment("Test: " + msg);
+
+                menuCommand.flyout.onafterhide = () => {
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand);
+
+                    menuCommand.flyout.onafterhide = null;
+                    OverlayHelpers.disposeAndRemove(subMenuElement);
+                    OverlayHelpers.disposeAndRemove(menuCommandElement);
+                    complete();
+                }
+                menuCommand.disabled = true;
+            });
+        }
+
+        // Tests that ... 
+        testFlyoutPropertyDeactivatesFlyoutCommands = function (complete) {
+            var subMenuElement = document.createElement('div');
+            document.body.appendChild(subMenuElement);
+            var subMenu = new Menu(subMenuElement);
+
+            var menuCommandElement = document.createElement('button');
+            document.body.appendChild(menuCommandElement);
+            var menuCommand = new MenuCommand(menuCommandElement, { type: 'flyout', flyout: subMenu });
+
+            MenuCommand._activateFlyoutCommand(menuCommand).then(() => {
+
+                var msg = "";
+                LiveUnit.LoggingCore.logComment("Test: " + msg);
+
+                subMenu.onafterhide = () => {
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand);
+
+                    subMenu.onafterhide = null;
+                    OverlayHelpers.disposeAndRemove(subMenuElement);
+                    OverlayHelpers.disposeAndRemove(menuCommandElement);
+                    complete();
+                }
+                menuCommand.flyout = null;
+            });
+        }
+
     }
 }
 // register the object as a test class by passing in the name

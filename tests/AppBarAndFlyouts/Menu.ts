@@ -17,19 +17,8 @@ module CorsicaTests {
 
     function verifyAllCommandsDeactivated(commands: Array<WinJS.UI.PrivateMenuCommand>, msg: string = "") {
         commands.forEach((command) => {
-            verifyDeactivation(command, msg);
+            OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(command, msg);
         });
-    }
-
-    function verifyDeactivation(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
-        // Deactivated is defined as a MenuCommand 
-        LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
-        LiveUnit.Assert.isTrue(!command.flyout || command.flyout.hidden, msg);
-    }
-
-    function verifyActivation(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
-        LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
-        LiveUnit.Assert.isFalse(command.flyout.hidden, msg);
     }
 
     export class MenuTests {
@@ -498,12 +487,12 @@ module CorsicaTests {
 
                 return MenuCommand._activateFlyoutCommand(f1);
             }).then(() => {
-                verifyActivation(f1, "TEST ERROR: command needs to be activated before continuing");
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f1, "TEST ERROR: command needs to be activated before continuing");
 
                 msg = "Focusing an activated 'flyout' typed command in a menu should leave it activated";
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
                 f1.element.focus();
-                verifyActivation(f1, msg);
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f1, msg);
 
                 msg = "Changing focus from an activated 'flyout' typed command in a Menu, to any other command in that Menu, should deactivate all commands.";
                 LiveUnit.LoggingCore.logComment("Test : " + msg);
@@ -512,7 +501,7 @@ module CorsicaTests {
 
                 return MenuCommand._activateFlyoutCommand(f2);
             }).then(() => {
-                verifyActivation(f2, "TEST ERROR: command needs to be activated before continuing");
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f2, "TEST ERROR: command needs to be activated before continuing");
 
                 msg = "Changing focus from an activated 'flyout' typed command in a Menu, to any other command in that Menu, should deactivate all commands.";
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
@@ -556,16 +545,16 @@ module CorsicaTests {
             OverlayHelpers.show(menu1).then(() => {
                 return MenuCommand._activateFlyoutCommand(c1);
             }).then(() => {
-                verifyActivation(c1, "TEST ERROR: command needs to be activated before continuing");
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c1, "TEST ERROR: command needs to be activated before continuing");
                 return MenuCommand._activateFlyoutCommand(c2);
             }).then(() => {
-                verifyActivation(c2, "TEST ERROR: command needs to be activated before continuing");
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c2, "TEST ERROR: command needs to be activated before continuing");
 
                 msg = "When a Menu is hidden, all of its 'flyout' typed MenuCommands should be deactivated";
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
                 return OverlayHelpers.hide(menu2)
             }).then(() => {
-                verifyDeactivation(c2);
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(c2);
 
                 OverlayHelpers.disposeAndRemove(menu1Element);
                 OverlayHelpers.disposeAndRemove(menu2Element);
@@ -601,15 +590,15 @@ module CorsicaTests {
             function afterSubSubMenuHide() {
                 subSubMenu.removeEventListener("afterhide", afterSubSubMenuHide, false);
 
-                verifyActivation(c1)
-                verifyDeactivation(c2);
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c1)
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(c2);
                 LiveUnit.Assert.areEqual(document.activeElement, subMenu.element);
 
                 OverlayHelpers.disposeAndRemove(parentMenuElement);
                 OverlayHelpers.disposeAndRemove(subMenuElement);
                 OverlayHelpers.disposeAndRemove(subSubMenuElement);
                 complete();
-            }, false);
+            }
             subSubMenu.addEventListener("afterhide", afterSubSubMenuHide, false);
 
             var c1 = new MenuCommand(null, { id: 'c1', type: 'flyout', flyout: subMenu }), 
@@ -623,14 +612,14 @@ module CorsicaTests {
             OverlayHelpers.show(parentMenu).then(() => {
                 return MenuCommand._activateFlyoutCommand(c1);
             }).then(() => {
-                verifyActivation(c1, "TEST ERROR: command needs to be activated before continuing");
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c1, "TEST ERROR: command needs to be activated before continuing");
                 return MenuCommand._activateFlyoutCommand(c2);
             }).then(() => {
-                verifyActivation(c2, "TEST ERROR: command needs to be activated before continuing");
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c2, "TEST ERROR: command needs to be activated before continuing");
 
                 msg = "Focusing an activated command in the Parent Menu should move focus to that commands subMenu and deactivate all 'flyout' commands in the subMenu";
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
-
+                c1.element.focus();
             });
         };
 
