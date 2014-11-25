@@ -15,8 +15,6 @@ module CorsicaTests {
         cascadeManager = Flyout._cascadeManager,
         chainCounter;
 
-    var Menu = <typeof WinJS.UI.Menu> WinJS.UI.Menu;
-
     var DEFAULT_CHAIN_SIZE = 6;
 
 
@@ -429,11 +427,6 @@ module CorsicaTests {
             }).done(complete);
         }
     }
-
-    //testInvokingSubMenuAppliesSelectionOnMenuCommand = function (complete) {
-    //    complete();
-    //}
-
 }
 
 // register the object as a test class by passing in the name
