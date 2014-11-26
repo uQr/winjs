@@ -87,13 +87,15 @@ module OverlayHelpers {
         }
 
         export function verifyMenuFlyoutCommandDeactivated(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
-            // Deactivated is defined as a MenuCommand that does not have the activated class and whose subFlyout is hidden or falsey.
+            // Deactivated is defined as a MenuCommand that does not have the activated class and whose flyout property is falsey or returns a subFlyout that is hidden.
             LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
             LiveUnit.Assert.isTrue(!command.flyout || command.flyout.hidden, msg);
         }
 
         export function verifyMenuFlyoutCommandActivated(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
+            // Activated is defined as a MenuCommand that has the activated class and whose flyout property is returns a subFlyout that is not hidden.
             LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
+            LiveUnit.Assert.isTrue(command.flyout, msg);
             LiveUnit.Assert.isFalse(command.flyout.hidden, msg);
         }
     }

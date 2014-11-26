@@ -15,6 +15,31 @@ module CorsicaTests {
         Menu = <typeof WinJS.UI.PrivateMenu> WinJS.UI.Menu,
         _Constants = Helper.require("WinJS/Controls/AppBar/_Constants");
 
+    function verifyPropertyChangeDeactivatesFlyoutMenuCommand(property: string, value: any, msg: string) {
+        return new WinJS.Promise((c) => {
+            var subMenuElement = document.createElement('div');
+            document.body.appendChild(subMenuElement);
+            var subMenu = new Menu(subMenuElement);
+
+            var menuCommandElement = document.createElement('button');
+            document.body.appendChild(menuCommandElement);
+            var menuCommand = new MenuCommand(menuCommandElement, { type: 'flyout', flyout: subMenu });
+
+            MenuCommand._activateFlyoutCommand(menuCommand).then(() => {
+
+                subMenu.onafterhide = () => {
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand, msg);
+
+                    subMenu.onafterhide = null;
+                    OverlayHelpers.disposeAndRemove(subMenuElement);
+                    OverlayHelpers.disposeAndRemove(menuCommandElement);
+                    c();
+                }
+                menuCommand[property] = value;
+            });
+        });
+    }
+
     export class MenuCommandTests {
 
         tearDown() {
@@ -253,7 +278,7 @@ module CorsicaTests {
 
             function afterSubMenuShow() {
                 subMenu.removeEventListener("aftershow", afterSubMenuShow, false);
-                LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(menuCommandElement, _Constants.menuCommandFlyoutActivatedClass), msg);
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(menuCommand);
 
                 var msg = "Hiding a Flyout MenuCommand's associated flyout, by any means, should deactivate the MenuCommand."
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
@@ -262,7 +287,7 @@ module CorsicaTests {
 
             function afterSubMenuHide() {
                 subMenu.removeEventListener("afterhide", afterSubMenuHide, false);
-                LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(menuCommandElement, _Constants.menuCommandFlyoutActivatedClass), msg);
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand);
 
                 OverlayHelpers.disposeAndRemove(subMenuElement);
                 OverlayHelpers.disposeAndRemove(menuCommandElement);
@@ -278,86 +303,25 @@ module CorsicaTests {
         }
 
         
-        // Tests that ... 
+        // Tests that setting the hidden property, of an activated flyout MenuCommand to true, will deactivate it.
         testHiddenPropertyDeactivatesFlyoutCommands = function (complete) {
-            var subMenuElement = document.createElement('div');
-            document.body.appendChild(subMenuElement);
-            var subMenu = new Menu(subMenuElement);
-
-            var menuCommandElement = document.createElement('button');
-            document.body.appendChild(menuCommandElement);
-            var menuCommand = new MenuCommand(menuCommandElement, { type: 'flyout', flyout: subMenu });
-
-            MenuCommand._activateFlyoutCommand(menuCommand).then(() => {
-
-                var msg = "";
-                LiveUnit.LoggingCore.logComment("Test: " + msg);
-
-                menuCommand.flyout.onafterhide = () => {
-                    OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand);
-
-                    menuCommand.flyout.onafterhide = null;
-                    OverlayHelpers.disposeAndRemove(subMenuElement);
-                    OverlayHelpers.disposeAndRemove(menuCommandElement);
-                    complete();
-                }
-                menuCommand.hidden = true;
-            });
-
+            var msg = "Setting the hidden property, of an activated flyout MenuCommand to true, should deactivate it.";
+            LiveUnit.LoggingCore.logComment("Test: " + msg);
+            verifyPropertyChangeDeactivatesFlyoutMenuCommand("hidden", true, msg).then(complete);
         }
 
-        // Tests that ... 
+        // Tests that disabling an activated flyout MenuCommand will deactivate it.
         testDisabledPropertyDeactivatesFlyoutCommands = function (complete) {
-            var subMenuElement = document.createElement('div');
-            document.body.appendChild(subMenuElement);
-            var subMenu = new Menu(subMenuElement);
-
-            var menuCommandElement = document.createElement('button');
-            document.body.appendChild(menuCommandElement);
-            var menuCommand = new MenuCommand(menuCommandElement, { type: 'flyout', flyout: subMenu });
-
-            MenuCommand._activateFlyoutCommand(menuCommand).then(() => {
-
-                var msg = "";
-                LiveUnit.LoggingCore.logComment("Test: " + msg);
-
-                menuCommand.flyout.onafterhide = () => {
-                    OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand);
-
-                    menuCommand.flyout.onafterhide = null;
-                    OverlayHelpers.disposeAndRemove(subMenuElement);
-                    OverlayHelpers.disposeAndRemove(menuCommandElement);
-                    complete();
-                }
-                menuCommand.disabled = true;
-            });
+            var msg = "Disabling an activated flyout MenuCommand should deactivate it.";
+            LiveUnit.LoggingCore.logComment("Test: " + msg);
+            verifyPropertyChangeDeactivatesFlyoutMenuCommand("disabled", true, msg).then(complete);
         }
 
-        // Tests that ... 
+        // Tests that setting the flyout property of an activated flyout MenuCommand will deactivate it.
         testFlyoutPropertyDeactivatesFlyoutCommands = function (complete) {
-            var subMenuElement = document.createElement('div');
-            document.body.appendChild(subMenuElement);
-            var subMenu = new Menu(subMenuElement);
-
-            var menuCommandElement = document.createElement('button');
-            document.body.appendChild(menuCommandElement);
-            var menuCommand = new MenuCommand(menuCommandElement, { type: 'flyout', flyout: subMenu });
-
-            MenuCommand._activateFlyoutCommand(menuCommand).then(() => {
-
-                var msg = "";
-                LiveUnit.LoggingCore.logComment("Test: " + msg);
-
-                subMenu.onafterhide = () => {
-                    OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand);
-
-                    subMenu.onafterhide = null;
-                    OverlayHelpers.disposeAndRemove(subMenuElement);
-                    OverlayHelpers.disposeAndRemove(menuCommandElement);
-                    complete();
-                }
-                menuCommand.flyout = null;
-            });
+            var msg = "Setting the flyout property of an activated flyout MenuCommand should deactivate it.";
+            LiveUnit.LoggingCore.logComment("Test: " + msg);
+            verifyPropertyChangeDeactivatesFlyoutMenuCommand("flyout", null, msg).then(complete); 
         }
 
     }

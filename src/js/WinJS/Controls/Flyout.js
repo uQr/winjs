@@ -501,7 +501,7 @@ define([
                 _endShow: function Flyout_endShow() {
                     // Remember if the IHM was up since we may need to hide it when the flyout hides.
                     // This check needs to happen after we've hidden any other visible flyouts from 
-                    // the cascasde as aresult of showing this flyout.
+                    // the cascasde as a result of showing this flyout.
                     this._keyboardWasUp = _Overlay._Overlay._keyboardInfo._visible;
                 },
 

@@ -483,7 +483,7 @@ define([
                 _activateFlyoutCommand: function MenuCommand_activateFlyoutCommand(menuCommand) {
                     // Activates the associated Flyout command and returns a promise once complete.
                     // A command is considered to be activated once the proper CSS class has been applied and its associated flyout has begun to show.
-                    var p = new WinJS.Promise(function (c, e) {
+                    return new Promise(function (c, e) {
                         menuCommand = menuCommand.winControl || menuCommand;
                         var subFlyout = menuCommand.flyout;
                         // Flyout may not have processAll'd, so this may be a DOM object
@@ -504,17 +504,16 @@ define([
 
                             subFlyout.show(menuCommand, "right");
                         } else {
-                            // Could not change command to deactivated state.
+                            // Could not change command to activated state.
                             e();
                         }
                     });
-                    return p;
                 },
 
                 _deactivateFlyoutCommand: function MenuCommand_deactivateFlyoutCommand(menuCommand) {
                     // Deactivates the associated Flyout command and returns a promise once complete.
                     // A command is considered to be deactivated once the proper CSS class has been applied and its associated flyout has begun to hide. 
-                    var p = new WinJS.Promise(function (c) {
+                    return new Promise(function (c) {
                         menuCommand = menuCommand.winControl || menuCommand;
                         _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
 
@@ -524,7 +523,7 @@ define([
 
                             subFlyout.addEventListener("beforehide", function beforeHide() {
                                 subFlyout.removeEventListener("beforehide", beforeHide, false);
-                                c()
+                                c();
                             }, false);
 
                             subFlyout.hide();
@@ -533,7 +532,6 @@ define([
                             c();
                         }
                     });
-                    return p;
                 },
             });
             return MenuCommand;

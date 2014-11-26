@@ -454,7 +454,7 @@ module CorsicaTests {
 
         testFocusChangeBetweenCommandDeactivatesFlyoutCommands = function (complete) {
             // Moving focus between commands in a Menu will deactivate any Flyout typed commands in the menu each time.
-            // Menu's will apply focus to MenuCommands on "mouseover" so this should verifies the scenario where an
+            // Menus will apply focus to MenuCommands on "mouseover" so this should verify the scenario where an
             // activated flyout command will deactivate when mousing over other commands in the Menu.
 
             var msg = "";
@@ -564,11 +564,12 @@ module CorsicaTests {
         };
 
         testParentMenuMovesFocusToSubMenuWhenActivatedMenuCommandIsFocused = function(complete) {
-        // Verifies that when a Menu contains a 'flyout' typed MenuCommand that is already activated, and that MenuCommand recieves focus,
-        // then the Menu should move focus onto the MenuCommand's subMenu all of the subMenu's 'flyout' typed commands should be deactivated.
-        // A real world scenario is a user mousing back into a parent or grandparent Menu across the activated MenuCommand in that Menu. 
-        // Mouseover on MenuCommands in a Menu, focuses that command, but when the MenuCommand is already activated we want to put focus
-        // into that command's subMenu and let the cascade Manager close the subSubMenu + descendants.
+            // Verifies that when a Menu contains a 'flyout' typed MenuCommand that is already activated, and that MenuCommand recieves focus,
+            // then the Menu should move focus onto the element of the MenuCommand's subMenu and all of the subMenu's 'flyout' typed commands 
+            // should be deactivated.
+            // A real world scenario is a user mousing back into a parent or grandparent Menu across the activated MenuCommand in that Menu. 
+            // Mouseover on MenuCommands in a Menu, focuses that command, but when the MenuCommand is already activated we want to put focus
+            // into that command's subMenu and let the cascade Manager close the subSubMenu + descendants.
 
             var msg = "";
 
