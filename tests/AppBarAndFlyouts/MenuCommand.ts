@@ -278,7 +278,7 @@ module CorsicaTests {
 
             function afterSubMenuShow() {
                 subMenu.removeEventListener("aftershow", afterSubMenuShow, false);
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(menuCommand);
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(menuCommand, msg);
 
                 var msg = "Hiding a Flyout MenuCommand's associated flyout, by any means, should deactivate the MenuCommand."
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
@@ -287,7 +287,7 @@ module CorsicaTests {
 
             function afterSubMenuHide() {
                 subMenu.removeEventListener("afterhide", afterSubMenuHide, false);
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand);
+                OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(menuCommand, msg);
 
                 OverlayHelpers.disposeAndRemove(subMenuElement);
                 OverlayHelpers.disposeAndRemove(menuCommandElement);

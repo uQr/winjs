@@ -86,17 +86,17 @@ module OverlayHelpers {
             });
         }
 
-        export function verifyMenuFlyoutCommandDeactivated(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
+        export function verifyMenuFlyoutCommandDeactivated(command: WinJS.UI.PrivateMenuCommand, errorMsg: string = "") {
             // Deactivated is defined as a MenuCommand that does not have the activated class and whose flyout property is falsey or returns a subFlyout that is hidden.
-            LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
-            LiveUnit.Assert.isTrue(!command.flyout || command.flyout.hidden, msg);
+            LiveUnit.Assert.isFalse(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), errorMsg);
+            LiveUnit.Assert.isTrue(!command.flyout || command.flyout.hidden, errorMsg);
         }
 
-        export function verifyMenuFlyoutCommandActivated(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
+        export function verifyMenuFlyoutCommandActivated(command: WinJS.UI.PrivateMenuCommand, errorMsg: string = "") {
             // Activated is defined as a MenuCommand that has the activated class and whose flyout property returns a subFlyout that is not hidden.
-            LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
-            LiveUnit.Assert.isTrue(command.flyout, msg);
-            LiveUnit.Assert.isFalse(command.flyout.hidden, msg);
+            LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), errorMsg);
+            LiveUnit.Assert.isTrue(command.flyout, errorMsg);
+            LiveUnit.Assert.isFalse(command.flyout.hidden, errorMsg);
         }
     }
 }

@@ -106,7 +106,6 @@ define([
                 this._element.addEventListener(_Constants._menuCommandInvokedEvent, this._handleCommandInvoked.bind(this), false);
                 this._element.addEventListener("mouseover", this._handleMouseOver.bind(this), false);
                 this._element.addEventListener("mouseout", this._handleMouseOut.bind(this), false);
-                //this._handleMouseMoveBound = this._handleMouseMove.bind(this);
 
                 // Attach our css class
                 _ElementUtilities.addClass(this._element, _Constants.menuClass);
@@ -403,15 +402,7 @@ define([
                                         that._hoverPromise = null;
                                     });
                             }
-
-                            this.element.addEventListener("mousemove", this._handleMouseMoveBound, false);
                         }
-                    }
-                },
-
-                _handleMouseMove: function Menu_handleMouseMove() {
-                    if (this && this.element && this.element.focus && this.element !== _Global.document.activeElement) {
-                        this.element.focus();
                     }
                 },
 
@@ -425,7 +416,6 @@ define([
                         if (this._hoverPromise) {
                             this._hoverPromise.cancel();
                         }
-                        this.element.removeEventListener("mousemove", this._handleMouseMoveBound, false);
                     }
                 },
 
