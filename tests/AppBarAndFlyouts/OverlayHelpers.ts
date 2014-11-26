@@ -93,7 +93,7 @@ module OverlayHelpers {
         }
 
         export function verifyMenuFlyoutCommandActivated(command: WinJS.UI.PrivateMenuCommand, msg: string = "") {
-            // Activated is defined as a MenuCommand that has the activated class and whose flyout property is returns a subFlyout that is not hidden.
+            // Activated is defined as a MenuCommand that has the activated class and whose flyout property returns a subFlyout that is not hidden.
             LiveUnit.Assert.isTrue(WinJS.Utilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass), msg);
             LiveUnit.Assert.isTrue(command.flyout, msg);
             LiveUnit.Assert.isFalse(command.flyout.hidden, msg);
