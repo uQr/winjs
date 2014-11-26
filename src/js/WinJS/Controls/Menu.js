@@ -345,17 +345,17 @@ define([
                 },
 
                 _handleFocusIn: function Menu_handleFocusIn(event) {
-                    // Menu focuses commands on mouseover. We need to handle cases around activated flyotu commands 
-                    // to make sure that mousing over different commands in a menu closes that commands sub flyouts.
+                    // Menu focuses commands on mouseover. We need to handle cases involving activated flyout commands 
+                    // to ensure that mousing over different commands in a menu closes that command's sub flyout.
                     var target = event.target;
                     if (isCommandInMenu(target)) {
                         var command = target.winControl;
                         if (_ElementUtilities.hasClass(command.element, _Constants.menuCommandFlyoutActivatedClass)) {
-                            // If its an activated 'flyout' typed command, move focus onto the command's subFlyout.
+                            // If it's an activated 'flyout' typed command, move focus onto the command's subFlyout.
                             // We expect this will collapse all decendant Flyouts of the subFlyout from the cascade.
                             command.flyout.element.focus();
                         } else {
-                            // Deactivate any other flyout commands in the Menu to subswquently trigger all subFlyouts descendants to collapse.
+                            // Deactivate any other flyout commands in the Menu to subsequently trigger all subFlyouts descendants to collapse.
                             Array.prototype.forEach.call(this.element.querySelectorAll("." + _Constants.menuCommandFlyoutActivatedClass), function (commandElement) {
                                 if (commandElement !== command.element) {
                                     var siblingCommand = commandElement.winControl;
@@ -364,8 +364,8 @@ define([
                             });
                         }
                     } else if (target === this.element) {
-                        // The Menu itself is receiving focus. Rely on the Flyout base implementationt to notify the cascadeManager.
-                        // We expect this will only happen When other Menu event handling code causes the menu to focus itself.
+                        // The Menu itself is receiving focus. Rely on the Flyout base implementation to notify the cascadeManager.
+                        // We expect this will only happen when other Menu event handling code causes the Menu to focus itself.
                         Flyout.Flyout.prototype._handleFocusIn.call(this, event);
                     }
                 },
