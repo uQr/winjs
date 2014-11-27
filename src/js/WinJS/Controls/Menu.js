@@ -355,13 +355,11 @@ define([
                             // We expect this will collapse all decendant Flyouts of the subFlyout from the cascade.
                             command.flyout.element.focus();
                         } else {
-                            // Deactivate any other flyout commands in the Menu to subsequently trigger all subFlyouts descendants to collapse.
-                            Array.prototype.forEach.call(this.element.querySelectorAll("." + _Constants.menuCommandFlyoutActivatedClass), function (commandElement) {
-                                if (commandElement !== command.element) {
-                                    var siblingCommand = commandElement.winControl;
-                                    _Command.MenuCommand._deactivateFlyoutCommand(siblingCommand);
-                                }
-                            });
+                            // Deactivate any currently activated command in the Menu to subsequently trigger all subFlyouts descendants to collapse.
+                            var activatedSiblingCommand = this.element.querySelector("." + _Constants.menuCommandFlyoutActivatedClass);
+                            if (activatedSiblingCommand) {
+                                _Command.MenuCommand._deactivateFlyoutCommand(activatedSiblingCommand);
+                            }
                         }
                     } else if (target === this.element) {
                         // The Menu itself is receiving focus. Rely on the Flyout base implementation to notify the cascadeManager.

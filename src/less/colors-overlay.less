@@ -115,13 +115,16 @@
             height: 100%;
             width: 100%;
             background-color: @accentColor;
-            border: 1px solid @accentColor;
-            content: "";
-            top:-1px; /* -1px to account for the focus rect border */
-            left:-1px; /* -1px to account for the focus rect border */
-            z-index: -1;
             opacity:@accentColorDefaultOpacity;
+            z-index: -1;
             box-sizing: content-box;
+            content: "";
+            /* We want this pseudo element to cover the border of its parent. */
+            /* Put a 1px border on this element to make it larger and then set its top/left to -1px.*/
+            border: 1px solid @accentColor;
+            top:-1px;
+            left:-1px;
+
         }
 
         button.win-command:enabled:-ms-keyboard-active {
@@ -227,13 +230,17 @@
             height: 100%;
             width: 100%;
             background-color: @accentColor;
-            border: @accentColor 1px solid;
             opacity: @listSelectRestOpacity;
             content: "";
-            top: -1px; /* -1px to account for the focus rect border */
-            left: -1px; /* -1px to account for the focus rect border */
             z-index: -1;
             box-sizing: content-box;
+            /* We want this pseudo element to cover the border of its parent. */
+            /* Put a 1px border on this element to make it larger and then set its top/left to -1px.*/
+            border: @accentColor 1px solid;
+            top: -1px;
+            left: -1px;
+            
+            
         }
 
         &.win-menu button[aria-checked=true].win-command:after,
