@@ -3,9 +3,9 @@
     .variableDefs(@theme) when not (@theme = highcontrast) {
         .colorDefinitions(@theme);
 
-        @accentColorDefaultOpacity: 0.7;
-        @accentColorHoverOpacity: 0.8;
-        @accentColorActiveOpacity: 1;
+        @accentColorDefaultOpacity: @listSelectRestOpacity;
+        @accentColorHoverOpacity: @listSelectHoverOpacity;
+        @accentColorActiveOpacity: @listSelectPressOpacity;
         @borderColor: @baseHigh;
         @textColor: @baseHigh;
         @textColorDisabled: @baseLow;
@@ -239,8 +239,6 @@
             border: @accentColor 1px solid;
             top: -1px;
             left: -1px;
-            
-            
         }
 
         &.win-menu button[aria-checked=true].win-command:after,
