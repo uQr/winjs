@@ -559,15 +559,36 @@ module CorsicaTests {
 
         showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             // If my anchor isn't in the cascade, just call overlayhelpers.show
-            // else call menucommand._activateFlyoutCommand
+            // else call menucommand._activateFlyoutCommand()
             // If the cascade contains #firstCmd
 
             var cascadingStack = cascadeManager._cascadingStack;
-            for (var i = cascadingStack.length - 1; i >= 0; i++) {
+            for (var cascadeIndex = cascadingStack.length - 1; cascadeIndex >= 0; cascadeIndex--) {
 
+                var currentFlyout = cascadingStack[cascadeIndex],
+                    currentFlyoutCommands = currentFlyout.element.querySelectorAll("#" + _Constants.menuCommandFlyoutClass),
+                    parentFlyoutCommand;
+
+                for (var i = 0, len = currentFlyoutCommands.length; i < len; i++) {
+                    var flyoutCommand = currentFlyoutCommands[i].winControl;
+                    if (flyoutCommand && flyoutCommand.flyout === flyout) {
+                        parentFlyoutCommand = flyoutCommand;
+                    }
+                }
+
+                if (parentFlyoutCommand) {
+                    break;
+                }
             }
 
-            return OverlayHelpers.show(flyout).then(function verifyFlyoutContainsFocusAfterShowing() {
+            var result;
+            if (parentFlyoutCommand) {
+                result = MenuCommand._activateFlyoutCommand(flyoutCommand);
+            } else {
+                result = OverlayHelpers.show(flyout);
+            }
+
+            return result.then(function verifyFlyoutContainsFocusAfterShowing() {
                 LiveUnit.Assert.isTrue(flyout.element.contains(<HTMLElement>document.activeElement), "Flyout should contain focus after showing");
             });
         }
@@ -582,7 +603,7 @@ module CorsicaTests {
             numMenus = numMenus || DEFAULT_CHAIN_SIZE;
 
             for (var i = 0; i < numMenus; i++) {
-                
+
                 var menu = new Menu(null, {});
                 document.body.appendChild(menu.element);
                 WinJS.Utilities.addClass(menu.element, chainClass);
@@ -597,7 +618,7 @@ module CorsicaTests {
                         new MenuCommand(null, { id: this.secondCommandId, label: this.secondCommandId, type: _Constants.typeFlyout, flyout: null }),
                     ];
                     prevMenu.commands = prevMenuCommands;
-                    menu.anchor = prevMenuCommands[0].element;
+                    //menu.anchor = prevMenuCommands[0].element;
                 } else {
                     menu.anchor = anchor
                 }
