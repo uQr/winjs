@@ -496,8 +496,8 @@ define([
                                 _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
                             }, false);
 
-                            subFlyout.addEventListener("beforeshow", function beforeShow() {
-                                subFlyout.removeEventListener("beforeshow", beforeShow, false);
+                            subFlyout.addEventListener("aftershow", function beforeShow() {
+                                subFlyout.removeEventListener("aftershow", beforeShow, false);
                                 // We are considered activated once we start showing the flyout.
                                 c();
                             }, false);
@@ -521,8 +521,8 @@ define([
                         // Flyout may not have processAll'd, so this may be a DOM object
                         if (subFlyout && !subFlyout.hidden && subFlyout.hide) {
 
-                            subFlyout.addEventListener("beforehide", function beforeHide() {
-                                subFlyout.removeEventListener("beforehide", beforeHide, false);
+                            subFlyout.addEventListener("afterhide", function beforeHide() {
+                                subFlyout.removeEventListener("afterhide", beforeHide, false);
                                 c();
                             }, false);
 

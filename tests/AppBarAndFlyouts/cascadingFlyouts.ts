@@ -583,6 +583,14 @@ module CorsicaTests {
             var result;
             if (parentFlyoutCommand) {
                 result = MenuCommand._activateFlyoutCommand(parentFlyoutCommand);
+                //result = new WinJS.Promise((c) => {
+                //    MenuCommand._activateFlyoutCommand(parentFlyoutCommand).then(() => {
+                //        flyout.addEventListener("aftershow", function afterShow() {
+                //            flyout.removeEventListener("aftershow", afterShow, false);
+                //            c();
+                //        }, false);
+                //    })
+                //})
             } else {
                 result = OverlayHelpers.show(flyout);
             }
