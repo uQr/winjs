@@ -559,14 +559,13 @@ module CorsicaTests {
 
         showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             // If my anchor isn't in the cascade, just call overlayhelpers.show
-            // else call menucommand._activateFlyoutCommand()
-            // If the cascade contains #firstCmd
+            // else call menucommand._activateFlyoutCommand(flyout)
 
             var cascadingStack = cascadeManager._cascadingStack;
             for (var cascadeIndex = cascadingStack.length - 1; cascadeIndex >= 0; cascadeIndex--) {
 
                 var currentFlyout = cascadingStack[cascadeIndex],
-                    currentFlyoutCommands = currentFlyout.element.querySelectorAll("#" + _Constants.menuCommandFlyoutClass),
+                    currentFlyoutCommands = currentFlyout.element.querySelectorAll("." + _Constants.menuCommandFlyoutClass),
                     parentFlyoutCommand;
 
                 for (var i = 0, len = currentFlyoutCommands.length; i < len; i++) {
@@ -583,7 +582,7 @@ module CorsicaTests {
 
             var result;
             if (parentFlyoutCommand) {
-                result = MenuCommand._activateFlyoutCommand(flyoutCommand);
+                result = MenuCommand._activateFlyoutCommand(parentFlyoutCommand);
             } else {
                 result = OverlayHelpers.show(flyout);
             }
@@ -610,7 +609,7 @@ module CorsicaTests {
                 menu.element.id = (i + 1) + "of" + numMenus;
 
                 if (prevMenu) {
-                    // Set commands in the previous Menu to it the current Menu, via the MenuCommand 'flyout' property.
+                    // Set commands in the previous Menu in order to chain it to the current Menu, via the MenuCommand 'flyout' property.
                     var prevMenuCommands = [
                         // First command opens the current Menu. 
                         // Second command can be used by tests for any reason.
@@ -618,7 +617,7 @@ module CorsicaTests {
                         new MenuCommand(null, { id: this.secondCommandId, label: this.secondCommandId, type: _Constants.typeFlyout, flyout: null }),
                     ];
                     prevMenu.commands = prevMenuCommands;
-                    //menu.anchor = prevMenuCommands[0].element;
+                    menu.anchor = prevMenuCommands[0].element;
                 } else {
                     menu.anchor = anchor
                 }
