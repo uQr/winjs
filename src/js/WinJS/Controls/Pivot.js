@@ -459,13 +459,13 @@ define([
                             pivot._headersContainerElement.style.marginRight = "0px";
                             var leadingMargin = pivot._rtl ? "marginRight" : "marginLeft";
                             var firstHeader = pivot._headersContainerElement.children[0];
-                            var leadingSpace = _ElementUtilities.getTotalWidth(firstHeader);
+                            var leadingSpace = _ElementUtilities.getTotalWidth(firstHeader) - headersStates.common.headersContainerLeadingMargin;
                             if (firstHeader !== pivot._headersContainerElement.children[0]) {
                                 // Calling getTotalWidth caused a layout which can trigger a synchronous resize which in turn
                                 // calls renderHeaders. We can ignore this one since its the old headers which are not in the DOM.
                                 return;
                             }
-                            pivot._headersContainerElement.style[leadingMargin] = (-1 * leadingSpace + headersStates.common.headersContainerLeadingMargin) + "px";
+                            pivot._headersContainerElement.style[leadingMargin] = (-1 * leadingSpace) + "px";
 
                             // Create header track nav button elements
                             pivot._prevButton = _Global.document.createElement("button");
@@ -1132,6 +1132,7 @@ define([
                                 that._showPivotItem(item.element, goPrevious);
                             }
                         }
+
                         var recenterPromise;
                         if (zooming) {
                             if (!that._stoppedAndRecenteredSignal) {
@@ -1139,7 +1140,7 @@ define([
                             }
                             recenterPromise = that._stoppedAndRecenteredSignal.promise;
                         } else {
-                            recenterPromise = Promise.wrap();
+                            recenterPromise = (that._stoppedAndRecenteredSignal && that._stoppedAndRecenteredSignal.promise) || Promise.wrap();
                         }
                         Promise.join([that._slideHeadersAnimation, that._showPivotItemAnimation, that._hidePivotItemAnimation]).then(function () {
                             recenterPromise.then(function () {
@@ -1205,7 +1206,7 @@ define([
                                 this._stoppedAndRecenteredSignal = null;
                             }
                         });
-                    } else if (this._currentManipulationState === MSManipulationEventStates.MS_MANIPULATION_STATE_INERTIA) {
+                    } else if (this._navMode !== Pivot._NavigationModes.api && this._currentManipulationState === MSManipulationEventStates.MS_MANIPULATION_STATE_INERTIA) {
                         var destinationX = ev.inertiaDestinationX;
                         if (+destinationX === destinationX) {
                             _Log.log && _Log.log('MSManipulation: inertiaDestinationX: ' + destinationX);
