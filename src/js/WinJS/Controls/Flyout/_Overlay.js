@@ -73,7 +73,7 @@ define([
                     // We get blur if we click off the window, including into an iframe within our window.
                     // Both blurs call this function, but fortunately document.hasFocus is true if either
                     // the document window or our iframe window has focus.
-                    if (!_Global.document.hasFocus()) {
+                    if (!_Global.document.hasFocus() && !_Overlay._debug) {
                         // The document doesn't have focus, so they clicked off the app, so light dismiss.
                         _Overlay._lightDismissOverlays(false);
                     } else {
@@ -1182,6 +1182,7 @@ define([
                 // Statics
                 _clickEatingAppBarDiv: false,
                 _clickEatingFlyoutDiv: false,
+                _debug: false,
 
                 _lightDismissFlyouts: function _Overlay_lightDismissFlyouts() {
                     _Overlay._hideClickEatingDivFlyout();

@@ -502,7 +502,7 @@ define([
                                 c();
                             }, false);
 
-                            subFlyout.show(menuCommand, "right");
+                            subFlyout.show(menuCommand, "_cascade");
                         } else {
                             // Could not change command to activated state.
                             e();

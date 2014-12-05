@@ -42,7 +42,7 @@ define([
             var Key = _ElementUtilities.Key;
 
             function getDimension(element, property) {
-                return parseFloat(element, _Global.getComputedStyle(element, null)[property]);
+                return parseFloat(_Global.getComputedStyle(element, null)[property]);
             }
 
             var strings = {
@@ -85,7 +85,7 @@ define([
                 collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
                     // Removes flyout param and its subflyout descendants from the _cascadingStack.
                     if (!this.reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
-                        this.reentrancyLock = true; 
+                        this.reentrancyLock = true;
 
                         var subFlyout;
                         while (this.length && flyout !== subFlyout) {
@@ -164,7 +164,7 @@ define([
                         this.collapseAll(true);
                     }
                 },
-            });                  
+            });
 
             var Flyout = _Base.Class.derive(_Overlay._Overlay, function Flyout_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.Flyout.Flyout">
@@ -690,6 +690,33 @@ define([
                                 }
                             }
                             break;
+                        case "_cascade":
+                            // Determine direction
+                            var rtl = false, // TODO determine this dynamically.
+                                OVERLAY = 4,
+                                preferredDirection = rtl ? "Left" : "Right",
+                                fallbackDirection = rtl ? "Right" : "Left",
+                                preferredAdjust = (flyout["margin" + preferredDirection] + OVERLAY),
+                                fallbackAdjust = (flyout["margin" + fallbackDirection] + OVERLAY);
+
+
+                            //// Shrink our measuremment of Anchor
+                            //anchor.right -= 4;
+                            //anchor.left += 4;
+
+                            //if (!this["_fit" + preferredDirection](anchor, flyout) && !this["_fit" + fallbackDirection](anchor, flyout)) {
+                            //    // Doesn't fit on either side just align to the preferred edge.
+                            //    this._nextLeft = rtl ? 0 : -1;
+                            //} else {
+                            //    this._nextLeft += rtl ? 4 : -4;
+                            //}
+
+                            if (!this["_fit" + preferredDirection](anchor, flyout, preferredAdjust) &&
+                                !this["_fit" + fallbackDirection](anchor, flyout, fallbackAdjust)) {
+                                // Doesn't fit on either side just align to the preferred edge.
+                                this._nextLeft = rtl ? 0 : -1;
+                            } 
+                            break;
                         default:
                             // Not a legal this._currentPlacement value
                             throw new _ErrorFromName("WinJS.UI.Flyout.BadPlacement", strings.badPlacement);
@@ -736,14 +763,16 @@ define([
                             this._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
                 },
 
-                _fitLeft: function Flyout_fitLeft(anchor, flyout) {
-                    this._nextLeft = anchor.left - flyout.width;
+                _fitLeft: function Flyout_fitLeft(anchor, flyout, adjust) {
+                    adjust = adjust || 0;
+                    this._nextLeft = (anchor.left + adjust) - flyout.width;
                     this._nextAnimOffset = { top: "0px", left: "50px", keyframe: "WinJS-showFlyoutLeft" };
                     return (this._nextLeft >= 0 && this._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
                 },
 
-                _fitRight: function Flyout_fitRight(anchor, flyout) {
-                    this._nextLeft = anchor.right;
+                _fitRight: function Flyout_fitRight(anchor, flyout, adjust) {
+                    adjust = adjust || 0;
+                    this._nextLeft = (anchor.right - adjust);
                     this._nextAnimOffset = { top: "0px", left: "-50px", keyframe: "WinJS-showFlyoutRight" };
                     return (this._nextLeft >= 0 && this._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
                 },
