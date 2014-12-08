@@ -6,7 +6,7 @@ define([
     'WinJS/_Signal',
     'WinJS/Scheduler',
     'WinJS/Utilities',
-    'WinJS/Utilities/_DirectionalFocus',
+    'WinJS/Utilities/_XYFocus',
     'WinJS/Fragments',
     'WinJS/Application',
     'WinJS/Navigation',
@@ -45,6 +45,11 @@ define([
     'WinJS/Controls/SplitView'
     ], function (_WinJS) {
     "use strict";
+
+    _WinJS.Namespace.define("WinJS.Utilities", {
+        _require: require,
+        _define: define
+    });
 
     return _WinJS;
 });

@@ -35,8 +35,7 @@ define([
         /// <event name="beforehide" locid="WinJS.UI.Flyout_e:beforehide">Raised just before hiding a flyout.</event>
         /// <event name="afterhide" locid="WinJS.UI.Flyout_e:afterhide">Raised immediately after a flyout is fully hidden.</event>
         /// <part name="flyout" class="win-flyout" locid="WinJS.UI.Flyout_part:flyout">The Flyout control itself.</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         Flyout: _Base.Namespace._lazy(function () {
             var Key = _ElementUtilities.Key;
@@ -47,7 +46,7 @@ define([
 
             var strings = {
                 get ariaLabel() { return _Resources._getWinJSString("ui/flyoutAriaLabel").value; },
-                get noAnchor() { return "Invalid argument: Showing flyout requires a DOM element as its parameter."; },
+                get noAnchor() { return "Invalid argument: Flyout anchor element not found in DOM."; },
                 get badPlacement() { return "Invalid argument: Flyout placement should be 'top' (default), 'bottom', 'left', 'right', 'auto', 'autohorizontal', or 'autovertical'."; },
                 get badAlignment() { return "Invalid argument: Flyout alignment should be 'center' (default), 'left', or 'right'."; }
             };
@@ -61,16 +60,16 @@ define([
             {
                 appendFlyout: function _CascadeManager_appendFlyout(flyoutToAdd) {
                     // PRECONDITION: flyoutToAdd must not already be in the cascade.
-                    _Log.log && this.indexOF(flyoutToAdd) >= 0 && _Log.log('_CascadeManager is attempting to append a Flyout that is already in the cascade.', "winjs _CascadeManager", "error");
+                    _Log.log && this.indexOf(flyoutToAdd) >= 0 && _Log.log('_CascadeManager is attempting to append a Flyout that is already in the cascade.', "winjs _CascadeManager", "error");
                     // PRECONDITION: this.reentrancyLock must be false. appendFlyout should only be called from baseFlyoutShow() which is the function responsible for preventing reentrancy.
                     _Log.log && this.reentrancyLock && _Log.log('_CascadeManager is attempting to append a Flyout through reentrancy.', "winjs _CascadeManager", "error");
 
-                    // IF the anchor element for flyoutToAdd is contained within another flyout, 
+                    // IF the anchor element for flyoutToAdd is contained within another flyout,
                     // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
                     //  Remove from the cascadingStack, any subflyout descendants of the parent flyout.
                     // ELSE flyoutToAdd isn't anchored to any of the Flyouts in the existing cascade
                     //  Collapse the entire cascadingStack to start a new cascade.
-                    // FINALLY: 
+                    // FINALLY:
                     //  add flyoutToAdd to the end of the cascading stack. Monitor it for events.
                     var indexOfParentFlyout = this.indexOfElement(flyoutToAdd._currentAnchor);
                     if (indexOfParentFlyout >= 0) {
@@ -85,7 +84,7 @@ define([
                 collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
                     // Removes flyout param and its subflyout descendants from the _cascadingStack.
                     if (!this.reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
-                        this.reentrancyLock = true; 
+                        this.reentrancyLock = true;
 
                         var subFlyout;
                         while (this.length && flyout !== subFlyout) {
@@ -149,7 +148,7 @@ define([
                         target = event.target;
 
                     if (event.keyCode === leftKey) {
-                        // Left key press in a SubFlyout will close that subFlyout and any subFlyouts cascading from it. 
+                        // Left key press in a SubFlyout will close that subFlyout and any subFlyouts cascading from it.
                         var index = this.indexOfElement(target);
                         if (index >= 1) {
                             var subFlyout = this.getAt(index);
@@ -164,7 +163,7 @@ define([
                         this.collapseAll(true);
                     }
                 },
-            });                  
+            });
 
             var Flyout = _Base.Class.derive(_Overlay._Overlay, function Flyout_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.Flyout.Flyout">
@@ -484,8 +483,8 @@ define([
 
                         Flyout._cascadeManager.appendFlyout(this);
 
-                        // Store what had focus before showing the Flyout. This must happen after we've appended this 
-                        // Flyout to the cascade and subsequently triggered other branches of cascading flyouts to 
+                        // Store what had focus before showing the Flyout. This must happen after we've appended this
+                        // Flyout to the cascade and subsequently triggered other branches of cascading flyouts to
                         // collapse. Ensures that focus has already been restored to the correct element by the 
                         // previous branch before we try to record it here.
                         this._previousFocus = _Global.document.activeElement;
@@ -502,7 +501,7 @@ define([
 
                 _endShow: function Flyout_endShow() {
                     // Remember if the IHM was up since we may need to hide it when the flyout hides.
-                    // This check needs to happen after we've hidden any other visible flyouts from 
+                    // This check needs to happen after we've hidden any other visible flyouts from
                     // the cascasde as a result of showing this flyout.
                     this._keyboardWasUp = _Overlay._Overlay._keyboardInfo._visible;
                 },
@@ -593,9 +592,17 @@ define([
                 //   - this is because right handed users would be more likely to obscure a flyout on the right of the anchor.
                 // All three auto placements will add a vertical scrollbar if necessary.
                 _getTopLeft: function Flyout_getTopLeft() {
-                    var anchorRawRectangle = this._currentAnchor.getBoundingClientRect(),
+
+                    var anchorRawRectangle,
                         flyout = {},
                         anchor = {};
+
+                    try {
+                        anchorRawRectangle = this._currentAnchor.getBoundingClientRect();
+                    }
+                    catch (e) {
+                        throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
+                    }
 
                     // Adjust for the anchor's margins.
                     anchor.top = anchorRawRectangle.top;
@@ -825,18 +832,21 @@ define([
 
                 _resize: function Flyout_resize() {
                     // If hidden and not busy animating, then nothing to do
-                    if (this.hidden && !this._animating) {
-                        return;
-                    }
+                    if (!this.hidden || this._animating) {
 
-                    // This should only happen if the IHM is dismissing,
-                    // the only other way is for viewstate changes, which
-                    // would dismiss any flyout.
-                    if (this._needToHandleHidingKeyboard) {
-                        // Hiding keyboard, update our position, giving the anchor a chance to update first.
-                        var that = this;
-                        _BaseUtils._setImmediate(function () { that._findPosition(); });
-                        this._needToHandleHidingKeyboard = false;
+                        // This should only happen if the IHM is dismissing,
+                        // the only other way is for viewstate changes, which
+                        // would dismiss any flyout.
+                        if (this._needToHandleHidingKeyboard) {
+                            // Hiding keyboard, update our position, giving the anchor a chance to update first.
+                            var that = this;
+                            _BaseUtils._setImmediate(function () {
+                                if (!that.hidden || that._animating) {
+                                    that._findPosition();
+                                }
+                            });
+                            this._needToHandleHidingKeyboard = false;
+                        }
                     }
                 },
 
@@ -883,19 +893,22 @@ define([
                 _hidingKeyboard: function Flyout_hidingKeyboard() {
                     // If we aren't visible and not animating, or haven't been repositioned, then nothing to do
                     // We don't know if the keyboard moved the anchor, so _keyboardMovedUs doesn't help here
-                    if (this.hidden && !this._animating) {
-                        return;
-                    }
+                    if (!this.hidden || this._animating) {
 
-                    // Snap to the final position
-                    // We'll either just reveal the current space or resize the window
-                    if (_Overlay._Overlay._keyboardInfo._isResized) {
-                        // Flag resize that we'll need an updated position
-                        this._needToHandleHidingKeyboard = true;
-                    } else {
-                        // Not resized, update our final position, giving the anchor a chance to update first.
-                        var that = this;
-                        _BaseUtils._setImmediate(function () { that._findPosition(); });
+                        // Snap to the final position
+                        // We'll either just reveal the current space or resize the window
+                        if (_Overlay._Overlay._keyboardInfo._isResized) {
+                            // Flag resize that we'll need an updated position
+                            this._needToHandleHidingKeyboard = true;
+                        } else {
+                            // Not resized, update our final position, giving the anchor a chance to update first.
+                            var that = this;
+                            _BaseUtils._setImmediate(function () {
+                                if (!that.hidden || that._animating) {
+                                    that._findPosition();
+                                }
+                            });
+                        }
                     }
                 },
 
@@ -989,7 +1002,7 @@ define([
                     if (!this.element.contains(event.relatedTarget)) {
                         Flyout._cascadeManager.handleFocusIntoFlyout(event);
                     }
-                    // Else focus is only moving between elements in the flyout. 
+                    // Else focus is only moving between elements in the flyout.
                     // Doesn't need to be handled by cascadeManager.
                 },
                 _handleFocusOut: function Flyout_handleFocusOut(event) {
