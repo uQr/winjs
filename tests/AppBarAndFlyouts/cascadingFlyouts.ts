@@ -78,9 +78,13 @@ module CorsicaTests {
             return p;
         }
 
-        generateFlyoutChain(anchor: HTMLElement, numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
+        generateFlyoutChain(anchor?: HTMLElement, numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
             this.abstractMethodFail();
             return [];
+        }
+
+        chainFlyouts(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
+            this.abstractMethodFail();
         }
 
         verifyCascade(expectedCascade: Array<WinJS.UI.PrivateFlyout>): void {
@@ -261,9 +265,9 @@ module CorsicaTests {
 
             that.showFlyoutChain(flyoutChain).then(() => {
 
-                // Create a single Flyout anchored to a flyout already in the cascade
-                var anchor = flyoutChain[requiredSize - 2].element,
-                    otherFlyout = that.generateFlyoutChain(anchor, 1)[0];
+                // Create a single Flyout anchored to a flyout already in the cascade.
+                var otherFlyout = that.generateFlyoutChain(null, 1)[0];
+                that.chainFlyouts(flyoutChain[requiredSize - 2], otherFlyout);
 
                 that.showFlyout(otherFlyout).then(() => {
                     var expectedCascade = flyoutChain.slice(0, requiredSize - 1).concat(otherFlyout);
@@ -430,7 +434,7 @@ module CorsicaTests {
             });
         }
 
-        generateFlyoutChain(anchor: HTMLElement, numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
+        generateFlyoutChain(anchor?: HTMLElement, numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
             // Creates and returns an Array of Flyouts. Each Flyout in the chain has its anchor property set to the HTMLElement of the previous flyout.
             var flyoutChain = [],
                 chainClass = "chain_" + ++chainCounter,
@@ -451,6 +455,11 @@ module CorsicaTests {
                 prevFlyout = flyout;
             }
             return flyoutChain;
+        }
+
+        chainFlyouts(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
+            // Chain the tail Flyout to the head Flyout.
+            tail.anchor = head.element;
         }
     }
 
@@ -493,7 +502,7 @@ module CorsicaTests {
             });
         }
 
-        generateFlyoutChain(anchor: HTMLElement, numMenus?: number): Array<WinJS.UI.PrivateFlyout> {
+        generateFlyoutChain(anchor?: HTMLElement, numMenus?: number): Array<WinJS.UI.PrivateFlyout> {
             // Creates and returns an Array of Menu Flyouts. Each Menu in the chain has its anchor property set to the HTMLElement of parent Menu's flyout MenuCommand
             var flyoutChain = [],
                 chainClass = "chain_" + ++chainCounter,
@@ -527,6 +536,12 @@ module CorsicaTests {
                 prevMenu = menu;
             }
             return flyoutChain;
+        }
+
+        chainFlyouts(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
+            // Chain the tail Menu to the head Menu.
+            var menuCommand = head.element.querySelector("#" + this.secondCommandId).winControl;
+            menuCommand.flyout = tail;
         }
     }
 }
