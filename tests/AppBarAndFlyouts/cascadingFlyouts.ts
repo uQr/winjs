@@ -123,8 +123,8 @@ module CorsicaTests {
             chainCounter = 0;
 
             _defaultAnchor = document.createElement('button');
-            _defaultAnchor.id = "rootanchor";
-            _defaultAnchor.textContent = "rootanchor";
+            _defaultAnchor.id = "defaultanchor";
+            _defaultAnchor.textContent = "defaultanchor";
             _defaultAnchor.tabIndex = 1;
             document.body.appendChild(_defaultAnchor);
             _defaultAnchor.focus();
