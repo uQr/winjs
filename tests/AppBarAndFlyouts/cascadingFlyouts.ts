@@ -24,7 +24,17 @@ module CorsicaTests {
         }
 
         showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
-            return WinJS.Promise.wrapError(this.abstractMethodFail());
+            this.abstractMethodFail();
+            return WinJS.Promise.wrapError(null);
+        }
+
+        generateFlyoutChain(anchor?: HTMLElement, numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
+            this.abstractMethodFail();
+            return [];
+        }
+
+        chainFlyouts(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
+            this.abstractMethodFail();
         }
 
         hideFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
@@ -74,15 +84,6 @@ module CorsicaTests {
             });
 
             return p;
-        }
-
-        generateFlyoutChain(anchor?: HTMLElement, numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
-            this.abstractMethodFail();
-            return [];
-        }
-
-        chainFlyouts(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
-            this.abstractMethodFail();
         }
 
         verifyCascade(expectedCascade: Array<WinJS.UI.PrivateFlyout>): void {
