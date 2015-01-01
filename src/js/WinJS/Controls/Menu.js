@@ -368,10 +368,10 @@ define([
                 },
 
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
-                    // Menu hides when invoking a command commits an action, not when a subFlyout is invoked.
+                    // Cascading Menus hide when invoking a command commits an action, not when invoking a command opens a subFlyout.
                     var command = event.detail.command;
                     if (command._type !== _Constants.typeFlyout) {
-                        this._hide();
+                        this._lightDismiss(); // Collapse all Menus/Flyouts.
                     }
                 },
 
