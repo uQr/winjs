@@ -10,7 +10,8 @@ import _OptionsParser = require("../ControlProcessor/_OptionsParser");
 "use strict";
 
 var AttributeNames = {
-    focusOverride: "data-win-focus"
+    focusOverride: "data-win-xyfocus",
+    focusOverrideLegacy: "data-win-focus"
 };
 
 var ClassNames = {
@@ -99,29 +100,46 @@ export interface IRect {
     width: number;
 }
 
+/**
+ * Gets the mapping object that maps keycodes to XYFocus actions.
+**/ 
 export var keyCodeMap: { [key: string]: number[] } = {
     left: [_ElementUtilities.Key.leftArrow],
     right: [_ElementUtilities.Key.rightArrow],
     up: [_ElementUtilities.Key.upArrow],
     down: [_ElementUtilities.Key.downArrow]
 };
+
+/**
+ * Gets or sets the focus root when invoking XYFocus APIs.
+**/
 export var focusRoot: HTMLElement;
 
+/**
+ * Returns the next focusable element from the current active element (or reference, if supplied) towards the specified direction.
+ * @param direction The direction to search.
+ * @param options An options object configuring the search.
+**/
+export function findNextFocusElement(direction: string, options?: XYFocusOptions): HTMLElement;
 export function findNextFocusElement(direction: "left", options?: XYFocusOptions): HTMLElement;
 export function findNextFocusElement(direction: "right", options?: XYFocusOptions): HTMLElement;
 export function findNextFocusElement(direction: "up", options?: XYFocusOptions): HTMLElement;
 export function findNextFocusElement(direction: "down", options?: XYFocusOptions): HTMLElement;
-export function findNextFocusElement(direction: string, options?: XYFocusOptions): HTMLElement;
 export function findNextFocusElement(direction: string, options?: XYFocusOptions): HTMLElement {
     var result = _findNextFocusElementInternal(direction, options);
     return result ? result.target : null;
 }
 
+/**
+ * Moves focus to the next focusable element from the current active element (or reference, if supplied) towards the specific direction.
+ * @param direction The direction to move.
+ * @param options An options object configuring the focus move.
+**/
+export function moveFocus(direction: string, options?: XYFocusOptions): HTMLElement;
 export function moveFocus(direction: "left", options?: XYFocusOptions): HTMLElement;
 export function moveFocus(direction: "right", options?: XYFocusOptions): HTMLElement;
 export function moveFocus(direction: "up", options?: XYFocusOptions): HTMLElement;
 export function moveFocus(direction: "down", options?: XYFocusOptions): HTMLElement;
-export function moveFocus(direction: string, options?: XYFocusOptions): HTMLElement;
 export function moveFocus(direction: string, options?: XYFocusOptions): HTMLElement {
     var result = findNextFocusElement(direction, options);
     if (result) {
@@ -135,27 +153,27 @@ export function moveFocus(direction: string, options?: XYFocusOptions): HTMLElem
 }
 
 export function enableXYFocus() {
-    if (!_dFocusEnabled) {
+    if (!_xyFocusEnabled) {
         _Global.document.addEventListener("keydown", _handleKeyEvent);
-        _dFocusEnabled = true;
+        _xyFocusEnabled = true;
     }
 }
 
 export function disableXYFocus() {
-    if (_dFocusEnabled) {
+    if (_xyFocusEnabled) {
         _Global.document.removeEventListener("keydown", _handleKeyEvent);
-        _dFocusEnabled = false;
+        _xyFocusEnabled = false;
     }
 }
 
 
 // Privates
-var _dFocusEnabled = false;
+var _xyFocusEnabled = false;
 var _lastTarget: HTMLElement;
 var _cachedLastTargetRect: IRect;
 var _historyRect: IRect;
 var _afEnabledFrames: Window[] = [];
-function _dFocus(direction: string, keyCode: number, referenceRect?: IRect): boolean {
+function _xyFocus(direction: string, keyCode: number, referenceRect?: IRect): boolean {
     // If focus has moved since the last XYFocus movement, scrolling occured, or an explicit
     // reference rectangle was given to us, then we invalidate the history rectangle.
     if (referenceRect || _Global.document.activeElement !== _lastTarget) {
@@ -163,7 +181,7 @@ function _dFocus(direction: string, keyCode: number, referenceRect?: IRect): boo
         _lastTarget = null;
         _cachedLastTargetRect = null;
     } else if (_lastTarget && _cachedLastTargetRect) {
-        var lastTargetRect = _lastTarget.getBoundingClientRect();
+        var lastTargetRect = _toIRect(_lastTarget.getBoundingClientRect());
         if (lastTargetRect.left !== _cachedLastTargetRect.left || lastTargetRect.top !== _cachedLastTargetRect.top) {
             _historyRect = null;
             _lastTarget = null;
@@ -291,7 +309,7 @@ function _findNextFocusElementInternal(direction: string, options?: XYFocusOptio
 
     // Handle override
     if (refObj.element) {
-        var manualOverrideOptions = refObj.element.getAttribute(AttributeNames.focusOverride);
+        var manualOverrideOptions = refObj.element.getAttribute(AttributeNames.focusOverride) || refObj.element.getAttribute(AttributeNames.focusOverrideLegacy);
         if (manualOverrideOptions) {
             var parsedOptions = _OptionsParser.optionsParser(manualOverrideOptions);
 
@@ -459,7 +477,7 @@ function _findNextFocusElementInternal(direction: string, options?: XYFocusOptio
         var refElement: HTMLElement;
         var refRect: IRect;
 
-        if ((!referenceElement && !referenceRect) || (referenceElement && referenceElement.tabIndex === -1) || (referenceElement && !referenceElement.parentNode)) {
+        if ((!referenceElement && !referenceRect) || (referenceElement && !referenceElement.parentNode)) {
             // Note: We need to check to make sure 'parentNode' is not null otherwise there is a case  
             // where _lastTarget is defined, but calling getBoundingClientRect will throw a native exception.  
             // This case happens if the innerHTML of the parent of the _lastTarget is set to "".  
@@ -502,7 +520,7 @@ function _findNextFocusElementInternal(direction: string, options?: XYFocusOptio
         }
 
         var style = getComputedStyle(element);
-        if (element.tabIndex === -1 || style.display === "none" || style.visibility === "hidden" || element.disabled) {
+        if (element.getAttribute("tabIndex") === "-1" || style.display === "none" || style.visibility === "hidden" || element.disabled) {
             // Skip elements that are hidden  
             // Note: We don't check for opacity === 0, because the browser cannot tell us this value accurately.  
             return false;
@@ -563,7 +581,7 @@ function _handleKeyEvent(e: KeyboardEvent): void {
         var key = keys[i];
         var keyMappings = keyCodeMap[key];
         if (keyMappings.indexOf(e.keyCode) >= 0) {
-            if (_dFocus(key, e.keyCode)) {
+            if (_xyFocus(key, e.keyCode)) {
                 e.preventDefault();
             }
             return;
@@ -594,7 +612,7 @@ _Global.addEventListener("message", (e: MessageEvent): void => {
             // When we get this message we will force-enable XYFocus to support scenarios where
             // websites running WinJS are put into an IFRAME and the parent frame has XYFocus enabled.
             enableXYFocus();
-            _dFocus(data.direction, -1, data.referenceRect);
+            _xyFocus(data.direction, -1, data.referenceRect);
             break;
 
         case CrossDomainMessageConstants.dFocusExit:
@@ -610,7 +628,7 @@ _Global.addEventListener("message", (e: MessageEvent): void => {
             var refRect: IRect = data.referenceRect;
             refRect.left += iframe.offsetLeft;
             refRect.top += iframe.offsetTop;
-            _dFocus(data.direction, -1, refRect);
+            _xyFocus(data.direction, -1, refRect);
             break;
     }
 });
@@ -649,7 +667,7 @@ var toPublish = {
     findNextFocusElement: findNextFocusElement,
     moveFocus: moveFocus,
 
-    _dFocus: _dFocus
+    _xyFocus: _xyFocus
 };
 toPublish = _BaseUtils._merge(toPublish, _Events.eventMixin);
 toPublish["_listeners"] = {};

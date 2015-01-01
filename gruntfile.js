@@ -59,11 +59,11 @@
         grunt.registerTask("minify", ["uglify", "add-bom"]);
 
         // Private tasks (not designed to be used from the command line)
-        grunt.registerTask("_copyFinal", ["copy:tests", "copy:testDeps", "copy:fonts"]);
+        grunt.registerTask("_copyFinal", ["copy:tests", "copy:testDeps", "copy:fonts", "copy:intellisense"]);
         grunt.registerTask("_copyToTsBuild", ["copy:srcjs"])
 
         // Other tasks
-        grunt.registerTask("modules", ["clean:modules", "requirejs:publicModules", "replace:base"]);
+        grunt.registerTask("modules", ["clean:modules", "build-modules", "replace:base"]);
         grunt.registerTask("lint", ["jshint", "jscs"]);
         grunt.registerTask("saucelabs", ["connect:saucelabs", "saucelabs-qunit", "post-tests-results"]);
     };

@@ -673,7 +673,8 @@ define([
                 // prevent multiple events from firing when nesting observers
                 evt.stopPropagation();
 
-                if (this._attributeFilter.length && this._attributeFilter.indexOf(evt.attrName) === -1) {
+                var attrName = evt.attrName;
+                if (this._attributeFilter.length && this._attributeFilter.indexOf(attrName) === -1) {
                     return;
                 }
 
@@ -682,7 +683,7 @@ define([
                     return;
                 }
 
-                var attrName = evt.attrName;
+                var isAriaMutation = attrName.indexOf("aria") >= 0;
 
                 // DOM mutation events use different naming for this attribute
                 if (attrName === 'tabindex') {
@@ -695,7 +696,7 @@ define([
                     attributeName: attrName
                 });
 
-                if (this._observerCount === 1) {
+                if (this._observerCount === 1 && !isAriaMutation) {
                     this._dispatchEvent();
                 } else if (this._scheduled === false) {
                     this._scheduled = true;
@@ -1133,7 +1134,7 @@ define([
         _zoomToDuration: _zoomToDuration,
 
         _zoomTo: function _zoomTo(element, args) {
-            if (element.msZoomTo) {
+            if (this._supportsSnapPoints && element.msZoomTo) {
                 element.msZoomTo(args);
             } else {
                 // Schedule to ensure that we're not running from within an event handler. For example, if running
@@ -2265,6 +2266,31 @@ define([
             }
 
             return highestTabIndex;
+        },
+
+        _hasCursorKeysBehaviors: function Utilities_hasCursorKeysBehaviors(element) {
+            if (element.tagName === "SELECT" ||
+                element.tagName === "TEXTAREA") {
+                return true;
+            }
+            if (element.tagName === "INPUT") {
+                return element.type === "" ||
+                    element.type === "date" ||
+                    element.type === "datetime" ||
+                    element.type === "datetime-local" ||
+                    element.type === "email" ||
+                    element.type === "month" ||
+                    element.type === "number" ||
+                    element.type === "password" ||
+                    element.type === "range" ||
+                    element.type === "search" ||
+                    element.type === "tel" ||
+                    element.type === "text" ||
+                    element.type === "time" ||
+                    element.type === "url" ||
+                    element.type === "week";
+            }
+            return false;
         },
 
         _reparentChildren: function (originalParent, destinationParent) {

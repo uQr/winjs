@@ -76,11 +76,12 @@ export class ToolBar {
     private _id: string;
     private _disposed: boolean;
     private _overflowButton: HTMLButtonElement;
+    private _spacer: HTMLDivElement;
     private _separatorWidth: number;
     private _standardCommandWidth: number;
     private _overflowButtonWidth: number;
     private _menu: Menu.Menu;
-    private _inlineMenu: boolean;
+    private _shownDisplayMode: string;
     private _element: HTMLElement;
     private _data: BindingList.List<_Command.ICommand>;
     private _primaryCommands: _Command.ICommand[];
@@ -108,34 +109,34 @@ export class ToolBar {
         return this._element;
     }
 
-    /// <field type="Boolean" locid="WinJS.UI.ToolBar.inlineMenu" helpKeyword="WinJS.UI.ToolBar.inlineMenu">
-    /// Indicates whether the commands that overflow should be displayed in an inline menu or not
+    /// <field type="String" defaultValue="reduced" locid="WinJS.UI.ToolBar.shownDisplayMode" helpKeyword="WinJS.UI.ToolBar.shownDisplayMode" isAdvanced="true">
+    /// Gets/Sets how ToolBar will display overflow commands while shown. Values are "reduced" and "full".
     /// </field>
-    get inlineMenu() {
-        return !!this._inlineMenu;
+    get shownDisplayMode() {
+        return this._shownDisplayMode;
     }
-    set inlineMenu(value: boolean) {
-        this._writeProfilerMark("set_inlineMenu,info");
+    set shownDisplayMode(value: string) {
+        this._writeProfilerMark("set_shownDisplayMode,info");
 
-        value = !!value;
-        if (value === this._inlineMenu) {
+        if (value === this._shownDisplayMode) {
             return;
         }
 
-        this._inlineMenu = value;
-
-        if (!value) {
-            _ElementUtilities.addClass(this.element, _Constants.flyoutMenuCssClass);
-            _ElementUtilities.removeClass(this.element, _Constants.inlineMenuCssClass);
-        } else {
-            _ElementUtilities.addClass(this.element, _Constants.inlineMenuCssClass);
-            _ElementUtilities.removeClass(this.element, _Constants.flyoutMenuCssClass);
+        if (value === _Constants.shownDisplayModes.full) {
+            this._shownDisplayMode = _Constants.shownDisplayModes.full;
+            _ElementUtilities.addClass(this.element, _Constants.shownDisplayFullCssClass);
+            _ElementUtilities.removeClass(this.element, _Constants.shownDisplayReducedCssClass);
             if (!this._inlineOverflowArea) {
                 this._inlineOverflowArea = _Global.document.createElement("div");
                 _ElementUtilities.addClass(this._inlineOverflowArea, _Constants.overflowAreaCssClass);
                 _ElementUtilities.addClass(this._inlineOverflowArea, _Constants.menuCssClass);
                 this.element.appendChild(this._inlineOverflowArea);
             }
+        } else {
+            // 'reduced' is default 
+            this._shownDisplayMode = _Constants.shownDisplayModes.reduced;
+            _ElementUtilities.addClass(this.element, _Constants.shownDisplayReducedCssClass);
+            _ElementUtilities.removeClass(this.element, _Constants.shownDisplayFullCssClass);
         }
         if (!this._initializing) {
             this._positionCommands();
@@ -144,7 +145,7 @@ export class ToolBar {
 
     /// <field type="String" locid="WinJS.UI.ToolBar.extraClass" helpKeyword="WinJS.UI.ToolBar.extraClass">
     /// Gets or sets the extra CSS class that is applied to the host DOM element, and the corresponding
-    /// overflow menu created by the ToolBar when its inlineMenu property is false.
+    /// overflow menu created by the ToolBar when its shownDisplayMode property is 'reduced'.
     /// </field>
     get extraClass() {
         return this._extraClass;
@@ -240,10 +241,13 @@ export class ToolBar {
 
         this._setupTree();
 
-        if (!options.data) {
+        if (!options.data || !options.shownDisplayMode) {
             // Shallow copy object so we can modify it.
             options = _BaseUtils._shallowCopy(options);
-            options.data = this._getDataFromDOMElements();
+
+            // Set defaults
+            options.data = options.data || this._getDataFromDOMElements();
+            options.shownDisplayMode = options.shownDisplayMode || _Constants.shownDisplayModes.reduced;
         }
 
         _Control.setOptions(this, options);
@@ -327,6 +331,10 @@ export class ToolBar {
         _ElementUtilities._reparentChildren(this.element, this._mainActionArea);
         this.element.appendChild(this._mainActionArea);
 
+        this._spacer = _Global.document.createElement("div");
+        _ElementUtilities.addClass(this._spacer, _Constants.spacerCssClass);
+        this._mainActionArea.appendChild(this._spacer);
+
         this._overflowButton = _Global.document.createElement("button");
         this._overflowButton.tabIndex = 0;
         this._overflowButton.innerHTML = "<span class='" + _Constants.ellipsisCssClass + "'></span>";
@@ -339,7 +347,7 @@ export class ToolBar {
             }
         });
         this._overflowButtonWidth = _ElementUtilities.getTotalWidth(this._overflowButton);
-        _ElementUtilities.addClass(this.element, _Constants.flyoutMenuCssClass);
+        _ElementUtilities.addClass(this.element, _Constants.shownDisplayReducedCssClass);
     }
 
     private _getFocusableElementsInfo(): IFocusableElementsInfo {
@@ -348,7 +356,7 @@ export class ToolBar {
             focusedIndex: -1
         };
         var elementsInReach = Array.prototype.slice.call(this._mainActionArea.children);
-        if (this.inlineMenu && _Global.getComputedStyle(this._inlineOverflowArea).visibility !== "hidden") {
+        if (this.shownDisplayMode === _Constants.shownDisplayModes.full && _Global.getComputedStyle(this._inlineOverflowArea).visibility !== "hidden") {
             elementsInReach = elementsInReach.concat(Array.prototype.slice.call(this._inlineOverflowArea.children));
         }
 
@@ -431,7 +439,7 @@ export class ToolBar {
             child = <HTMLElement> this._mainActionArea.children[i];
             if (child.style.display !== "none" || (child["winControl"] && child["winControl"].section === "secondary")) {
                 currentElements.push(child);
-                if (dataElements.indexOf(child) === -1 && child !== this._overflowButton) {
+                if (dataElements.indexOf(child) === -1 && child !== this._overflowButton && child !== this._spacer) {
                     deletedElements.push(child);
                 }
             }
@@ -552,7 +560,7 @@ export class ToolBar {
 
                     case Key.end:
                         var index = focusableElementsInfo.elements.length - 1;
-                        if (!this.inlineMenu && this._isElementFocusable(this._overflowButton)) {
+                        if (this.shownDisplayMode === _Constants.shownDisplayModes.reduced && this._isElementFocusable(this._overflowButton)) {
                             // In detached mode, the end key goes to the last command, not the overflow button,
                             // which is the last element when it is visible.
                             index = Math.max(0, index - 1);
@@ -644,9 +652,9 @@ export class ToolBar {
         for (var i = 0, len = sortedCommandsInfo.length; i < len; i++) {
             availableWidth -= sortedCommandsInfo[i].width;
 
-            // The overflow button needs space if there are secondary commands, inlineMenu is on,
+            // The overflow button needs space if there are secondary commands, shownDisplayMode is 'full',
             // or we are not evaluating the last command.
-            overflowButtonSpace = (this.inlineMenu || hasSecondaryCommands || (i < len - 1) ? this._overflowButtonWidth : 0)
+            overflowButtonSpace = (this.shownDisplayMode === _Constants.shownDisplayModes.full || hasSecondaryCommands || (i < len - 1) ? this._overflowButtonWidth : 0)
 
             if (availableWidth - overflowButtonSpace < 0) {
                 maxPriority = sortedCommandsInfo[i].priority - 1;
@@ -765,7 +773,7 @@ export class ToolBar {
     }
 
     private _getMenuCommand(command: _Command.ICommand): _MenuCommand.MenuCommand {
-        var menuCommand = new _ToolBarMenuCommand._MenuCommand(this.inlineMenu, null, {
+        var menuCommand = new _ToolBarMenuCommand._MenuCommand(this.shownDisplayMode === _Constants.shownDisplayModes.full, null, {
             label: command.label,
             type: (command.type === _Constants.typeContent ? _Constants.typeFlyout : command.type) || _Constants.typeButton,
             disabled: command.disabled,
@@ -802,7 +810,7 @@ export class ToolBar {
     }
 
     private _setupOverflowArea(additionalCommands: any[]) {
-        if (this.inlineMenu) {
+        if (this.shownDisplayMode === _Constants.shownDisplayModes.full) {
             // Inline menu mode always has the overflow button hidden
             this._overflowButton.style.display = "";
 
@@ -840,7 +848,7 @@ export class ToolBar {
         // Add separator between primary and secondary command if applicable
         var secondaryCommandsLength = this._secondaryCommands.length;
         if (additionalCommands.length > 0 && secondaryCommandsLength > 0) {
-            var separator = new _ToolBarMenuCommand._MenuCommand(this.inlineMenu, null, {
+            var separator = new _ToolBarMenuCommand._MenuCommand(this.shownDisplayMode === _Constants.shownDisplayModes.full, null, {
                 type: _Constants.typeSeparator
             });
             this._inlineOverflowArea.appendChild(separator.element);

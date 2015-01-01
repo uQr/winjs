@@ -126,8 +126,9 @@ define([
                     // Add listeners
                     this._domElement.addEventListener('keydown', this._keyDownHandler.bind(this));
                     _ElementUtilities._addEventListener(this._clickElement, 'pointerdown', this._pointerDownHandler.bind(this));
-                    _ElementUtilities._globalListener.addEventListener(this._domElement, 'pointermove', this._pointerMoveHandler.bind(this));
-                    _ElementUtilities._globalListener.addEventListener(this._domElement, 'pointerup', this._pointerUpHandler.bind(this));
+                    _ElementUtilities._addEventListener(this._clickElement, 'pointercancel', this._pointerCancelHandler.bind(this));
+                    this._boundPointerMove = this._pointerMoveHandler.bind(this);
+                    this._boundPointerUp = this._pointerUpHandler.bind(this);
 
                     // Need mutation observer to listen for aria checked change
                     this._mutationObserver = new _ElementUtilities._MutationObserver(this._ariaChangedHandler.bind(this));
@@ -271,32 +272,47 @@ define([
 
                         // Toggle checked on spacebar
                         if (e.keyCode === _ElementUtilities.Key.space) {
+                            e.preventDefault();
                             this.checked = !this.checked;
                         }
 
                         // Arrow keys set value
                         if (e.keyCode === _ElementUtilities.Key.rightArrow ||
                             e.keyCode === _ElementUtilities.Key.upArrow) {
+                            e.preventDefault();
                             this.checked = true;
                         }
                         if (e.keyCode === _ElementUtilities.Key.leftArrow ||
                             e.keyCode === _ElementUtilities.Key.downArrow) {
+                            e.preventDefault();
                             this.checked = false;
                         }
 
                     },
                     _pointerDownHandler: function ToggleSwitch_pointerDown(e) {
-                        if (this.disabled) {
+                        if (this.disabled || this._mousedown) {
                             return;
                         }
 
                         e.preventDefault();
 
                         this._mousedown = true;
-                        this._dragXStart = e.pageX - this._trackElement.offsetLeft;
+                        this._dragXStart = e.pageX - this._trackElement.getBoundingClientRect().left;
                         this._dragX = this._dragXStart;
                         this._dragging = false;
                         _ElementUtilities.addClass(this._domElement, classPressed);
+
+                        _ElementUtilities._globalListener.addEventListener(this._domElement, 'pointermove', this._boundPointerMove, true);
+                        _ElementUtilities._globalListener.addEventListener(this._domElement, 'pointerup', this._boundPointerUp, true);
+                        if (e.pointerType === _ElementUtilities._MSPointerEvent.MSPOINTER_TYPE_TOUCH) {
+                            _ElementUtilities._setPointerCapture(this._domElement, e.pointerId);
+                        }
+                    },
+                    _pointerCancelHandler: function ToggleSwitch_pointerCancel(e) {
+                        this._resetPressedState();
+                        if (e.pointerType === _ElementUtilities._MSPointerEvent.MSPOINTER_TYPE_TOUCH) {
+                            _ElementUtilities._releasePointerCapture(this._domElement, e.pointerId);
+                        }
                     },
                     _pointerUpHandler: function ToggleSwitch_pointerUp(e) {
                         if (this.disabled) {
@@ -314,9 +330,11 @@ define([
 
                         // If the thumb is being dragged, pick a new value based on what the thumb
                         // was closest to
+                        var trackRect = this._trackElement.getBoundingClientRect();
+                        var thumbRect = this._thumbElement.getBoundingClientRect();
                         var isRTL = _Global.getComputedStyle(this._domElement).direction === 'rtl';
                         if (this._dragging) {
-                            var maxX = this._trackElement.offsetWidth - this._thumbElement.offsetWidth;
+                            var maxX = trackRect.width - thumbRect.width;
                             this.checked = isRTL ? this._dragX < maxX / 2 : this._dragX >= maxX / 2;
                             this._dragging = false;
                             _ElementUtilities.removeClass(this._domElement, classDragging);
@@ -327,9 +345,7 @@ define([
                         }
 
                         // Reset tracking variables and intermediate styles
-                        this._mousedown = false;
-                        this._thumbElement.style.left = '';
-                        _ElementUtilities.removeClass(this._domElement, classPressed);
+                        this._resetPressedState();
                     },
                     _pointerMoveHandler: function ToggleSwitch_pointerMove(e) {
                         if (this.disabled) {
@@ -345,16 +361,18 @@ define([
                         e.preventDefault();
 
                         // Get pointer x coord relative to control
-                        var localMouseX = e.pageX - this._trackElement.offsetLeft;
+                        var trackRect = this._trackElement.getBoundingClientRect();
+                        var localMouseX = e.pageX - trackRect.left;
 
                         // Not dragging if mouse is outside track
-                        if (localMouseX > this._trackElement.offsetWidth) {
+                        if (localMouseX > trackRect.width) {
                             return;
                         }
 
                         // Calculate a position for the thumb
-                        var maxX = this._trackElement.offsetWidth - this._thumbElement.offsetWidth - 6;
-                        this._dragX = Math.min(maxX, localMouseX - this._thumbElement.offsetWidth / 2);
+                        var thumbRect = this._thumbElement.getBoundingClientRect();
+                        var maxX = trackRect.width - thumbRect.width - 6;
+                        this._dragX = Math.min(maxX, localMouseX - thumbRect.width / 2);
                         this._dragX = Math.max(2, this._dragX);
 
                         // Calculate if this pointermove constitutes switching to drag mode
@@ -364,6 +382,13 @@ define([
                         }
 
                         this._thumbElement.style.left = this._dragX + 'px';
+                    },
+                    _resetPressedState: function ToggleSwitch_resetPressedState() {
+                        this._mousedown = false;
+                        this._thumbElement.style.left = '';
+                        _ElementUtilities.removeClass(this._domElement, classPressed);
+                        _ElementUtilities._globalListener.removeEventListener(this._domElement, 'pointermove', this._boundPointerMove, true);
+                        _ElementUtilities._globalListener.removeEventListener(this._domElement, 'pointerup', this._boundPointerUp, true);
                     }
                 });
 
