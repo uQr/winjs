@@ -714,21 +714,17 @@ define([
                     /// The command found, an array of commands if more than one have the same ID, or null if no command is found.
                     /// </returns>
                     /// </signature>
-                    var commands = this.element.querySelectorAll("#" + id);
-                    var newCommands = [];
-                    for (var count = 0, len = commands.length; count < len; count++) {
-                        if (commands[count].winControl) {
-                            newCommands.push(commands[count].winControl);
-                        }
-                    }
-
-                    if (newCommands.length === 1) {
-                        return newCommands[0];
-                    } else if (newCommands.length === 0) {
+                    var commands = this._layout.commandsInOrder.filter(function (command) {
+                        return command.id === id || command.element.id === id;
+                    });
+                    
+                    if (commands.length === 1) {
+                        return commands[0];
+                    } else if (commands.length === 0) {
                         return null;
                     }
 
-                    return newCommands;
+                    return commands;
                 },
 
                 showCommands: function (commands) {
@@ -1194,7 +1190,8 @@ define([
                 _animatePositionChange: function AppBar_animatePositionChange(fromPosition, toPosition) {
                     // Determines and executes the proper transition between visible positions
 
-                    this._layout.positionChanging(fromPosition, toPosition);
+                    var layoutElementsAnimationPromise = this._layout.positionChanging(fromPosition, toPosition),
+                        appBarElementAnimationPromise;
 
                     // Get values in terms of pixels to perform animation.
                     var beginningVisiblePixelHeight = this._visiblePixels[fromPosition],
@@ -1215,11 +1212,13 @@ define([
                     // Animate
                     if (endingVisiblePixelHeight > beginningVisiblePixelHeight) {
                         var fromOffset = { top: offsetTop + "px", left: "0px" };
-                        return Animations.showEdgeUI(this._element, fromOffset, { mechanism: "transition" });
+                        appBarElementAnimationPromise = Animations.showEdgeUI(this._element, fromOffset, { mechanism: "transition" });
                     } else {
                         var toOffset = { top: offsetTop + "px", left: "0px" };
-                        return Animations.hideEdgeUI(this._element, toOffset, { mechanism: "transition" });
+                        appBarElementAnimationPromise = Animations.hideEdgeUI(this._element, toOffset, { mechanism: "transition" });
                     }
+
+                    return Promise.join([layoutElementsAnimationPromise, appBarElementAnimationPromise]);
                 },
 
                 _checkDoNext: function AppBar_checkDoNext() {

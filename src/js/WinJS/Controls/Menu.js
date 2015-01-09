@@ -369,6 +369,10 @@ define([
 
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
                     // Cascading Menus hide when invoking a command commits an action, not when invoking a command opens a subFlyout.
+                    if (this._hoverPromise) {
+                        // Prevent pending duplicate invoke triggered via hover.
+                        this._hoverPromise.cancel();
+                    }
                     var command = event.detail.command;
                     if (command._type !== _Constants.typeFlyout) {
                         this._lightDismiss(); // Collapse all Menus/Flyouts.

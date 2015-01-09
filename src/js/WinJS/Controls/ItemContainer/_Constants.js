@@ -13,8 +13,8 @@ define([
     members._verticalClass = "win-vertical";
     members._scrollableClass = "win-surface";
     members._itemsContainerClass = "win-itemscontainer";
-    members._listHeaderContainerClass = "win-listheadercontainer";
-    members._listFooterContainerClass = "win-listfootercontainer";
+    members._listHeaderContainerClass = "win-headercontainer";
+    members._listFooterContainerClass = "win-footercontainer";
     members._padderClass = "win-itemscontainer-padder";
     members._proxyClass = "_win-proxy";
     members._itemClass = "win-item";
@@ -59,7 +59,6 @@ define([
     members._selectionModeClass = "win-selectionmode";
     members._noCSSGrid = "win-nocssgrid";
     members._hidingSelectionMode = "win-hidingselectionmode";
-    members._hidingSelectionModeAnimationName = "WinJS-selectionMode-shiftLeft";
     members._hidingSelectionModeAnimationTimeout = 250;
 
     members._INVALID_INDEX = -1;
