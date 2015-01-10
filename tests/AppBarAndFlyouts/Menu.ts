@@ -57,22 +57,21 @@ module CorsicaTests {
             OverlayHelpers.disposeAndRemove(menuElement);
         }
 
-
-    // Test Menu Instantiation with null element
-    testMenuNullInstantiation = function () {
+        // Test Menu Instantiation with null element
+        testMenuNullInstantiation = function () {
             LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu with null element");
             var menu = new Menu(null, { commands: { type: 'separator', id: 'sep' } });
             LiveUnit.Assert.isNotNull(menu, "Menu instantiation was null when sent a null Menu element.");
         }
 
-    // Test Menu Instantiation with no options
-    testMenuEmptyInstantiation = function () {
+        // Test Menu Instantiation with no options
+        testMenuEmptyInstantiation = function () {
             LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu with empty constructor");
             var menu = new Menu();
             LiveUnit.Assert.isNotNull(menu, "Menu instantiation was null when sent a Empty Menu element.");
         }
 
-    // Test multiple instantiation of the same Menu DOM element
+        // Test multiple instantiation of the same Menu DOM element
         testMenuMultipleInstantiation() {
             MenuTests.prototype.testMenuMultipleInstantiation["LiveUnit.ExpectedException"] = { message: "Invalid argument: Controls may only be instantiated one time for each DOM element" };
             // Get the Menu element from the DOM
@@ -90,7 +89,6 @@ module CorsicaTests {
                 OverlayHelpers.disposeAndRemove(menuElement);
             }
         }
-
 
         // Test Menu parameters
         testMenuParams = function () {
@@ -154,83 +152,81 @@ module CorsicaTests {
             testBadInitOption("placement", {}, "WinJS.UI.Flyout.BadPlacement", badPlacement);
         }
 
-    testDefaultMenuParameters = function () {
-            // Get the Menu element from the DOM
-            var menuElement = document.createElement("div");
-            document.body.appendChild(menuElement);
-            LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu element");
-            var menu = new Menu(menuElement, { commands: { type: 'separator', id: 'sep' } });
-            LiveUnit.LoggingCore.logComment("Menu has been instantiated.");
-            LiveUnit.Assert.isNotNull(menu, "Menu element should not be null when instantiated.");
+        testDefaultMenuParameters = function () {
+                // Get the Menu element from the DOM
+                var menuElement = document.createElement("div");
+                document.body.appendChild(menuElement);
+                LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu element");
+                var menu = new Menu(menuElement, { commands: { type: 'separator', id: 'sep' } });
+                LiveUnit.LoggingCore.logComment("Menu has been instantiated.");
+                LiveUnit.Assert.isNotNull(menu, "Menu element should not be null when instantiated.");
 
-            LiveUnit.Assert.areEqual(menuElement, menu.element, "Verifying that element is what we set it with");
-            LiveUnit.Assert.isTrue(menu.hidden, "Verifying that hidden is true");
-            OverlayHelpers.disposeAndRemove(menuElement);
-        }
-
-
-    // Simple Function Tests
-    testSimpleMenuTestsFunctions = function () {
-            // Get the MenuTests element from the DOM
-            var menuElement = document.createElement("div");
-            document.body.appendChild(menuElement);
-            LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu element");
-            var menu = new Menu(menuElement, { commands: { type: 'separator', id: 'sep' } });
-            LiveUnit.LoggingCore.logComment("Menu has been instantiated.");
-            LiveUnit.Assert.isNotNull(menu, "Menu element should not be null when instantiated.");
-
-            LiveUnit.LoggingCore.logComment("show");
-            menu.show(menuElement);
-
-            LiveUnit.LoggingCore.logComment("hide");
-            menu.hide();
-
-            OverlayHelpers.disposeAndRemove(menuElement);
-        }
-
-
-    testMenuDispose = function () {
-            var mc1 = new MenuCommand(document.createElement("button"), { label: "mc1" });
-            var mc2 = new MenuCommand(document.createElement("button"), { label: "mc2" });
-
-            var menu = new Menu(null, { commands: [mc1, mc2] });
-            LiveUnit.Assert.isTrue(menu.dispose);
-            LiveUnit.Assert.isFalse(menu._disposed);
-
-            menu.dispose();
-            LiveUnit.Assert.isTrue(menu._disposed);
-            LiveUnit.Assert.isTrue(mc1._disposed);
-            LiveUnit.Assert.isTrue(mc2._disposed);
-            menu.dispose();
-        }
-
-    testMenuShowThrows = function (complete) {
-            // Get the menu element from the DOM
-            var menuElement = document.createElement("div");
-            document.body.appendChild(menuElement);
-            LiveUnit.LoggingCore.logComment("Attempt to Instantiate the menu element");
-            var menu: any = new Menu(menuElement);
-            LiveUnit.LoggingCore.logComment("menu has been instantiated.");
-            LiveUnit.Assert.isNotNull(menu, "menu element should not be null when instantiated.");
-
-            LiveUnit.LoggingCore.logComment("Calling show() with no parameters should throw");
-            try {
-                menu.show();
-            } catch (e) {
-                LiveUnit.Assert.areEqual("Invalid argument: Flyout anchor element not found in DOM.", e.message);
+                LiveUnit.Assert.areEqual(menuElement, menu.element, "Verifying that element is what we set it with");
+                LiveUnit.Assert.isTrue(menu.hidden, "Verifying that hidden is true");
+                OverlayHelpers.disposeAndRemove(menuElement);
             }
 
-            LiveUnit.LoggingCore.logComment("Calling show() with null should throw");
-            try {
-                menu.show(null);
-            } catch (e) {
-                LiveUnit.Assert.areEqual("Invalid argument: Flyout anchor element not found in DOM.", e.message);
-            }
-            OverlayHelpers.disposeAndRemove(menuElement);
-            complete();
-        }
+        // Simple Function Tests
+        testSimpleMenuTestsFunctions = function () {
+                // Get the MenuTests element from the DOM
+                var menuElement = document.createElement("div");
+                document.body.appendChild(menuElement);
+                LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu element");
+                var menu = new Menu(menuElement, { commands: { type: 'separator', id: 'sep' } });
+                LiveUnit.LoggingCore.logComment("Menu has been instantiated.");
+                LiveUnit.Assert.isNotNull(menu, "Menu element should not be null when instantiated.");
 
-    testBackClickEventTriggersLightDismiss = function (complete) {
+                LiveUnit.LoggingCore.logComment("show");
+                menu.show(menuElement);
+
+                LiveUnit.LoggingCore.logComment("hide");
+                menu.hide();
+
+                OverlayHelpers.disposeAndRemove(menuElement);
+            }
+
+        testMenuDispose = function () {
+                var mc1 = new MenuCommand(document.createElement("button"), { label: "mc1" });
+                var mc2 = new MenuCommand(document.createElement("button"), { label: "mc2" });
+
+                var menu = new Menu(null, { commands: [mc1, mc2] });
+                LiveUnit.Assert.isTrue(menu.dispose);
+                LiveUnit.Assert.isFalse(menu._disposed);
+
+                menu.dispose();
+                LiveUnit.Assert.isTrue(menu._disposed);
+                LiveUnit.Assert.isTrue(mc1._disposed);
+                LiveUnit.Assert.isTrue(mc2._disposed);
+                menu.dispose();
+            }
+
+        testMenuShowThrows = function (complete) {
+                // Get the menu element from the DOM
+                var menuElement = document.createElement("div");
+                document.body.appendChild(menuElement);
+                LiveUnit.LoggingCore.logComment("Attempt to Instantiate the menu element");
+                var menu: any = new Menu(menuElement);
+                LiveUnit.LoggingCore.logComment("menu has been instantiated.");
+                LiveUnit.Assert.isNotNull(menu, "menu element should not be null when instantiated.");
+
+                LiveUnit.LoggingCore.logComment("Calling show() with no parameters should throw");
+                try {
+                    menu.show();
+                } catch (e) {
+                    LiveUnit.Assert.areEqual("Invalid argument: Flyout anchor element not found in DOM.", e.message);
+                }
+
+                LiveUnit.LoggingCore.logComment("Calling show() with null should throw");
+                try {
+                    menu.show(null);
+                } catch (e) {
+                    LiveUnit.Assert.areEqual("Invalid argument: Flyout anchor element not found in DOM.", e.message);
+                }
+                OverlayHelpers.disposeAndRemove(menuElement);
+                complete();
+            }
+
+        testBackClickEventTriggersLightDismiss = function (complete) {
             // Verifies that a shown Menu will handle the WinJS.Application.backclick event and light dismiss itself.
 
             // Simulate
@@ -347,7 +343,7 @@ module CorsicaTests {
             });
         }
 
-        testMenuLaysoutCommandsCorrectly = function (complete) {
+        testMenuLaysOutCommandsCorrectly = function (complete) {
             // Verifies that layout is adjusted for all visible commands in a menu depending on what other types of commands are also visible in the menu.
             // Command layouts should be updated during the following function calls:
             //  menu.show()
@@ -448,6 +444,60 @@ module CorsicaTests {
 
             menu.addEventListener("aftershow", menu_onaftershow, false);
             menu.show(menu.element);
+        };
+
+        testMenuHidesOnActionCommitted = function (complete) {
+            // Whenever any 'button' or 'toggle' typed MenuCommand is invoked, the containing Menu should hide.
+            var commandTypes = {
+                button: "button",
+                toggle: "toggle",
+                separator: "separator",
+                flyout: "flyout"
+            }
+
+            var p = WinJS.Promise.wrap();
+            Object.keys(commandTypes).forEach((type) => { 
+                p = p.then(() => {
+                    return new WinJS.Promise((c) => {
+
+                        var menuElement = document.createElement('div');
+                        menuElement.id = "menu";
+                        document.body.appendChild(menuElement);
+                        var menu = new Menu(menuElement, { anchor: menuElement });
+                        var command = new MenuCommand(null, { type: commandTypes[type]});
+                        menu.commands = [command];
+
+                        function cleanUp() {
+                            menu.onbeforehide = () => { };
+                            OverlayHelpers.disposeAndRemove(menuElement);
+                            c();
+                        }
+
+                        //WinJS.Promise.timeout(1000).then(() => {return OverlayHelpers.show(menu) }).then(() => {
+                           OverlayHelpers.show(menu).then(() => {
+                                switch (command.type) {
+                                    case commandTypes.button:
+                                    case commandTypes.toggle:
+                                        menu.onbeforehide = () => {
+                                            cleanUp();
+                                        }
+                                    command._invoke();
+                                        break;
+
+                                    case commandTypes.separator:
+                                    case commandTypes.flyout:
+                                        menu.onbeforehide = () => {
+                                            LiveUnit.Assert.fail("Menu should not hide when command of type '" + command.type + "' is invoked");
+                                        }
+                                    command._invoke();
+                                        WinJS.Promise.timeout(0).then(cleanUp);
+                                        break;
+                                }
+                            });
+                    })
+                });
+            });
+            p.done(complete);
         };
 
         testFocusChangeBetweenCommandDeactivatesFlyoutCommands = function (complete) {
@@ -621,7 +671,6 @@ module CorsicaTests {
                 c1.element.focus();
             });
         };
-
     }
 }
 // register the object as a test class by passing in the name
