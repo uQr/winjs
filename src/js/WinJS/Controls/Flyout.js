@@ -84,22 +84,23 @@ define([
                 },
                 collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
                     // Removes flyout param and its subflyout descendants from the _cascadingStack.
-                    var that = this;
                     if (!this.reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
                         this.reentrancyLock = true;
-                        this.unlocked = new Promise(function (unlock) {
-
-                            var subFlyout;
-                            while (that.length && flyout !== subFlyout) {
-                                subFlyout = that._cascadingStack.pop();
-                                subFlyout.element.removeEventListener("keydown", that._handleKeyDownInCascade_bound, false);
-                                subFlyout._hide(); // We use the reentrancyLock to prevent reentrancy here.
-                            }
-
-                            that.reentrancyLock = false;
-                            that.unlocked = null;
-                            unlock();
+                        var unlock;
+                        this.unlocked = new Promise(function (c) {
+                            unlock = c;
                         });
+
+                        var subFlyout;
+                        while (this.length && flyout !== subFlyout) {
+                            subFlyout = this._cascadingStack.pop();
+                            subFlyout.element.removeEventListener("keydown", this._handleKeyDownInCascade_bound, false);
+                            subFlyout._hide(); // We use the reentrancyLock to prevent reentrancy here.
+                        }
+
+                        this.reentrancyLock = false;
+                        this.unlocked = null;
+                        unlock();
                     }
                 },
                 collapseAll: function _CascadeManager_collapseAll(keyboardInvoked) {
@@ -457,9 +458,8 @@ define([
                     } else if (Flyout._cascadeManager.reentrancyLock) {
                         this._doNext = "show";
                         this._reuseCurrent = true;
-                        Flyout._cascadeManager.unlocked.then(function () {
-                            this._checkDoNext();
-                        });
+                        var that = this;
+                        Flyout._cascadeManager.unlocked.then(function () { that._checkDoNext(); });
                     } else {
                         // We call our base _baseShow to handle the actual animation
                         if (this._baseShow()) {

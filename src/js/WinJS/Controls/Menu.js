@@ -374,7 +374,7 @@ define([
                         this._hoverPromise.cancel();
                     }
                     var command = event.detail.command;
-                    if (command._type !== _Constants.typeFlyout) {
+                    if (command._type !== _Constants.typeFlyout && command._type !== _Constants.typeSeparator) {
                         this._lightDismiss(); // Collapse all Menus/Flyouts.
                     }
                 },
