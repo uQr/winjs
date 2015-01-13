@@ -25,6 +25,7 @@ module CorsicaTests {
         }, false);
     }
 
+    // Helpers and tests that every implementing class should have.
     export class _BaseCascadingTests {
         private abstractMethodFail() {
             LiveUnit.Assert.fail("Test Error: This method is abstract. Descendant classes need to provide implementation.");
@@ -358,7 +359,7 @@ module CorsicaTests {
                 var endFlyout = flyoutChain[flyoutChain.length - 1],
                     expectedCascade = flyoutChain.slice(0, flyoutChain.length - 1);
 
-                listenOnce(endFlyout, "afterhide", () => { 
+                listenOnce(endFlyout, "afterhide", () => {
                     this.verifyCascade(expectedCascade);
                     complete();
                 });
@@ -403,7 +404,7 @@ module CorsicaTests {
                         var headFlyout = flyoutChain[0],
                             tailFlyout = flyoutChain[flyoutChain.length - 1];
 
-                        listenOnce(headFlyout, "afterhide", () => { 
+                        listenOnce(headFlyout, "afterhide", () => {
                             this.verifyCascade([]);
                             completePromise();
                         });
@@ -419,11 +420,29 @@ module CorsicaTests {
                 return verifyKeyCollapsesTheCascade(Key.F10, "F10");
             }).done(complete);
         }
+
+        testFlyoutsBlockedDuringReEntrancyGetShownInOrder = function (complete) {
+            // Verifies that ////////////////////////////////////////////////////////////////////////
+            var chain1 = this.generateFlyoutChain();
+            var chain2 = this.generateFlyoutChain();
+
+            this.showFlyoutChain(chain1).then(() => {
+                chain1[0].onbeforehide = () => {
+                    this.showFlyoutChain(chain2).then(() => {
+                        this.verifyCascade(chain2);
+                        complete();
+                    });
+                };
+                chain1[0].hide();
+            });
+
+            var msg = "";
+        }
     }
 
     export class CascadingFlyoutTests extends _BaseCascadingTests {
         showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
-            return OverlayHelpers.show(flyout);           
+            return OverlayHelpers.show(flyout);
         }
 
         generateFlyoutChain(numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
