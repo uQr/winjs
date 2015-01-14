@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-import _Global = require("../Core/_Global");
+import _Global = require("./Core/_Global");
 
-import _Base = require("../Core/_Base");
-import _BaseUtils = require("../Core/_BaseUtils");
-import _ElementUtilities = require("../Utilities/_ElementUtilities");
-import _Events = require("../Core/_Events");
-import _OptionsParser = require("../ControlProcessor/_OptionsParser");
+import _Base = require("./Core/_Base");
+import _BaseUtils = require("./Core/_BaseUtils");
+import _ElementUtilities = require("./Utilities/_ElementUtilities");
+import _Events = require("./Core/_Events");
+import _OptionsParser = require("./ControlProcessor/_OptionsParser");
 
 "use strict";
 
