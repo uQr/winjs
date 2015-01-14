@@ -153,78 +153,78 @@ module CorsicaTests {
         }
 
         testDefaultMenuParameters = function () {
-                // Get the Menu element from the DOM
-                var menuElement = document.createElement("div");
-                document.body.appendChild(menuElement);
-                LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu element");
-                var menu = new Menu(menuElement, { commands: { type: 'separator', id: 'sep' } });
-                LiveUnit.LoggingCore.logComment("Menu has been instantiated.");
-                LiveUnit.Assert.isNotNull(menu, "Menu element should not be null when instantiated.");
+            // Get the Menu element from the DOM
+            var menuElement = document.createElement("div");
+            document.body.appendChild(menuElement);
+            LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu element");
+            var menu = new Menu(menuElement, { commands: { type: 'separator', id: 'sep' } });
+            LiveUnit.LoggingCore.logComment("Menu has been instantiated.");
+            LiveUnit.Assert.isNotNull(menu, "Menu element should not be null when instantiated.");
 
-                LiveUnit.Assert.areEqual(menuElement, menu.element, "Verifying that element is what we set it with");
-                LiveUnit.Assert.isTrue(menu.hidden, "Verifying that hidden is true");
-                OverlayHelpers.disposeAndRemove(menuElement);
-            }
+            LiveUnit.Assert.areEqual(menuElement, menu.element, "Verifying that element is what we set it with");
+            LiveUnit.Assert.isTrue(menu.hidden, "Verifying that hidden is true");
+            OverlayHelpers.disposeAndRemove(menuElement);
+        }
 
         // Simple Function Tests
         testSimpleMenuTestsFunctions = function () {
-                // Get the MenuTests element from the DOM
-                var menuElement = document.createElement("div");
-                document.body.appendChild(menuElement);
-                LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu element");
-                var menu = new Menu(menuElement, { commands: { type: 'separator', id: 'sep' } });
-                LiveUnit.LoggingCore.logComment("Menu has been instantiated.");
-                LiveUnit.Assert.isNotNull(menu, "Menu element should not be null when instantiated.");
+            // Get the MenuTests element from the DOM
+            var menuElement = document.createElement("div");
+            document.body.appendChild(menuElement);
+            LiveUnit.LoggingCore.logComment("Attempt to Instantiate the Menu element");
+            var menu = new Menu(menuElement, { commands: { type: 'separator', id: 'sep' } });
+            LiveUnit.LoggingCore.logComment("Menu has been instantiated.");
+            LiveUnit.Assert.isNotNull(menu, "Menu element should not be null when instantiated.");
 
-                LiveUnit.LoggingCore.logComment("show");
-                menu.show(menuElement);
+            LiveUnit.LoggingCore.logComment("show");
+            menu.show(menuElement);
 
-                LiveUnit.LoggingCore.logComment("hide");
-                menu.hide();
+            LiveUnit.LoggingCore.logComment("hide");
+            menu.hide();
 
-                OverlayHelpers.disposeAndRemove(menuElement);
-            }
+            OverlayHelpers.disposeAndRemove(menuElement);
+        }
 
         testMenuDispose = function () {
-                var mc1 = new MenuCommand(document.createElement("button"), { label: "mc1" });
-                var mc2 = new MenuCommand(document.createElement("button"), { label: "mc2" });
+            var mc1 = new MenuCommand(document.createElement("button"), { label: "mc1" });
+            var mc2 = new MenuCommand(document.createElement("button"), { label: "mc2" });
 
-                var menu = new Menu(null, { commands: [mc1, mc2] });
-                LiveUnit.Assert.isTrue(menu.dispose);
-                LiveUnit.Assert.isFalse(menu._disposed);
+            var menu = new Menu(null, { commands: [mc1, mc2] });
+            LiveUnit.Assert.isTrue(menu.dispose);
+            LiveUnit.Assert.isFalse(menu._disposed);
 
-                menu.dispose();
-                LiveUnit.Assert.isTrue(menu._disposed);
-                LiveUnit.Assert.isTrue(mc1._disposed);
-                LiveUnit.Assert.isTrue(mc2._disposed);
-                menu.dispose();
-            }
+            menu.dispose();
+            LiveUnit.Assert.isTrue(menu._disposed);
+            LiveUnit.Assert.isTrue(mc1._disposed);
+            LiveUnit.Assert.isTrue(mc2._disposed);
+            menu.dispose();
+        }
 
         testMenuShowThrows = function (complete) {
-                // Get the menu element from the DOM
-                var menuElement = document.createElement("div");
-                document.body.appendChild(menuElement);
-                LiveUnit.LoggingCore.logComment("Attempt to Instantiate the menu element");
-                var menu: any = new Menu(menuElement);
-                LiveUnit.LoggingCore.logComment("menu has been instantiated.");
-                LiveUnit.Assert.isNotNull(menu, "menu element should not be null when instantiated.");
+            // Get the menu element from the DOM
+            var menuElement = document.createElement("div");
+            document.body.appendChild(menuElement);
+            LiveUnit.LoggingCore.logComment("Attempt to Instantiate the menu element");
+            var menu: any = new Menu(menuElement);
+            LiveUnit.LoggingCore.logComment("menu has been instantiated.");
+            LiveUnit.Assert.isNotNull(menu, "menu element should not be null when instantiated.");
 
-                LiveUnit.LoggingCore.logComment("Calling show() with no parameters should throw");
-                try {
-                    menu.show();
-                } catch (e) {
-                    LiveUnit.Assert.areEqual("Invalid argument: Flyout anchor element not found in DOM.", e.message);
-                }
-
-                LiveUnit.LoggingCore.logComment("Calling show() with null should throw");
-                try {
-                    menu.show(null);
-                } catch (e) {
-                    LiveUnit.Assert.areEqual("Invalid argument: Flyout anchor element not found in DOM.", e.message);
-                }
-                OverlayHelpers.disposeAndRemove(menuElement);
-                complete();
+            LiveUnit.LoggingCore.logComment("Calling show() with no parameters should throw");
+            try {
+                menu.show();
+            } catch (e) {
+                LiveUnit.Assert.areEqual("Invalid argument: Flyout anchor element not found in DOM.", e.message);
             }
+
+            LiveUnit.LoggingCore.logComment("Calling show() with null should throw");
+            try {
+                menu.show(null);
+            } catch (e) {
+                LiveUnit.Assert.areEqual("Invalid argument: Flyout anchor element not found in DOM.", e.message);
+            }
+            OverlayHelpers.disposeAndRemove(menuElement);
+            complete();
+        }
 
         testBackClickEventTriggersLightDismiss = function (complete) {
             // Verifies that a shown Menu will handle the WinJS.Application.backclick event and light dismiss itself.
@@ -336,11 +336,11 @@ module CorsicaTests {
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
                 return OverlayHelpers.hide(menu);
             }).then(() => {
-                LiveUnit.Assert.isTrue(test2Ran, "TEST ERROR: Test 2 did not run.");
+                    LiveUnit.Assert.isTrue(test2Ran, "TEST ERROR: Test 2 did not run.");
 
-                OverlayHelpers.disposeAndRemove(menuElement);
-                complete();
-            });
+                    OverlayHelpers.disposeAndRemove(menuElement);
+                    complete();
+                });
         }
 
         testMenuLaysOutCommandsCorrectly = function (complete) {
@@ -447,7 +447,8 @@ module CorsicaTests {
         };
 
         testMenuHidesOnActionCommitted = function (complete) {
-            // Whenever any 'button' or 'toggle' typed MenuCommand is invoked, the containing Menu should hide.
+            // Whenever any 'button' or 'toggle' typed MenuCommand is invoked, 
+            // an action is considered to have been committed and the containing Menu should hide.
             var commandTypes = {
                 button: "button",
                 toggle: "toggle",
@@ -456,7 +457,7 @@ module CorsicaTests {
             }
 
             var p = WinJS.Promise.wrap();
-            Object.keys(commandTypes).forEach((type) => { 
+            Object.keys(commandTypes).forEach((type) => {
                 p = p.then(() => {
                     return new WinJS.Promise((c) => {
 
@@ -464,7 +465,7 @@ module CorsicaTests {
                         menuElement.id = "menu";
                         document.body.appendChild(menuElement);
                         var menu = new Menu(menuElement, { anchor: menuElement });
-                        var command = new MenuCommand(null, { type: commandTypes[type]});
+                        var command = new MenuCommand(null, { type: commandTypes[type] });
                         menu.commands = [command];
 
                         function cleanUp() {
@@ -473,27 +474,26 @@ module CorsicaTests {
                             c();
                         }
 
-                        //WinJS.Promise.timeout(1000).then(() => {return OverlayHelpers.show(menu) }).then(() => {
-                           OverlayHelpers.show(menu).then(() => {
-                                switch (command.type) {
-                                    case commandTypes.button:
-                                    case commandTypes.toggle:
-                                        menu.onbeforehide = () => {
-                                            cleanUp();
-                                        }
+                        OverlayHelpers.show(menu).then(() => {
+                            switch (command.type) {
+                                case commandTypes.button:
+                                case commandTypes.toggle:
+                                    menu.onbeforehide = () => {
+                                        cleanUp();
+                                    }
                                     command._invoke();
-                                        break;
+                                    break;
 
-                                    case commandTypes.separator:
-                                    case commandTypes.flyout:
-                                        menu.onbeforehide = () => {
-                                            LiveUnit.Assert.fail("Menu should not hide when command of type '" + command.type + "' is invoked");
-                                        }
+                                case commandTypes.separator:
+                                case commandTypes.flyout:
+                                    menu.onbeforehide = () => {
+                                        LiveUnit.Assert.fail("Menu should not hide when command of type '" + command.type + "' is invoked");
+                                    }
                                     command._invoke();
-                                        WinJS.Promise.timeout(0).then(cleanUp);
-                                        break;
-                                }
-                            });
+                                    WinJS.Promise.timeout(0).then(cleanUp);
+                                    break;
+                            }
+                        });
                     })
                 });
             });
@@ -535,32 +535,32 @@ module CorsicaTests {
 
                 return MenuCommand._activateFlyoutCommand(f1);
             }).then(() => {
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f1, "TEST ERROR: command needs to be activated before continuing");
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f1, "TEST ERROR: command needs to be activated before continuing");
 
-                msg = "Focusing an activated 'flyout' typed command in a menu should leave it activated";
-                LiveUnit.LoggingCore.logComment("Test: " + msg);
-                f1.element.focus();
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f1, msg);
+                    msg = "Focusing an activated 'flyout' typed command in a menu should leave it activated";
+                    LiveUnit.LoggingCore.logComment("Test: " + msg);
+                    f1.element.focus();
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f1, msg);
 
-                msg = "Changing focus from an activated 'flyout' typed command in a Menu, to any other command in that Menu, should deactivate all commands.";
-                LiveUnit.LoggingCore.logComment("Test : " + msg);
-                f2.element.focus();
-                verifyAllCommandsDeactivated(commands, msg);
+                    msg = "Changing focus from an activated 'flyout' typed command in a Menu, to any other command in that Menu, should deactivate all commands.";
+                    LiveUnit.LoggingCore.logComment("Test : " + msg);
+                    f2.element.focus();
+                    verifyAllCommandsDeactivated(commands, msg);
 
-                return MenuCommand._activateFlyoutCommand(f2);
-            }).then(() => {
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f2, "TEST ERROR: command needs to be activated before continuing");
+                    return MenuCommand._activateFlyoutCommand(f2);
+                }).then(() => {
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(f2, "TEST ERROR: command needs to be activated before continuing");
 
-                msg = "Changing focus from an activated 'flyout' typed command in a Menu, to any other command in that Menu, should deactivate all commands.";
-                LiveUnit.LoggingCore.logComment("Test: " + msg);
-                b1.element.focus();
-                verifyAllCommandsDeactivated(commands, msg);
+                    msg = "Changing focus from an activated 'flyout' typed command in a Menu, to any other command in that Menu, should deactivate all commands.";
+                    LiveUnit.LoggingCore.logComment("Test: " + msg);
+                    b1.element.focus();
+                    verifyAllCommandsDeactivated(commands, msg);
 
-                OverlayHelpers.disposeAndRemove(menuElement);
-                OverlayHelpers.disposeAndRemove(subMenuElement);
-                OverlayHelpers.disposeAndRemove(subFlyoutElement);
-                complete();
-            });
+                    OverlayHelpers.disposeAndRemove(menuElement);
+                    OverlayHelpers.disposeAndRemove(subMenuElement);
+                    OverlayHelpers.disposeAndRemove(subFlyoutElement);
+                    complete();
+                });
         };
 
         testCommandsDeactivateWhenContainingMenuHides = function (complete) {
@@ -593,25 +593,25 @@ module CorsicaTests {
             OverlayHelpers.show(menu1).then(() => {
                 return MenuCommand._activateFlyoutCommand(c1);
             }).then(() => {
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c1, "TEST ERROR: command needs to be activated before continuing");
-                return MenuCommand._activateFlyoutCommand(c2);
-            }).then(() => {
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c2, "TEST ERROR: command needs to be activated before continuing");
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c1, "TEST ERROR: command needs to be activated before continuing");
+                    return MenuCommand._activateFlyoutCommand(c2);
+                }).then(() => {
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c2, "TEST ERROR: command needs to be activated before continuing");
 
-                msg = "When a Menu is hidden, all of its 'flyout' typed MenuCommands should be deactivated";
-                LiveUnit.LoggingCore.logComment("Test: " + msg);
+                    msg = "When a Menu is hidden, all of its 'flyout' typed MenuCommands should be deactivated";
+                    LiveUnit.LoggingCore.logComment("Test: " + msg);
                 return OverlayHelpers.hide(menu2)
             }).then(() => {
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(c2);
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandDeactivated(c2);
 
-                OverlayHelpers.disposeAndRemove(menu1Element);
-                OverlayHelpers.disposeAndRemove(menu2Element);
-                OverlayHelpers.disposeAndRemove(menu3Element);
-                complete();
-            });
+                    OverlayHelpers.disposeAndRemove(menu1Element);
+                    OverlayHelpers.disposeAndRemove(menu2Element);
+                    OverlayHelpers.disposeAndRemove(menu3Element);
+                    complete();
+                });
         };
 
-        testParentMenuMovesFocusToSubMenuWhenActivatedMenuCommandIsFocused = function(complete) {
+        testParentMenuMovesFocusToSubMenuWhenActivatedMenuCommandIsFocused = function (complete) {
             // Verifies that when a Menu contains a 'flyout' typed MenuCommand that is already activated, and that MenuCommand recieves focus,
             // then the Menu should move focus onto the element of the MenuCommand's subMenu and all of the subMenu's 'flyout' typed commands
             // should be deactivated.
@@ -661,15 +661,15 @@ module CorsicaTests {
             OverlayHelpers.show(parentMenu).then(() => {
                 return MenuCommand._activateFlyoutCommand(c1);
             }).then(() => {
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c1, "TEST ERROR: command needs to be activated before continuing");
-                return MenuCommand._activateFlyoutCommand(c2);
-            }).then(() => {
-                OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c2, "TEST ERROR: command needs to be activated before continuing");
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c1, "TEST ERROR: command needs to be activated before continuing");
+                    return MenuCommand._activateFlyoutCommand(c2);
+                }).then(() => {
+                    OverlayHelpers.Assert.verifyMenuFlyoutCommandActivated(c2, "TEST ERROR: command needs to be activated before continuing");
 
-                msg = "Focusing an activated command in the Parent Menu should move focus to that commands subMenu and deactivate all 'flyout' commands in the subMenu";
-                LiveUnit.LoggingCore.logComment("Test: " + msg);
-                c1.element.focus();
-            });
+                    msg = "Focusing an activated command in the Parent Menu should move focus to that commands subMenu and deactivate all 'flyout' commands in the subMenu";
+                    LiveUnit.LoggingCore.logComment("Test: " + msg);
+                    c1.element.focus();
+                });
         };
     }
 }
