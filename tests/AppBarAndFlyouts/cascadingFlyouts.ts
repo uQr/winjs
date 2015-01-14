@@ -25,7 +25,6 @@ module CorsicaTests {
         }, false);
     }
 
-    // Helpers and tests that every implementing class should have.
     export class _BaseCascadingTests {
         private abstractMethodFail() {
             LiveUnit.Assert.fail("Test Error: This method is abstract. Descendant classes need to provide implementation.");
@@ -420,29 +419,6 @@ module CorsicaTests {
                 return verifyKeyCollapsesTheCascade(Key.F10, "F10");
             }).done(complete);
         }
-
-        testFlyoutsBlockedFromShowingDuringReEntrancy_WillBeShownAsyncronously = function (complete) {
-            // Regression test: https://github.com/winjs/winjs/issues/882
-            // Verifies that showing a 2nd Flyout chain at the beginning of hiding the 1st Flyout chain, 
-            // will cauase the 2nd Flyout chain to show once the 1st cascade is finished collapsing.
-            var msg = "",
-                chain1 = this.generateFlyoutChain(),
-                chain2 = this.generateFlyoutChain();
-
-            this.showFlyoutChain(chain1).then(() => {
-                chain1[0].onbeforehide = () => {
-
-                    // Sanity Check to make sure we are actually testing against the reentrancyLock
-                    LiveUnit.Assert.isTrue(Flyout._cascadeManager.reentrancyLock, "TEST ERROR: Test is only valid when reentrancyLock is enabled");
-
-                    this.showFlyoutChain(chain2).then(() => {
-                        this.verifyCascade(chain2);
-                        complete();
-                    });
-                };
-                chain1[0].hide();
-            });
-        }
     }
 
     export class CascadingFlyoutTests extends _BaseCascadingTests {
@@ -514,7 +490,9 @@ module CorsicaTests {
                 result = OverlayHelpers.show(flyout);
             }
 
-            return result;
+            return result.then(function verifyFlyoutContainsFocusAfterShowing() {
+                LiveUnit.Assert.isTrue(flyout.element.contains(<HTMLElement>document.activeElement), "Flyout should contain focus after showing");
+            });
         }
 
         generateFlyoutChain(numMenus?: number): Array<WinJS.UI.PrivateFlyout> {
