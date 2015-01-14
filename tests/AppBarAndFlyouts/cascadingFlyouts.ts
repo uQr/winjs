@@ -25,31 +25,23 @@ module CorsicaTests {
         }, false);
     }
 
+    // Helpers and tests that every implementing class should have.
     export class _BaseCascadingTests {
         private abstractMethodFail() {
             LiveUnit.Assert.fail("Test Error: This method is abstract. Descendant classes need to provide implementation.");
         }
 
         showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
-            return this._showFlyoutImpl(flyout);
-        }
-        _showFlyoutImpl(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             this.abstractMethodFail();
             return WinJS.Promise.wrapError(null); // Appease the compiler.
         }
 
         generateFlyoutChain(numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
-            return this._generateFlyoutChainImpl(numFlyouts);
-        }
-        _generateFlyoutChainImpl(numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
             this.abstractMethodFail();
             return []; // Appease the compiler.
         }
 
         chainFlyouts(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
-            return this._chainFlyoutsImpl(head, tail);
-        }
-        _chainFlyoutsImpl(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
             this.abstractMethodFail();
         }
 
@@ -428,14 +420,36 @@ module CorsicaTests {
                 return verifyKeyCollapsesTheCascade(Key.F10, "F10");
             }).done(complete);
         }
+
+        testFlyoutsBlockedFromShowingDuringReEntrancy_WillBeShownAsyncronously = function (complete) {
+            // Regression test: https://github.com/winjs/winjs/issues/882
+            // Verifies that showing a 2nd Flyout chain at the beginning of hiding the 1st Flyout chain, 
+            // will cause the 2nd Flyout chain to show once the 1st cascade is finished collapsing.
+            var chain1 = this.generateFlyoutChain(),
+                chain2 = this.generateFlyoutChain();
+
+            this.showFlyoutChain(chain1).then(() => {
+                chain1[0].onbeforehide = () => {
+
+                    // Sanity Check to make sure we are actually testing against the reentrancyLock
+                    LiveUnit.Assert.isTrue(Flyout._cascadeManager.reentrancyLock, "TEST ERROR: Test is only valid when reentrancyLock is enabled");
+
+                    this.showFlyoutChain(chain2).then(() => {
+                        this.verifyCascade(chain2);
+                        complete();
+                    });
+                };
+                chain1[0].hide();
+            });
+        }
     }
 
     export class CascadingFlyoutTests extends _BaseCascadingTests {
-        _showFlyoutImpl(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
+        showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             return OverlayHelpers.show(flyout);
         }
 
-        _generateFlyoutChainImpl(numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
+        generateFlyoutChain(numFlyouts?: number): Array<WinJS.UI.PrivateFlyout> {
             // Creates and returns an Array of Flyouts. Each Flyout in the chain has its anchor property set to the HTMLElement of the previous flyout.
             var flyoutChain = [],
                 chainClass = "chain_" + ++chainCounter,
@@ -459,7 +473,7 @@ module CorsicaTests {
             return flyoutChain;
         }
 
-        _chainFlyoutsImpl(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
+        chainFlyouts(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
             // Chain the tail Flyout to the head Flyout.
             tail.anchor = head.element;
         }
@@ -469,7 +483,7 @@ module CorsicaTests {
         private firstCommandId = "flyoutCmd1";
         private secondCommandId = "flyoutCmd2";
 
-        _showFlyoutImpl(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
+        showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             // If my anchor isn't in the cascade, just call overlayhelpers.show
             // else call menucommand._activateFlyoutCommand(flyout)
 
@@ -499,12 +513,10 @@ module CorsicaTests {
                 result = OverlayHelpers.show(flyout);
             }
 
-            return result.then(function verifyFlyoutContainsFocusAfterShowing() {
-                LiveUnit.Assert.isTrue(flyout.element.contains(<HTMLElement>document.activeElement), "Flyout should contain focus after showing");
-            });
+            return result;
         }
 
-        _generateFlyoutChainImpl(numMenus?: number): Array<WinJS.UI.PrivateFlyout> {
+        generateFlyoutChain(numMenus?: number): Array<WinJS.UI.PrivateFlyout> {
             // Creates and returns an Array of Menu Flyouts. Each Menu in the chain has its anchor property set to the HTMLElement of parent Menu's flyout MenuCommand
             var flyoutChain = [],
                 chainClass = "chain_" + ++chainCounter,
@@ -541,7 +553,7 @@ module CorsicaTests {
             return flyoutChain;
         }
 
-        _chainFlyoutsImpl(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
+        chainFlyouts(head: WinJS.UI.PrivateFlyout, tail: WinJS.UI.PrivateFlyout): void {
             // Chain the tail Menu to the head Menu.
             var menuCommand = head.element.querySelector("#" + this.secondCommandId).winControl;
             menuCommand.flyout = tail;
