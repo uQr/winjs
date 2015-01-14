@@ -11,12 +11,13 @@ define([
     '../Core/_WriteProfilerMark',
     '../Animations',
     '../Promise',
+    '../_Signal',
     '../Utilities/_Dispose',
     '../Utilities/_ElementUtilities',
     '../Utilities/_Hoverable',
     './AppBar/_Constants',
     './Flyout/_Overlay'
-], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Log, _Resources, _WriteProfilerMark, Animations, Promise, _Dispose, _ElementUtilities, _Hoverable, _Constants, _Overlay) {
+], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Log, _Resources, _WriteProfilerMark, Animations, Promise, _Signal, _Dispose, _ElementUtilities, _Hoverable, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -86,10 +87,8 @@ define([
                     // Removes flyout param and its subflyout descendants from the _cascadingStack.
                     if (!this.reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
                         this.reentrancyLock = true;
-                        var unlock;
-                        this.unlocked = new Promise(function (c) {
-                            unlock = c;
-                        });
+                        var signal = new _Signal();
+                        this.unlocked = signal.promise;
 
                         var subFlyout;
                         while (this.length && flyout !== subFlyout) {
@@ -100,7 +99,7 @@ define([
 
                         this.reentrancyLock = false;
                         this.unlocked = null;
-                        unlock();
+                        signal.complete();
                     }
                 },
                 collapseAll: function _CascadeManager_collapseAll(keyboardInvoked) {
@@ -451,13 +450,17 @@ define([
                     }
 
                     // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of a updating the cascade,
-                    // then don't mess up our current state. Queue us up to wait for current operation to finish first.
+                    // then don't mess up our current state.
                     if (this._element.winAnimating) {
-                        this._doNext = "show";
                         this._reuseCurrent = true;
+                        // Queue us up to wait for the current animation to finish. 
+                        // _checkDoNext() is always scheduled after the current animation completes.
+                        this._doNext = "show";
                     } else if (Flyout._cascadeManager.reentrancyLock) {
-                        this._doNext = "show";
                         this._reuseCurrent = true;
+                        // Queue us up to wait for the current animation to finish. 
+                        // Schedule a call to _checkDoNext() for when the cascadeManager unlocks.
+                        this._doNext = "show";
                         var that = this;
                         Flyout._cascadeManager.unlocked.then(function () { that._checkDoNext(); });
                     } else {
