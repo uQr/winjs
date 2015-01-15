@@ -509,7 +509,7 @@ module CorsicaTests {
             var menuElement = document.createElement('div');
             menuElement.id = "menu";
             document.body.appendChild(menuElement);
-            var menu = new Menu(menuElement, { anchor: menuElement });
+            var menu = new Menu(menuElement, { anchor: document.body });
 
             var subMenuElement = document.createElement('div');
             subMenuElement.id = "subMenuElement";
@@ -569,7 +569,7 @@ module CorsicaTests {
             var menu1Element = document.createElement('div');
             menu1Element.id = "menu1";
             document.body.appendChild(menu1Element);
-            var menu1 = new Menu(menu1Element, { anchor: menu1Element });
+            var menu1 = new Menu(menu1Element, { anchor: document.body });
 
             var menu2Element = document.createElement('div');
             menu2Element.id = "menu2";
@@ -623,7 +623,7 @@ module CorsicaTests {
             var parentMenuElement = document.createElement('div');
             parentMenuElement.id = "parentMenu";
             document.body.appendChild(parentMenuElement);
-            var parentMenu = new Menu(parentMenuElement, { anchor: parentMenuElement });
+            var parentMenu = new Menu(parentMenuElement, { anchor: document.body });
 
             var subMenuElement = document.createElement('div');
             subMenuElement.id = "subMenu";
