@@ -1717,7 +1717,7 @@ module Helper {
             // Execute an asynchronous forEach loop over an array. The asynchronous forEach loop only applies asyncCallbackFn to each subsequent value in the array,
             // after the Promise returned by applying asyncCallbackFn to the previous array value completes.
             // 
-            // Returns a Promise that completes when all promises that were returned by applying asyncCallbackFn to every values in the array have been completed.
+            // Returns a Promise that completes when all promises that were returned by applying asyncCallbackFn to every value in the array have been completed.
             var p = WinJS.Promise.as();
             array.forEach((value, index, array) => {
                 p = p.then(() => {
