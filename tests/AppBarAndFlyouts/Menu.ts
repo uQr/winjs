@@ -449,55 +449,54 @@ module CorsicaTests {
         testMenuHidesOnActionCommitted = function (complete) {
             // Whenever any 'button' or 'toggle' typed MenuCommand is invoked, 
             // an action is considered to have been committed and the containing Menu should hide.
+
             var commandTypes = {
                 button: "button",
                 toggle: "toggle",
                 separator: "separator",
                 flyout: "flyout"
-            }
+            };
 
-            var p = WinJS.Promise.wrap();
-            Object.keys(commandTypes).forEach((type) => {
-                p = p.then(() => {
-                    return new WinJS.Promise((c) => {
+            var asyncTest = (type: string) => {
+                return new WinJS.Promise((c) => {
 
-                        var menuElement = document.createElement('div');
-                        menuElement.id = "menu";
-                        document.body.appendChild(menuElement);
-                        var menu = new Menu(menuElement, { anchor: menuElement });
-                        var command = new MenuCommand(null, { type: commandTypes[type] });
-                        menu.commands = [command];
+                    var menuElement = document.createElement('div');
+                    document.body.appendChild(menuElement);
+                    var menu = new Menu(menuElement, { anchor: document.body });
+                    var command = new MenuCommand(null, { type: type });
+                    menu.commands = [command];
 
-                        function cleanUp() {
-                            menu.onbeforehide = () => { };
-                            OverlayHelpers.disposeAndRemove(menuElement);
-                            c();
+                    function cleanUp() {
+                        menu.onbeforehide = () => { };
+                        OverlayHelpers.disposeAndRemove(menuElement);
+                        c();
+                    }
+
+                    OverlayHelpers.show(menu).then(() => {
+                        switch (command.type) {
+                            case commandTypes.button:
+                            case commandTypes.toggle:
+                                menu.onbeforehide = () => {
+                                    cleanUp();
+                                }
+                                    command._invoke();
+                                break;
+
+                            case commandTypes.separator:
+                            case commandTypes.flyout:
+                                menu.onbeforehide = () => {
+                                    LiveUnit.Assert.fail("Menu should not hide when command of type '" + command.type + "' is invoked");
+                                }
+                                    command._invoke();
+                                WinJS.Promise.timeout(0).then(cleanUp);
+                                break;
                         }
-
-                        OverlayHelpers.show(menu).then(() => {
-                            switch (command.type) {
-                                case commandTypes.button:
-                                case commandTypes.toggle:
-                                    menu.onbeforehide = () => {
-                                        cleanUp();
-                                    }
-                                    command._invoke();
-                                    break;
-
-                                case commandTypes.separator:
-                                case commandTypes.flyout:
-                                    menu.onbeforehide = () => {
-                                        LiveUnit.Assert.fail("Menu should not hide when command of type '" + command.type + "' is invoked");
-                                    }
-                                    command._invoke();
-                                    WinJS.Promise.timeout(0).then(cleanUp);
-                                    break;
-                            }
-                        });
-                    })
+                    });
                 });
-            });
-            p.done(complete);
+            };
+
+            // Run a test for each commandType.
+            Helper.Promise.forEach(Object.keys(commandTypes), asyncTest).done(complete);
         };
 
         testFocusChangeBetweenCommandDeactivatesFlyoutCommands = function (complete) {
