@@ -31,7 +31,9 @@ module CorsicaTests {
             LiveUnit.Assert.fail("Test Error: This method is abstract. Descendant classes need to provide implementation.");
         }
 
+        //
         // Abstract Helper methods that need to be implemented by each derivative class.
+        //
         showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             this.abstractMethodFail();
             return WinJS.Promise.wrapError(null); // Appease the compiler.
@@ -46,8 +48,9 @@ module CorsicaTests {
             this.abstractMethodFail();
         }
 
-
-        // Helper methods
+        //
+        // Concrete Helper methods
+        //
         hideFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             // Hides the specified flyout and returns a promise that completes when
             // it and all of its subFlyouts in the cascade are hidden.
@@ -147,7 +150,9 @@ module CorsicaTests {
             WinJS.UI._Overlay._clickEatingFlyoutDiv = false;
         }
 
+        //
         // Unit Tests 
+        //
         testSingleFlyoutInTheCascade = function (complete) {
             // Verifies that showing and hiding a flyout will always add and remove it from the cascade.
 
@@ -567,7 +572,9 @@ module CorsicaTests {
             menuCommand.flyout = tail;
         }
 
+        //
         // Unit Tests
+        //
         testMenuCommandActionCommittedCollapsesEntireCascade = function (complete) {
             var flyoutChain = this.generateFlyoutChain();
 

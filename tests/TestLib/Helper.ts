@@ -1713,16 +1713,15 @@ module Helper {
 
 module Helper {
     export module Promise {
-        export function forEach(array: Array<any>, callbackFn: (value?, index?, array?) => any): WinJS.Promise<any> {
-            // Helper function that will execute an asynchronous forEach loop over an Array, applying the callbackFn to values in the Array,
-            // only one at a time. Each iteration of the async forEach loop waits until the promise returned by the callbackFn applied to the previous value 
-            // completed before moving on and applying the callbackFn to the next value in the array.
+        export function forEach(array: Array<any>, asyncCallbackFn: (value?, index?, array?) => any): WinJS.Promise<any> {
+            // Execute an asynchronous forEach loop over an array. The asynchronous forEach loop only applies asyncCallbackFn to each subsequent value in the array,
+            // after the Promise returned by applying asyncCallbackFn to the previous array value completes.
             // 
-            // Returns a Promise that completes when the all promises returned by the callbackFn hace compelted.
+            // Returns a Promise that completes when all promises that were returned by applying asyncCallbackFn to every values in the array have been completed.
             var p = WinJS.Promise.as();
             array.forEach((value, index, array) => {
                 p = p.then(() => {
-                    return WinJS.Promise.wrap(callbackFn(value, index, array));
+                    return asyncCallbackFn(value, index, array);
                 });
 
             });
