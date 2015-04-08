@@ -547,7 +547,8 @@ define([
                         this._showAndHideQueue();
                     } else if (this._doNext === "show") {
                         // Show last so that we don't unnecessarily animate commands
-                        this._show();
+                        this._currentShowFn = this._currentShowFn || this._show;
+                        this._currentShowFn();
                         this._doNext = "";
                     }
                 },

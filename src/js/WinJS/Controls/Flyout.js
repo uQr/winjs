@@ -367,12 +367,37 @@ define([
                     /// <compatibleWith platform="Windows" minVersion="8.0"/>
                     /// </signature>
                     this._writeProfilerMark("show,StartTM"); // The corresponding "stop" profiler mark is handled in _Overlay._baseEndShow().
-                    // Just call private version to make appbar flags happy
                     this._show(anchor, placement, alignment);
                 },
 
-                _show: function Flyout_show(anchor, placement, alignment) {
-                    this._baseFlyoutShow(anchor, placement, alignment);
+                _show: function Flyout_show(anchor, placement, alignment, coordinates) {
+                    this._baseFlyoutShow(anchor, placement,alignment, null);
+                },
+
+                /// <signature helpKeyword="WinJS.UI.Flyout.showAt">
+                /// <summary locid="WinJS.UI.Flyout.showAt">
+                /// Shows the Flyout, if hidden, at the specified (x,y) coordinates.
+                /// </summary>
+                /// <param name="coordinates" type="Object" domElement="false" locid="WinJS.UI.Flyout.showAt_p:coordinates">
+                /// The point at which to draw the Flyout, relative to the visual viewport.
+                /// Acceptible values are PointerEvent Objects, MouseEvent Objects and generic objects that define properties 'x' and 'y'.
+                /// </param>
+                /// <param name="placement" type="Object" domElement="false" locid="WinJS.UI.Flyout.show_p:placement">
+                /// The placement of the Flyout to the anchor: 'auto' (default), 'top', 'bottom', 'left', or 'right'.  This parameter overrides the placement property for this show only.
+                /// </param>
+                /// <param name="alignment" type="Object" domElement="false" locid="WinJS.UI.Flyout.show:alignment">
+                /// For 'top' or 'bottom' placement, the alignment of the Flyout to the anchor's edge: 'center' (default), 'left', or 'right'.
+                /// This parameter overrides the alignment property for this show only.
+                /// </param>
+                /// <compatibleWith platform="Windows" minVersion="8.0"/>
+                /// </signature>
+                showAt: function Flyout_showAt(coordinates) {
+                    this._writeProfilerMark("show,StartTM"); // The corresponding "stop" profiler mark is handled in _Overlay._baseEndShow().
+                    this._showAt(coordinates);
+                },
+
+                _showAt: function Flyout_show(coordinates) {
+                    this._baseFlyoutShow(null, null, null, coordinates);
                 },
 
                 hide: function () {
@@ -444,11 +469,16 @@ define([
                     }
                 },
 
-                _baseFlyoutShow: function Flyout_baseFlyoutShow(anchor, placement, alignment) {
+                _baseFlyoutShow: function Flyout_baseFlyoutShow(anchor, placement, alignment, coordinates) {
                     // Don't do anything if disabled
                     if (this.disabled) {
                         return;
                     }
+
+                    // Store the function call with parameters used to "show" the flyout so that we can repeat
+                    // the operate later if something forces us to pause now.
+                    var that = this;
+                    this._currentShowFn = function () { that._baseFlyoutShow(anchor, placement, alignment, coordinates); };
 
                     // Pick up defaults
                     if (!anchor) {
@@ -468,20 +498,25 @@ define([
                         anchor = anchor.element;
                     }
 
+                    // Normalize coordinates since they could be a mouse/pointer event object or an (x,y) pair.
+                    if (coordinates) {
+                        var temp = coordinates;
+                        coordinates = {
+                            x: temp.clientX || temp.x,
+                            y: temp.clientY || temp.y
+                        };
+                    }
+
                     // We expect an anchor
                     if (!anchor) {
-                        // If we have _nextLeft, etc., then we were continuing an old animation, so that's OK
-                        if (!this._reuseCurrent) {
-                            throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
-                        }
-                        // Last call was incomplete, so reuse the previous _current values.
-                        this._reuseCurrent = null;
+                        throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
                     } else {
                         // Remember the anchor so that if we lose focus we can go back
                         this._currentAnchor = anchor;
-                        // Remember current values
+                        // Remember current values in case we need to stop and resume.
                         this._currentPlacement = placement;
                         this._currentAlignment = alignment;
+                        this._currentCoordinates = coordinates;
                     }
 
                     // Need click-eating div to be visible, no matter what
@@ -492,12 +527,10 @@ define([
                     // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of a updating the cascade,
                     // then don't mess up our current state.
                     if (this._element.winAnimating) {
-                        this._reuseCurrent = true;
                         // Queue us up to wait for the current animation to finish.
                         // _checkDoNext() is always scheduled after the current animation completes.
                         this._doNext = "show";
                     } else if (Flyout._cascadeManager.reentrancyLock) {
-                        this._reuseCurrent = true;
                         // Queue us up to wait for the current animation to finish.
                         // Schedule a call to _checkDoNext() for when the cascadeManager unlocks.
                         this._doNext = "show";
@@ -647,117 +680,124 @@ define([
                 // All three auto placements will add a vertical scrollbar if necessary.
                 _getTopLeft: function Flyout_getTopLeft() {
 
-                    var anchorRawRectangle,
-                        flyout = {},
-                        anchor = {};
 
-                    try {
-                        anchorRawRectangle = this._currentAnchor.getBoundingClientRect();
-                    }
-                    catch (e) {
-                        throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
-                    }
+                    function _getTopLeftUsingCoordinates() { };
 
-                    // Adjust for the anchor's margins.
-                    anchor.top = anchorRawRectangle.top;
-                    anchor.bottom = anchorRawRectangle.bottom;
-                    anchor.left = anchorRawRectangle.left;
-                    anchor.right = anchorRawRectangle.right;
-                    anchor.height = anchor.bottom - anchor.top;
-                    anchor.width = anchor.right - anchor.left;
+                    function _getTopLeftUsingPlacement() {
+                        var anchorRawRectangle,
+                            flyout = {},
+                            anchor = {};
 
-                    // Get our flyout and margins, note that getDimension calls
-                    // window.getComputedStyle, which ensures layout is updated.
-                    flyout.marginTop = getDimension(this._element, "marginTop");
-                    flyout.marginBottom = getDimension(this._element, "marginBottom");
-                    flyout.marginLeft = getDimension(this._element, "marginLeft");
-                    flyout.marginRight = getDimension(this._element, "marginRight");
-                    flyout.width = _ElementUtilities.getTotalWidth(this._element);
-                    flyout.height = _ElementUtilities.getTotalHeight(this._element);
-                    flyout.innerWidth = _ElementUtilities.getContentWidth(this._element);
-                    flyout.innerHeight = _ElementUtilities.getContentHeight(this._element);
-                    this._nextMarginPadding = (flyout.height - flyout.innerHeight);
+                        try {
+                            anchorRawRectangle = this._currentAnchor.getBoundingClientRect();
+                        }
+                        catch (e) {
+                            throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
+                        }
 
-                    // Check fit for requested this._currentPlacement, doing fallback if necessary
-                    switch (this._currentPlacement) {
-                        case "top":
-                            if (!this._fitTop(anchor, flyout)) {
-                                // Didn't fit, needs scrollbar
-                                this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                                this._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
-                            }
-                            this._centerHorizontally(anchor, flyout, this._currentAlignment);
-                            break;
-                        case "bottom":
-                            if (!this._fitBottom(anchor, flyout)) {
-                                // Didn't fit, needs scrollbar
-                                this._nextTop = -1;
-                                this._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
-                            }
-                            this._centerHorizontally(anchor, flyout, this._currentAlignment);
-                            break;
-                        case "left":
-                            if (!this._fitLeft(anchor, flyout)) {
-                                // Didn't fit, just shove it to edge
-                                this._nextLeft = 0;
-                            }
-                            this._centerVertically(anchor, flyout);
-                            break;
-                        case "right":
-                            if (!this._fitRight(anchor, flyout)) {
-                                // Didn't fit,just shove it to edge
-                                this._nextLeft = -1;
-                            }
-                            this._centerVertically(anchor, flyout);
-                            break;
-                        case "autovertical":
-                            if (!this._fitTop(anchor, flyout)) {
-                                // Didn't fit above (preferred), so go below.
+                        // Adjust for the anchor's margins.
+                        anchor.top = anchorRawRectangle.top;
+                        anchor.bottom = anchorRawRectangle.bottom;
+                        anchor.left = anchorRawRectangle.left;
+                        anchor.right = anchorRawRectangle.right;
+                        anchor.height = anchor.bottom - anchor.top;
+                        anchor.width = anchor.right - anchor.left;
+
+                        // Get our flyout and margins, note that getDimension calls
+                        // window.getComputedStyle, which ensures layout is updated.
+                        flyout.marginTop = getDimension(this._element, "marginTop");
+                        flyout.marginBottom = getDimension(this._element, "marginBottom");
+                        flyout.marginLeft = getDimension(this._element, "marginLeft");
+                        flyout.marginRight = getDimension(this._element, "marginRight");
+                        flyout.width = _ElementUtilities.getTotalWidth(this._element);
+                        flyout.height = _ElementUtilities.getTotalHeight(this._element);
+                        flyout.innerWidth = _ElementUtilities.getContentWidth(this._element);
+                        flyout.innerHeight = _ElementUtilities.getContentHeight(this._element);
+                        this._nextMarginPadding = (flyout.height - flyout.innerHeight);
+
+                        // Check fit for requested this._currentPlacement, doing fallback if necessary
+                        switch (this._currentPlacement) {
+                            case "top":
+                                if (!this._fitTop(anchor, flyout)) {
+                                    // Didn't fit, needs scrollbar
+                                    this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                                    this._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
+                                }
+                                this._centerHorizontally(anchor, flyout, this._currentAlignment);
+                                break;
+                            case "bottom":
                                 if (!this._fitBottom(anchor, flyout)) {
                                     // Didn't fit, needs scrollbar
-                                    this._configureVerticalWithScroll(anchor);
+                                    this._nextTop = -1;
+                                    this._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
                                 }
-                            }
-                            this._centerHorizontally(anchor, flyout, this._currentAlignment);
-                            break;
-                        case "autohorizontal":
-                            if (!this._fitLeft(anchor, flyout)) {
-                                // Didn't fit left (preferred), so go right.
+                                this._centerHorizontally(anchor, flyout, this._currentAlignment);
+                                break;
+                            case "left":
+                                if (!this._fitLeft(anchor, flyout)) {
+                                    // Didn't fit, just shove it to edge
+                                    this._nextLeft = 0;
+                                }
+                                this._centerVertically(anchor, flyout);
+                                break;
+                            case "right":
                                 if (!this._fitRight(anchor, flyout)) {
                                     // Didn't fit,just shove it to edge
                                     this._nextLeft = -1;
                                 }
-                            }
-                            this._centerVertically(anchor, flyout);
-                            break;
-                        case "auto":
-                            // Auto, if the anchor was in the vertical center of the display would we fit above it?
-                            if (this._sometimesFitsAbove(anchor, flyout)) {
-                                // It will fit above or below the anchor
+                                this._centerVertically(anchor, flyout);
+                                break;
+                            case "autovertical":
                                 if (!this._fitTop(anchor, flyout)) {
                                     // Didn't fit above (preferred), so go below.
-                                    this._fitBottom(anchor, flyout);
+                                    if (!this._fitBottom(anchor, flyout)) {
+                                        // Didn't fit, needs scrollbar
+                                        this._configureVerticalWithScroll(anchor);
+                                    }
                                 }
                                 this._centerHorizontally(anchor, flyout, this._currentAlignment);
-                            } else {
-                                // Won't fit above or below, try a side
-                                if (!this._fitLeft(anchor, flyout) &&
-                                    !this._fitRight(anchor, flyout)) {
-                                    // Didn't fit left or right either
-                                    this._configureVerticalWithScroll(anchor);
+                                break;
+                            case "autohorizontal":
+                                if (!this._fitLeft(anchor, flyout)) {
+                                    // Didn't fit left (preferred), so go right.
+                                    if (!this._fitRight(anchor, flyout)) {
+                                        // Didn't fit,just shove it to edge
+                                        this._nextLeft = -1;
+                                    }
+                                }
+                                this._centerVertically(anchor, flyout);
+                                break;
+                            case "auto":
+                                // Auto, if the anchor was in the vertical center of the display would we fit above it?
+                                if (this._sometimesFitsAbove(anchor, flyout)) {
+                                    // It will fit above or below the anchor
+                                    if (!this._fitTop(anchor, flyout)) {
+                                        // Didn't fit above (preferred), so go below.
+                                        this._fitBottom(anchor, flyout);
+                                    }
                                     this._centerHorizontally(anchor, flyout, this._currentAlignment);
                                 } else {
-                                    this._centerVertically(anchor, flyout);
+                                    // Won't fit above or below, try a side
+                                    if (!this._fitLeft(anchor, flyout) &&
+                                        !this._fitRight(anchor, flyout)) {
+                                        // Didn't fit left or right either
+                                        this._configureVerticalWithScroll(anchor);
+                                        this._centerHorizontally(anchor, flyout, this._currentAlignment);
+                                    } else {
+                                        this._centerVertically(anchor, flyout);
+                                    }
                                 }
-                            }
-                            break;
-                        default:
-                            // Not a legal this._currentPlacement value
-                            throw new _ErrorFromName("WinJS.UI.Flyout.BadPlacement", strings.badPlacement);
-                    }
+                                break;
+                            default:
+                                // Not a legal this._currentPlacement value
+                                throw new _ErrorFromName("WinJS.UI.Flyout.BadPlacement", strings.badPlacement);
+                        }
 
-                    // Remember "bottom" in case we need to consider keyboard later, only tested for top-pinned bars
-                    this._nextBottom = this._nextTop + flyout.height;
+                        // Remember "bottom" in case we need to consider keyboard later, only tested for top-pinned bars
+                        this._nextBottom = this._nextTop + flyout.height;
+                    };
+
+
                 },
 
                 _configureVerticalWithScroll: function (anchor) {
@@ -1108,9 +1148,9 @@ define([
                     _WriteProfilerMark("WinJS.UI.Flyout:" + this._id + ":" + text);
                 }
             },
-            {
-                _cascadeManager: new _CascadeManager(),
-            });
+{
+    _cascadeManager: new _CascadeManager(),
+});
             return Flyout;
         })
     });
