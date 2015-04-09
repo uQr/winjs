@@ -371,7 +371,7 @@ define([
                 },
 
                 _show: function Flyout_show(anchor, placement, alignment, coordinates) {
-                    this._baseFlyoutShow(anchor, placement,alignment, null);
+                    this._baseFlyoutShow(anchor, placement, alignment, null);
                 },
 
                 /// <signature helpKeyword="WinJS.UI.Flyout.showAt">
@@ -680,202 +680,275 @@ define([
                 // All three auto placements will add a vertical scrollbar if necessary.
                 _getTopLeft: function Flyout_getTopLeft() {
 
+                    var that = this;
 
-                    function _getTopLeftUsingCoordinates() { };
-
-                    function _getTopLeftUsingPlacement() {
-                        var anchorRawRectangle,
-                            flyout = {},
-                            anchor = {};
-
-                        try {
-                            anchorRawRectangle = this._currentAnchor.getBoundingClientRect();
+                    function configureVerticalWithScroll(anchor) {
+                        if (topHasMoreRoom(anchor)) {
+                            // Top, won't fit, needs scrollbar
+                            that._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                            that._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - that._nextMarginPadding;
+                        } else {
+                            // Bottom, won't fit, needs scrollbar
+                            that._nextTop = -1;
+                            that._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - that._nextMarginPadding;
                         }
-                        catch (e) {
-                            throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
+                    }
+
+                    // If the anchor is centered vertically, would the flyout fit above it?
+                    function sometimesFitsAbove(anchor, flyout) {
+                        return ((_Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.height) / 2) >= flyout.height;
+                    }
+
+                    function topHasMoreRoom(anchor) {
+                        return anchor.top > _Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.bottom;
+                    }
+
+                    // See if we can fit in various places, fitting in the main view,
+                    // ignoring viewport changes, like for the IHM.
+                    function fitTop(anchor, flyout) {
+                        that._nextTop = anchor.top - flyout.height;
+                        that._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
+                        return (that._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
+                                that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
+                    }
+
+                    function fitBottom(anchor, flyout) {
+                        that._nextTop = anchor.bottom;
+                        that._nextAnimOffset = { top: "-50px", left: "0px", keyframe: "WinJS-showFlyoutBottom" };
+                        return (that._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
+                                that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
+                    }
+
+                    function fitLeft(anchor, flyout) {
+                        that._nextLeft = anchor.left - flyout.width;
+                        that._nextAnimOffset = { top: "0px", left: "50px", keyframe: "WinJS-showFlyoutLeft" };
+                        return (that._nextLeft >= 0 && that._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
+                    }
+
+                    function fitRight(anchor, flyout) {
+                        that._nextLeft = anchor.right;
+                        that._nextAnimOffset = { top: "0px", left: "-50px", keyframe: "WinJS-showFlyoutRight" };
+                        return (that._nextLeft >= 0 && that._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
+                    }
+
+                    function centerVertically(anchor, flyout) {
+                        that._nextTop = anchor.top + anchor.height / 2 - flyout.height / 2;
+                        if (that._nextTop < _Overlay._Overlay._keyboardInfo._visibleDocTop) {
+                            that._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                        } else if (that._nextTop + flyout.height >= _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
+                            // Flag to put on bottom
+                            that._nextTop = -1;
                         }
+                    }
 
-                        // Adjust for the anchor's margins.
-                        anchor.top = anchorRawRectangle.top;
-                        anchor.bottom = anchorRawRectangle.bottom;
-                        anchor.left = anchorRawRectangle.left;
-                        anchor.right = anchorRawRectangle.right;
-                        anchor.height = anchor.bottom - anchor.top;
-                        anchor.width = anchor.right - anchor.left;
+                    function centerHorizontally(anchor, flyout, alignment) {
+                        if (alignment === "center") {
+                            that._nextLeft = anchor.left + anchor.width / 2 - flyout.width / 2;
+                        } else if (alignment === "left") {
+                            that._nextLeft = anchor.left;
+                        } else if (alignment === "right") {
+                            that._nextLeft = anchor.right - flyout.width;
+                        } else {
+                            throw new _ErrorFromName("WinJS.UI.Flyout.BadAlignment", strings.badAlignment);
+                        }
+                        if (that._nextLeft < 0) {
+                            that._nextLeft = 0;
+                        } else if (that._nextLeft + flyout.width >= _Global.document.documentElement.clientWidth) {
+                            // flag to put on right
+                            that._nextLeft = -1;
+                        }
+                    }
 
-                        // Get our flyout and margins, note that getDimension calls
-                        // window.getComputedStyle, which ensures layout is updated.
-                        flyout.marginTop = getDimension(this._element, "marginTop");
-                        flyout.marginBottom = getDimension(this._element, "marginBottom");
-                        flyout.marginLeft = getDimension(this._element, "marginLeft");
-                        flyout.marginRight = getDimension(this._element, "marginRight");
-                        flyout.width = _ElementUtilities.getTotalWidth(this._element);
-                        flyout.height = _ElementUtilities.getTotalHeight(this._element);
-                        flyout.innerWidth = _ElementUtilities.getContentWidth(this._element);
-                        flyout.innerHeight = _ElementUtilities.getContentHeight(this._element);
-                        this._nextMarginPadding = (flyout.height - flyout.innerHeight);
+                    var anchorRawRectangle,
+                        flyout = {},
+                        anchor = {};
 
-                        // Check fit for requested this._currentPlacement, doing fallback if necessary
-                        switch (this._currentPlacement) {
-                            case "top":
-                                if (!this._fitTop(anchor, flyout)) {
+                    try {
+                        anchorRawRectangle = this._currentAnchor.getBoundingClientRect();
+                    }
+                    catch (e) {
+                        throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
+                    }
+
+                    // Adjust for the anchor's margins.
+                    anchor.top = anchorRawRectangle.top;
+                    anchor.bottom = anchorRawRectangle.bottom;
+                    anchor.left = anchorRawRectangle.left;
+                    anchor.right = anchorRawRectangle.right;
+                    anchor.height = anchor.bottom - anchor.top;
+                    anchor.width = anchor.right - anchor.left;
+
+                    // Get our flyout and margins, note that getDimension calls
+                    // window.getComputedStyle, which ensures layout is updated.
+                    flyout.marginTop = getDimension(this._element, "marginTop");
+                    flyout.marginBottom = getDimension(this._element, "marginBottom");
+                    flyout.marginLeft = getDimension(this._element, "marginLeft");
+                    flyout.marginRight = getDimension(this._element, "marginRight");
+                    flyout.width = _ElementUtilities.getTotalWidth(this._element);
+                    flyout.height = _ElementUtilities.getTotalHeight(this._element);
+                    flyout.innerWidth = _ElementUtilities.getContentWidth(this._element);
+                    flyout.innerHeight = _ElementUtilities.getContentHeight(this._element);
+                    this._nextMarginPadding = (flyout.height - flyout.innerHeight);
+
+                    // Check fit for requested this._currentPlacement, doing fallback if necessary
+                    switch (this._currentPlacement) {
+                        case "top":
+                            if (!fitTop(anchor, flyout)) {
+                                // Didn't fit, needs scrollbar
+                                this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                                this._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
+                            }
+                            centerHorizontally(anchor, flyout, this._currentAlignment);
+                            break;
+                        case "bottom":
+                            if (!fitBottom(anchor, flyout)) {
+                                // Didn't fit, needs scrollbar
+                                this._nextTop = -1;
+                                this._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
+                            }
+                            centerHorizontally(anchor, flyout, this._currentAlignment);
+                            break;
+                        case "left":
+                            if (!fitLeft(anchor, flyout)) {
+                                // Didn't fit, just shove it to edge
+                                this._nextLeft = 0;
+                            }
+                            centerVertically(anchor, flyout);
+                            break;
+                        case "right":
+                            if (!fitRight(anchor, flyout)) {
+                                // Didn't fit,just shove it to edge
+                                this._nextLeft = -1;
+                            }
+                            centerVertically(anchor, flyout);
+                            break;
+                        case "autovertical":
+                            if (!fitTop(anchor, flyout)) {
+                                // Didn't fit above (preferred), so go below.
+                                if (!fitBottom(anchor, flyout)) {
                                     // Didn't fit, needs scrollbar
-                                    this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                                    this._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
+                                    configureVerticalWithScroll(anchor);
                                 }
-                                this._centerHorizontally(anchor, flyout, this._currentAlignment);
-                                break;
-                            case "bottom":
-                                if (!this._fitBottom(anchor, flyout)) {
-                                    // Didn't fit, needs scrollbar
-                                    this._nextTop = -1;
-                                    this._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
-                                }
-                                this._centerHorizontally(anchor, flyout, this._currentAlignment);
-                                break;
-                            case "left":
-                                if (!this._fitLeft(anchor, flyout)) {
-                                    // Didn't fit, just shove it to edge
-                                    this._nextLeft = 0;
-                                }
-                                this._centerVertically(anchor, flyout);
-                                break;
-                            case "right":
-                                if (!this._fitRight(anchor, flyout)) {
+                            }
+                            centerHorizontally(anchor, flyout, this._currentAlignment);
+                            break;
+                        case "autohorizontal":
+                            if (!fitLeft(anchor, flyout)) {
+                                // Didn't fit left (preferred), so go right.
+                                if (!fitRight(anchor, flyout)) {
                                     // Didn't fit,just shove it to edge
                                     this._nextLeft = -1;
                                 }
-                                this._centerVertically(anchor, flyout);
-                                break;
-                            case "autovertical":
-                                if (!this._fitTop(anchor, flyout)) {
+                            }
+                            centerVertically(anchor, flyout);
+                            break;
+                        case "auto":
+                            // Auto, if the anchor was in the vertical center of the display would we fit above it?
+                            if (sometimesFitsAbove(anchor, flyout)) {
+                                // It will fit above or below the anchor
+                                if (!fitTop(anchor, flyout)) {
                                     // Didn't fit above (preferred), so go below.
-                                    if (!this._fitBottom(anchor, flyout)) {
-                                        // Didn't fit, needs scrollbar
-                                        this._configureVerticalWithScroll(anchor);
-                                    }
+                                    fitBottom(anchor, flyout);
                                 }
-                                this._centerHorizontally(anchor, flyout, this._currentAlignment);
-                                break;
-                            case "autohorizontal":
-                                if (!this._fitLeft(anchor, flyout)) {
-                                    // Didn't fit left (preferred), so go right.
-                                    if (!this._fitRight(anchor, flyout)) {
-                                        // Didn't fit,just shove it to edge
-                                        this._nextLeft = -1;
-                                    }
-                                }
-                                this._centerVertically(anchor, flyout);
-                                break;
-                            case "auto":
-                                // Auto, if the anchor was in the vertical center of the display would we fit above it?
-                                if (this._sometimesFitsAbove(anchor, flyout)) {
-                                    // It will fit above or below the anchor
-                                    if (!this._fitTop(anchor, flyout)) {
-                                        // Didn't fit above (preferred), so go below.
-                                        this._fitBottom(anchor, flyout);
-                                    }
-                                    this._centerHorizontally(anchor, flyout, this._currentAlignment);
+                                centerHorizontally(anchor, flyout, this._currentAlignment);
+                            } else {
+                                // Won't fit above or below, try a side
+                                if (!fitLeft(anchor, flyout) &&
+                                    !fitRight(anchor, flyout)) {
+                                    // Didn't fit left or right either
+                                    configureVerticalWithScroll(anchor);
+                                    centerHorizontally(anchor, flyout, this._currentAlignment);
                                 } else {
-                                    // Won't fit above or below, try a side
-                                    if (!this._fitLeft(anchor, flyout) &&
-                                        !this._fitRight(anchor, flyout)) {
-                                        // Didn't fit left or right either
-                                        this._configureVerticalWithScroll(anchor);
-                                        this._centerHorizontally(anchor, flyout, this._currentAlignment);
-                                    } else {
-                                        this._centerVertically(anchor, flyout);
-                                    }
+                                    centerVertically(anchor, flyout);
                                 }
-                                break;
-                            default:
-                                // Not a legal this._currentPlacement value
-                                throw new _ErrorFromName("WinJS.UI.Flyout.BadPlacement", strings.badPlacement);
-                        }
-
-                        // Remember "bottom" in case we need to consider keyboard later, only tested for top-pinned bars
-                        this._nextBottom = this._nextTop + flyout.height;
-                    };
-
-
-                },
-
-                _configureVerticalWithScroll: function (anchor) {
-                    if (this._topHasMoreRoom(anchor)) {
-                        // Top, won't fit, needs scrollbar
-                        this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                        this._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
-                    } else {
-                        // Bottom, won't fit, needs scrollbar
-                        this._nextTop = -1;
-                        this._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
+                            }
+                            break;
+                        default:
+                            // Not a legal this._currentPlacement value
+                            throw new _ErrorFromName("WinJS.UI.Flyout.BadPlacement", strings.badPlacement);
                     }
+
+                    // Remember "bottom" in case we need to consider keyboard later, only tested for top-pinned bars
+                    this._nextBottom = this._nextTop + flyout.height;
+
                 },
 
-                // If the anchor is centered vertically, would the flyout fit above it?
-                _sometimesFitsAbove: function Flyout_sometimesFitsAbove(anchor, flyout) {
-                    return ((_Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.height) / 2) >= flyout.height;
-                },
+                //_configureVerticalWithScroll: function (anchor) {
+                //    if (this._topHasMoreRoom(anchor)) {
+                //        // Top, won't fit, needs scrollbar
+                //        this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                //        this._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
+                //    } else {
+                //        // Bottom, won't fit, needs scrollbar
+                //        this._nextTop = -1;
+                //        this._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
+                //    }
+                //},
 
-                _topHasMoreRoom: function Flyout_topHasMoreRoom(anchor) {
-                    return anchor.top > _Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.bottom;
-                },
+                //// If the anchor is centered vertically, would the flyout fit above it?
+                //_sometimesFitsAbove: function Flyout_sometimesFitsAbove(anchor, flyout) {
+                //    return ((_Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.height) / 2) >= flyout.height;
+                //},
 
-                // See if we can fit in various places, fitting in the main view,
-                // ignoring viewport changes, like for the IHM.
-                _fitTop: function Flyout_fitTop(anchor, flyout) {
-                    this._nextTop = anchor.top - flyout.height;
-                    this._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
-                    return (this._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
-                            this._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
-                },
+                //_topHasMoreRoom: function Flyout_topHasMoreRoom(anchor) {
+                //    return anchor.top > _Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.bottom;
+                //},
 
-                _fitBottom: function Flyout_fitBottom(anchor, flyout) {
-                    this._nextTop = anchor.bottom;
-                    this._nextAnimOffset = { top: "-50px", left: "0px", keyframe: "WinJS-showFlyoutBottom" };
-                    return (this._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
-                            this._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
-                },
+                //// See if we can fit in various places, fitting in the main view,
+                //// ignoring viewport changes, like for the IHM.
+                //_fitTop: function Flyout_fitTop(anchor, flyout) {
+                //    this._nextTop = anchor.top - flyout.height;
+                //    this._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
+                //    return (this._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
+                //            this._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
+                //},
 
-                _fitLeft: function Flyout_fitLeft(anchor, flyout) {
-                    this._nextLeft = anchor.left - flyout.width;
-                    this._nextAnimOffset = { top: "0px", left: "50px", keyframe: "WinJS-showFlyoutLeft" };
-                    return (this._nextLeft >= 0 && this._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
-                },
+                //_fitBottom: function Flyout_fitBottom(anchor, flyout) {
+                //    this._nextTop = anchor.bottom;
+                //    this._nextAnimOffset = { top: "-50px", left: "0px", keyframe: "WinJS-showFlyoutBottom" };
+                //    return (this._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
+                //            this._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
+                //},
 
-                _fitRight: function Flyout_fitRight(anchor, flyout) {
-                    this._nextLeft = anchor.right;
-                    this._nextAnimOffset = { top: "0px", left: "-50px", keyframe: "WinJS-showFlyoutRight" };
-                    return (this._nextLeft >= 0 && this._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
-                },
+                //_fitLeft: function Flyout_fitLeft(anchor, flyout) {
+                //    this._nextLeft = anchor.left - flyout.width;
+                //    this._nextAnimOffset = { top: "0px", left: "50px", keyframe: "WinJS-showFlyoutLeft" };
+                //    return (this._nextLeft >= 0 && this._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
+                //},
 
-                _centerVertically: function Flyout_centerVertically(anchor, flyout) {
-                    this._nextTop = anchor.top + anchor.height / 2 - flyout.height / 2;
-                    if (this._nextTop < _Overlay._Overlay._keyboardInfo._visibleDocTop) {
-                        this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                    } else if (this._nextTop + flyout.height >= _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
-                        // Flag to put on bottom
-                        this._nextTop = -1;
-                    }
-                },
+                //_fitRight: function Flyout_fitRight(anchor, flyout) {
+                //    this._nextLeft = anchor.right;
+                //    this._nextAnimOffset = { top: "0px", left: "-50px", keyframe: "WinJS-showFlyoutRight" };
+                //    return (this._nextLeft >= 0 && this._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
+                //},
 
-                _centerHorizontally: function Flyout_centerHorizontally(anchor, flyout, alignment) {
-                    if (alignment === "center") {
-                        this._nextLeft = anchor.left + anchor.width / 2 - flyout.width / 2;
-                    } else if (alignment === "left") {
-                        this._nextLeft = anchor.left;
-                    } else if (alignment === "right") {
-                        this._nextLeft = anchor.right - flyout.width;
-                    } else {
-                        throw new _ErrorFromName("WinJS.UI.Flyout.BadAlignment", strings.badAlignment);
-                    }
-                    if (this._nextLeft < 0) {
-                        this._nextLeft = 0;
-                    } else if (this._nextLeft + flyout.width >= _Global.document.documentElement.clientWidth) {
-                        // flag to put on right
-                        this._nextLeft = -1;
-                    }
-                },
+                //_centerVertically: function Flyout_centerVertically(anchor, flyout) {
+                //    this._nextTop = anchor.top + anchor.height / 2 - flyout.height / 2;
+                //    if (this._nextTop < _Overlay._Overlay._keyboardInfo._visibleDocTop) {
+                //        this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                //    } else if (this._nextTop + flyout.height >= _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
+                //        // Flag to put on bottom
+                //        this._nextTop = -1;
+                //    }
+                //},
+
+                //_centerHorizontally: function Flyout_centerHorizontally(anchor, flyout, alignment) {
+                //    if (alignment === "center") {
+                //        this._nextLeft = anchor.left + anchor.width / 2 - flyout.width / 2;
+                //    } else if (alignment === "left") {
+                //        this._nextLeft = anchor.left;
+                //    } else if (alignment === "right") {
+                //        this._nextLeft = anchor.right - flyout.width;
+                //    } else {
+                //        throw new _ErrorFromName("WinJS.UI.Flyout.BadAlignment", strings.badAlignment);
+                //    }
+                //    if (this._nextLeft < 0) {
+                //        this._nextLeft = 0;
+                //    } else if (this._nextLeft + flyout.width >= _Global.document.documentElement.clientWidth) {
+                //        // flag to put on right
+                //        this._nextLeft = -1;
+                //    }
+                //},
 
                 _updateAdjustments: function Flyout_updateAdjustments(alignment) {
                     // Move to 0,0 in case it is off screen, so that it lays out at a reasonable size

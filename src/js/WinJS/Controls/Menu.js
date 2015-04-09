@@ -249,7 +249,27 @@ define([
 
                 _show: function Menu_show(anchor, placement, alignment) {
                     // Call flyout show
-                    this._baseFlyoutShow(anchor, placement, alignment);
+                    this._baseFlyoutShow(anchor, placement, alignment, null);
+
+                    // We need to adjust MenuCommand layouts based on the various types of
+                    // commands visible in our Menu, but only after we send the beforeshow
+                    // event, so the developer has a chance to show or hide more commands.
+                    // Flyout's _findPosition will make that call.
+                },
+
+                showAt: function (coordinates) {
+                    /// <signature helpKeyword="WinJS.UI.Menu.show">
+                    /// <summary locid="WinJS.UI.Menu.show">
+                    /// TODO ///////////////////////////////////////
+                    /// </summary>
+                    /// </signature>
+                    this._writeProfilerMark("show,StartTM"); // The corresponding "stop" profiler mark is handled in _Overlay._baseEndShow().
+                    this._show(coordinates);
+                },
+
+                _showAt: function Menu_showAt(coordinates) {
+                    // Call flyout showAt
+                    this._baseFlyoutShow(null, null, null, coordinates);
 
                     // We need to adjust MenuCommand layouts based on the various types of
                     // commands visible in our Menu, but only after we send the beforeshow
