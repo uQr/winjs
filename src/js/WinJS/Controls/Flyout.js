@@ -619,7 +619,7 @@ define([
                     // Set up the new position, and prep the offset for showPopup
                     this._getTopLeft();
                     // Panning top offset is calculated top
-                    this._scrollTop = this._nextTop - _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                    this._isNegative = false;
 
                     // Adjust position
                     if (this._nextTop < 0) {
@@ -1025,18 +1025,18 @@ define([
                     if (height > viewportHeight) {
                         // Too Tall, pin to top with max height
                         this._keyboardMovedUs = true;
-                        this._scrollTop = 0;
+                        this._isNegative = false;
                         this._keyboardSquishedUs = viewportHeight;
                     } else if (this._nextTop === -1) {
                         // Pinned to bottom counts as moved
                         this._keyboardMovedUs = true;
                     } else if (this._nextTop < _Overlay._Overlay._keyboardInfo._visibleDocTop) {
                         // Above the top of the viewport
-                        this._scrollTop = 0;
+                        this._isNegative = false;
                         this._keyboardMovedUs = true;
                     } else if (this._nextBottom > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
                         // Below the bottom of the viewport
-                        this._scrollTop = -1;
+                        this._isNegative = true;
                         this._keyboardMovedUs = true;
                     }
                 },
@@ -1085,7 +1085,7 @@ define([
                     }
 
                     // May need to adjust top by viewport offset
-                    if (this._scrollTop < 0) {
+                    if (this._isNegative) {
                         // Need to attach to bottom
                         this._element.style.bottom = _Overlay._Overlay._keyboardInfo._visibleDocBottomOffset + "px";
                         this._element.style.top = "auto";
