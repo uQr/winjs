@@ -603,7 +603,7 @@ define([
 
                 // Find our new flyout position.
                 _findPosition: function Flyout_findPosition() {
-                    this._nextHeight = null;
+                    this._nextMaxHeight = null;
                     this._keyboardMovedUs = false;
                     this._hasScrolls = false;
                     this._keyboardSquishedUs = 0;
@@ -642,11 +642,11 @@ define([
                     }
 
                     // Adjust height/scrollbar
-                    if (this._nextHeight !== null) {
+                    if (this._nextMaxHeight !== null) {
                         _ElementUtilities.addClass(this._element, _Constants.scrollsClass);
                         this._lastMaxHeight = this._element.style.maxHeight;
-                        this._element.style.maxHeight = this._nextHeight + "px";
-                        this._nextBottom = this._nextTop + this._nextHeight;
+                        this._element.style.maxHeight = this._nextMaxHeight + "px";
+                        this._nextBottom = this._nextTop + this._nextMaxHeight;
                         this._hasScrolls = true;
                     }
 
@@ -686,11 +686,11 @@ define([
                         if (topHasMoreRoom(anchor)) {
                             // Top, won't fit, needs scrollbar
                             that._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                            that._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - that._nextMarginPadding;
+                            that._nextMaxHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - that._nextMarginPadding;
                         } else {
                             // Bottom, won't fit, needs scrollbar
                             that._nextTop = -1;
-                            that._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - that._nextMarginPadding;
+                            that._nextMaxHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - that._nextMarginPadding;
                         }
                     }
 
@@ -796,7 +796,7 @@ define([
                             if (!fitTop(anchor, flyout)) {
                                 // Didn't fit, needs scrollbar
                                 this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                                this._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
+                                this._nextMaxHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
                             }
                             centerHorizontally(anchor, flyout, this._currentAlignment);
                             break;
@@ -804,7 +804,7 @@ define([
                             if (!fitBottom(anchor, flyout)) {
                                 // Didn't fit, needs scrollbar
                                 this._nextTop = -1;
-                                this._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
+                                this._nextMaxHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
                             }
                             centerHorizontally(anchor, flyout, this._currentAlignment);
                             break;
@@ -877,11 +877,11 @@ define([
                 //    if (this._topHasMoreRoom(anchor)) {
                 //        // Top, won't fit, needs scrollbar
                 //        this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                //        this._nextHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
+                //        this._nextMaxHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._nextMarginPadding;
                 //    } else {
                 //        // Bottom, won't fit, needs scrollbar
                 //        this._nextTop = -1;
-                //        this._nextHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
+                //        this._nextMaxHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._nextMarginPadding;
                 //    }
                 //},
 
