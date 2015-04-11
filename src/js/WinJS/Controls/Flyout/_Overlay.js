@@ -70,33 +70,33 @@ define([
                     this._toggleListeners(_GlobalListener.states.on);
                 },
                 _windowBlur: function _GlobalListener_windowBlur(event) {
-                    // Want to lightdismiss _Overlays on window blur.
-                    // We get blur if we click off the window, including into an iframe within our window.
-                    // Both blurs call this function, but fortunately document.hasFocus is true if either
-                    // the document window or our iframe window has focus.
-                    if (!_Global.document.hasFocus()) {
-                        // The document doesn't have focus, so they clicked off the app, so light dismiss.
-                        _Overlay._lightDismissOverlays(false);
-                    } else {
-                        if ((_Overlay._clickEatingFlyoutDiv &&
-                             _Overlay._clickEatingFlyoutDiv.style.display === "block") ||
-                            (_Overlay._clickEatingAppBarDiv &&
-                             _Overlay._clickEatingAppBarDiv.style.display === "block")) {
-                            // We were trying to unfocus the window, but document still has focus,
-                            // so make sure the iframe that took the focus will check for blur next time.
-                            // We don't have to do this if the click eating div is hidden because then
-                            // there would be no flyout or appbar needing light dismiss.
-                            var active = _Global.document.activeElement;
-                            if (active && active.tagName === "IFRAME" && !active.msLightDismissBlur) {
-                                // - This will go away when the IFRAME goes away, and we only create one.
-                                // - This only works in IE because other browsers don't fire focus events on iframe elements.
-                                // - Can't use WinJS.Utilities._addEventListener's focusout because it doesn't fire when an
-                                //   iframe loses focus due to changing windows.
-                                active.addEventListener("blur", this._windowBlur, false);
-                                active.msLightDismissBlur = true;
-                            }
-                        }
-                    }
+                    //// Want to lightdismiss _Overlays on window blur.
+                    //// We get blur if we click off the window, including into an iframe within our window.
+                    //// Both blurs call this function, but fortunately document.hasFocus is true if either
+                    //// the document window or our iframe window has focus.
+                    //if (!_Global.document.hasFocus()) {
+                    //    // The document doesn't have focus, so they clicked off the app, so light dismiss.
+                    //    _Overlay._lightDismissOverlays(false);
+                    //} else {
+                    //    if ((_Overlay._clickEatingFlyoutDiv &&
+                    //         _Overlay._clickEatingFlyoutDiv.style.display === "block") ||
+                    //        (_Overlay._clickEatingAppBarDiv &&
+                    //         _Overlay._clickEatingAppBarDiv.style.display === "block")) {
+                    //        // We were trying to unfocus the window, but document still has focus,
+                    //        // so make sure the iframe that took the focus will check for blur next time.
+                    //        // We don't have to do this if the click eating div is hidden because then
+                    //        // there would be no flyout or appbar needing light dismiss.
+                    //        var active = _Global.document.activeElement;
+                    //        if (active && active.tagName === "IFRAME" && !active.msLightDismissBlur) {
+                    //            // - This will go away when the IFRAME goes away, and we only create one.
+                    //            // - This only works in IE because other browsers don't fire focus events on iframe elements.
+                    //            // - Can't use WinJS.Utilities._addEventListener's focusout because it doesn't fire when an
+                    //            //   iframe loses focus due to changing windows.
+                    //            active.addEventListener("blur", this._windowBlur, false);
+                    //            active.msLightDismissBlur = true;
+                    //        }
+                    //    }
+                    //}
                 },
                 _inputPaneShowing: function _GlobalListener_inputePaneShowing(event) {
                     _WriteProfilerMark(_GlobalListener.profilerString + "_showingKeyboard,StartTM");
