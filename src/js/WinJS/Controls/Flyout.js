@@ -397,7 +397,7 @@ define([
                 },
 
                 _showAt: function Flyout_show(coordinates) {
-                    this._baseFlyoutShow(null, null, null, coordinates);
+                    this._baseFlyoutShow(null, "cartesian", "none", coordinates);
                 },
 
                 hide: function () {
@@ -475,57 +475,65 @@ define([
                         return;
                     }
 
-                    // Store the function call with parameters used to "show" the flyout so that we can repeat
-                    // the operate later if something forces us to pause now.
+                    // Store the function call with the parameters used to "show" the flyout so that we can repeat
+                    // the operation later if something forces us to cancel and resume later.
                     var that = this;
                     this._currentShowFn = function () { that._baseFlyoutShow(anchor, placement, alignment, coordinates); };
 
-                    // Pick up defaults
-                    if (!anchor) {
-                        anchor = this._anchor;
-                    }
-                    if (!placement) {
-                        placement = this._placement;
-                    }
-                    if (!alignment) {
-                        alignment = this._alignment;
-                    }
-
-                    // Dereference the anchor if necessary
-                    if (typeof anchor === "string") {
-                        anchor = _Global.document.getElementById(anchor);
-                    } else if (anchor && anchor.element) {
-                        anchor = anchor.element;
-                    }
-
-                    // Normalize coordinates since they could be a mouse/pointer event object or an (x,y) pair.
                     if (coordinates) {
+                        // If we are showing via arbitrary coordinates, then we don't require an anchor to show
+                        // ourselves. If an anchor hasn't been assigned just use the body.
+                        anchor = anchor || this._anchor || document.body;
+
+                        placement = "cartesian";
+                        alignment = "none";
+
+                        // Normalize coordinates since they could be a mouse/pointer event object or an (x,y) pair.
                         var temp = coordinates;
                         coordinates = {
                             x: temp.clientX || temp.x,
                             y: temp.clientY || temp.y
                         };
+                    } else {
+                        // Else we are showing relative to our anchor element. Anchor element is required.
+
+                        // Pick up defaults
+                        if (!anchor) {
+                            anchor = this._anchor;
+                        }
+                        if (!placement) {
+                            placement = this._placement;
+                        }
+                        if (!alignment) {
+                            alignment = this._alignment;
+                        }
+
+                        // Dereference the anchor if necessary
+                        if (typeof anchor === "string") {
+                            anchor = _Global.document.getElementById(anchor);
+                        } else if (anchor && anchor.element) {
+                            anchor = anchor.element;
+                        }
+
+                        if (!anchor) {
+                            // We expect an anchor
+                            throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
+                        }
                     }
 
-                    // We expect an anchor
-                    if (!anchor) {
-                        throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
-                    } else {
-                        // Remember the anchor so that if we lose focus we can go back
-                        this._currentAnchor = anchor;
-                        // Remember current values in case we need to stop and resume.
-                        this._currentPlacement = placement;
-                        this._currentAlignment = alignment;
-                        this._currentCoordinates = coordinates;
-                    }
+                    // Remember current values in case we need to stop and resume.
+                    this._currentAnchor = anchor;
+                    this._currentPlacement = placement;
+                    this._currentAlignment = alignment;
+                    this._currentCoordinates = coordinates;
 
                     // Need click-eating div to be visible, no matter what
                     if (!this._sticky) {
                         _Overlay._Overlay._showClickEatingDivFlyout();
                     }
 
-                    // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of a updating the cascade,
-                    // then don't mess up our current state.
+                    // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of 
+                    // updating the cascade, then don't mess up our current state.
                     if (this._element.winAnimating) {
                         // Queue us up to wait for the current animation to finish.
                         // _checkDoNext() is always scheduled after the current animation completes.
@@ -613,17 +621,20 @@ define([
                         this._checkMenuCommands();
                     }
 
-                    // Update margins for this alignment and remove old scrolling
-                    this._updateAdjustments(this._currentAlignment);
+                    // Remove old height restrictions and scrolling
+                    this._clearAdjustments();
+
+                    this._updateAlignment(this._currentAlignment);
 
                     // Set up the new position, and prep the offset for showPopup
                     this._getTopLeft();
+
                     // Panning top offset is calculated top
                     this._isNegative = false;
 
                     // Adjust position
                     if (this._nextTop < 0) {
-                        // Need to attach to bottom
+                        // Overran bottom, attach to bottom.
                         this._element.style.bottom = "0px";
                         this._element.style.top = "auto";
                     } else {
@@ -950,30 +961,38 @@ define([
                 //    }
                 //},
 
-                _updateAdjustments: function Flyout_updateAdjustments(alignment) {
+                _clearAdjustments: function Flyout_clearAdjustments() {
                     // Move to 0,0 in case it is off screen, so that it lays out at a reasonable size
                     this._element.style.top = "0px";
                     this._element.style.bottom = "auto";
                     this._element.style.left = "0px";
                     this._element.style.right = "auto";
 
-                    // Scrolling may not be necessary
+                    // Clear height restrictons and scrollbar class
                     _ElementUtilities.removeClass(this._element, _Constants.scrollsClass);
                     if (this._lastMaxHeight !== null) {
                         this._element.style.maxHeight = this._lastMaxHeight;
                         this._lastMaxHeight = null;
-                    }
+                    };
+                },
+
+                _updateAlignment: function Flyout_updateAlignment(alignment) {
                     // Alignment
-                    if (alignment === "center") {
-                        _ElementUtilities.removeClass(this._element, "win-leftalign");
-                        _ElementUtilities.removeClass(this._element, "win-rightalign");
-                    } else if (alignment === "left") {
-                        _ElementUtilities.addClass(this._element, "win-leftalign");
-                        _ElementUtilities.removeClass(this._element, "win-rightalign");
-                    } else if (alignment === "right") {
-                        _ElementUtilities.addClass(this._element, "win-rightalign");
-                        _ElementUtilities.removeClass(this._element, "win-leftalign");
-                    }
+                    switch (alignment) {
+                        case "left":
+                            _ElementUtilities.addClass(this._element, "win-leftalign");
+                            _ElementUtilities.removeClass(this._element, "win-rightalign");
+                            break;
+                        case "right":
+                            _ElementUtilities.addClass(this._element, "win-rightalign");
+                            _ElementUtilities.removeClass(this._element, "win-leftalign");
+                            break;
+                        case "center":
+                        case "none":
+                            _ElementUtilities.removeClass(this._element, "win-rightalign");
+                            _ElementUtilities.removeClass(this._element, "win-leftalign");
+                            break;
+                    };
                 },
 
                 _showingKeyboard: function Flyout_showingKeyboard(event) {
@@ -1221,9 +1240,9 @@ define([
                     _WriteProfilerMark("WinJS.UI.Flyout:" + this._id + ":" + text);
                 }
             },
-{
-    _cascadeManager: new _CascadeManager(),
-});
+            {
+                _cascadeManager: new _CascadeManager(),
+            });
             return Flyout;
         })
     });
