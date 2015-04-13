@@ -712,8 +712,28 @@ define([
                         return anchor.top > _Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.bottom;
                     }
 
+                    function fitVertical(preferredTop, preferredBottom, boundaryTop, boundaryBottom) {
+                        return boundaryTop <= preferredTop && preferredBottom <= boundaryBottom;
+
+                    };
+
+                    function fitHorizontal(preferredLeft, preferredRight, boundaryLeft, boundaryRight) {
+                        return boundaryLeft <= preferredLeft && preferredRight <= boundaryRight;
+
+                    };
+
+
                     // See if we can fit in various places, fitting in the main view,
                     // ignoring viewport changes, like for the IHM.
+                    //function fitTop(anchor, flyout) {
+                    //    that._nextTop = anchor.top - flyout.height;
+                    //    var preferredTop = anchor.top - flyout.height;
+                    //    var preferredBottom = anchor.top;
+                    //    var boundar
+                    //    that._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
+                    //    return (that._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
+                    //            that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
+                    //}
                     function fitTop(anchor, flyout) {
                         that._nextTop = anchor.top - flyout.height;
                         that._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
@@ -875,6 +895,25 @@ define([
                                 }
                             }
                             break;
+                        case "cartesian":
+                            this._nextTop = this._cuurentCoordinates.y;
+                            this._nextLeft = this._currentCoordinates.x;
+
+                            if (this._nextTop < 0) {
+                                this._nextTop = 0;
+                            } else if(this._nextTop > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
+                                this._nextTop = -1;
+                            }
+
+                            if (this._nextLeft < 0) {
+                                // Overran left, pin to left edge.
+                                this._nextLeft = 0;
+                            } else if (this._nextLeft + flyout.width > _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
+                                // Overran right, pin to right edge.
+                                this._nextLeft = -1;
+                            }
+
+                            break;
                         default:
                             // Not a legal this._currentPlacement value
                             throw new _ErrorFromName("WinJS.UI.Flyout.BadPlacement", strings.badPlacement);
@@ -910,6 +949,7 @@ define([
                             _ElementUtilities.addClass(this._element, "win-rightalign");
                             break;
                         case "center":
+                        case "none":
                             break;
                     };
                 },
