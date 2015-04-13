@@ -259,11 +259,11 @@ define([
                                 _Constants.menuTouchSpacingClass
                         );
                     }
-                    // Call flyout show
+                    // Call flyout show 
                     this._baseFlyoutShow(anchor, placement, alignment, null);
 
-                    // We need to adjust MenuCommand layouts based on the various types of
-                    // commands visible in our Menu, but only after we send the beforeshow
+                    // Additionally, Menu will need to adjust MenuCommand layouts based on the various 
+                    // types of commands visible in our Menu, but only after we send the beforeshow
                     // event, so the developer has a chance to show or hide more commands.
                     // Flyout's _findPosition will make that call.
                 },
@@ -275,15 +275,16 @@ define([
                     /// </summary>
                     /// </signature>
                     this._writeProfilerMark("show,StartTM"); // The corresponding "stop" profiler mark is handled in _Overlay._baseEndShow().
-                    this._show(coordinates);
+                    this._showAt(coordinates);
                 },
 
                 _showAt: function Menu_showAt(coordinates) {
-                    // Call flyout showAt
-                    this._baseFlyoutShow(null, null, null, coordinates);
 
-                    // We need to adjust MenuCommand layouts based on the various types of
-                    // commands visible in our Menu, but only after we send the beforeshow
+                    // Call flyout showAt
+                    this._baseFlyoutShow(null, "cartesian", "none", coordinates);
+                    
+                    // Additionally, Menu will need to adjust MenuCommand layouts based on the various 
+                    // types of commands visible in our Menu, but only after we send the beforeshow
                     // event, so the developer has a chance to show or hide more commands.
                     // Flyout's _findPosition will make that call.
                 },

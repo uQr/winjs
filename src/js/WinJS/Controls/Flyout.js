@@ -510,8 +510,8 @@ define([
                         // Normalize coordinates since they could be a mouse/pointer event object or an (x,y) pair.
                         var temp = coordinates;
                         coordinates = {
-                            x: temp.clientX || temp.x,
-                            y: temp.clientY || temp.y
+                            x: temp.clientX - window.pageXOffset || temp.x,
+                            y: temp.clientY - window.pageYOffset || temp.y
                         };
                     } else {
                         // Else we are showing relative to our anchor element. Anchor element is required.
@@ -630,11 +630,11 @@ define([
 
                 // Find our new flyout position.
                 _findPosition: function Flyout_findPosition() {
-                    //this._nextMaxHeight = null;
                     this._adjustedHeight = 0;
                     this._nextTop = 0;
                     this._nextLeft = 0;
                     this._keyboardMovedUs = false;
+                    this._needsScrolls = false;
 
                     // Make sure menu commands display correctly
                     if (this._checkMenuCommands) {
@@ -661,7 +661,7 @@ define([
                     }
                     if (this._nextLeft < 0) {
                         // Overran right, attach to right
-                        this._element.style.right = _Overlay._Overlay._keyboardInfo._visualViewportWidth + "px";
+                        this._element.style.right = 0 + "px";
                         this._element.style.left = "auto";
                     } else {
                         // Normal, set left
@@ -915,7 +915,7 @@ define([
                             }
                             break;
                         case "cartesian":
-                            this._nextTop = this._cuurentCoordinates.y;
+                            this._nextTop = this._currentCoordinates.y;
                             this._nextLeft = this._currentCoordinates.x;
 
                             if (this._nextTop < 0) {
@@ -1037,7 +1037,7 @@ define([
                         keyboardMovedUs = true;
                     } else if (this._nextTop === -1) {
                         // We were already pinned to the bottom, so our position on screen will change
-                        _keyboardMovedUs = true;
+                        keyboardMovedUs = true;
                     }
 
                     // Signals use of basic fadein animation
