@@ -618,11 +618,24 @@ module CorsicaTests {
                 .then(complete);
         }
 
-        testShowAtRTL() {
-            // RTL gives top right aligned
+        xtestShowAtRTL() {
+            // TODO test showAt in RTL
         }
 
-        testshowAtBoundaries() {
+        xtestShowAt_Boundaries() {
+            /** 
+             * TODO: verify that when showAt is called,
+             * if: any edge of the flyout would clip through the corresponding edge of the visual viewport, 
+             * then: the flyout is repositioned such that the clipping edge is instead pinned to the 
+             * corresponding viewport edge
+             *
+             * Test Cases: 
+             * Top left corner: showAt({x: -1, y: -1}) => (style.left: 0 - marginLeft, style.top: 0 - marginTop)
+             * Top right corner: showAt({x: window.innerWidth + 1, y: -1}) => (style.right: 0 - marginRight, style.top: 0 - marginTop)
+             * Bottom left corner: showAt({x: -1, y: window.innerHeight + 1}) => (style.left: 0 - marginLeft, style.bottom: 0 - marginBottom)
+             * Bottom right corner: showAt({x: window.innerWidth+1, y: window.innerHeight+1}) => (style.right: 0 - marginRight, style.bottom: 0 - marginBottom)
+            **/
+
             function measure(flyout: WinJS.UI.PrivateFlyout) {
 
             }
