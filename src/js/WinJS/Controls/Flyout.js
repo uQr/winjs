@@ -44,7 +44,7 @@ define([
             var Key = _ElementUtilities.Key;
 
             function getDimension(element, property) {
-                return parseFloat(element, _Global.getComputedStyle(element, null)[property]);
+                return _ElementUtilities.convertToPixels(element, _Global.getComputedStyle(element, null)[property]);
             }
 
             var strings = {
@@ -99,7 +99,7 @@ define([
                             subFlyout.element.removeEventListener("keydown", this._handleKeyDownInCascade_bound, false);
                             subFlyout._hide(); // We use the reentrancyLock to prevent reentrancy here.
                         }
-                        
+
                         if (this._cascadingStack.length === 0) {
                             // The cascade is empty so clear the input type. This gives us the opportunity
                             // to recalculate the input type when the next cascade starts.
@@ -837,7 +837,6 @@ define([
                     flyout.innerWidth = _ElementUtilities.getContentWidth(this._element);
                     flyout.innerHeight = _ElementUtilities.getContentHeight(this._element);
                     this._verticalMarginBorderPadding = (flyout.height - flyout.innerHeight);
-                    this._horizontalMarginBorderPadding = (flyout.width - flyout.innerWidth);
                     this._adjustedHeight = flyout.innerHeight;
 
                     // Check fit for requested this._currentPlacement, doing fallback if necessary
@@ -915,13 +914,15 @@ define([
                                 }
                             }
                             break;
-                            case "cartesian":
-                            this._nextTop = this._currentCoordinates.y - this._verticalMarginBorderPadding / 2;
-                            this._nextLeft = this._currentCoordinates.x - this._horizontalMarginBorderPadding / 2;
+                        case "cartesian":
+                            this._nextTop = this._currentCoordinates.y - flyout.marginTop;
+                            this._nextLeft = this._currentCoordinates.x - flyout.marginLeft;
 
                             if (this._nextTop < 0) {
+                                // Overran top, pin to top edge.
                                 this._nextTop = 0;
                             } else if (this._nextTop + this._adjustedHeight + this._verticalMarginBorderPadding > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
+                                // Overran bottom, pin to bottom edge.
                                 this._nextTop = -1;
                             }
 
@@ -1021,7 +1022,7 @@ define([
                     // position because of the IHM. If the Flyout needs to adjust for the IHM,it will reposition
                     // itself to be pinned to either the top or bottom edge of the visual viewport.
                     // - Too Tall, above top, or below bottom.
-                    
+
                     var keyboardMovedUs = false;
                     var viewportHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight;
                     var adjustedMarginBoxHeight = this._adjustedHeight + this._verticalMarginBorderPadding;
