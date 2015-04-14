@@ -713,11 +713,11 @@ define([
                         if (topHasMoreRoom(anchor)) {
                             // Top
                             that._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                            that._adjustedHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - that._cachedMarginBorderPadding;
+                            that._adjustedHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - that._verticalMarginBorderPadding;
                         } else {
                             // Bottom
                             that._nextTop = -1;
-                            that._adjustedHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - that._cachedMarginBorderPadding;
+                            that._adjustedHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - that._verticalMarginBorderPadding;
                         }
                         that._needsScrolls = true;
                     }
@@ -836,7 +836,8 @@ define([
                     flyout.height = _ElementUtilities.getTotalHeight(this._element);
                     flyout.innerWidth = _ElementUtilities.getContentWidth(this._element);
                     flyout.innerHeight = _ElementUtilities.getContentHeight(this._element);
-                    this._cachedMarginBorderPadding = (flyout.height - flyout.innerHeight);
+                    this._verticalMarginBorderPadding = (flyout.height - flyout.innerHeight);
+                    this._horizontalMarginBorderPadding = (flyout.width - flyout.innerWidth);
                     this._adjustedHeight = flyout.innerHeight;
 
                     // Check fit for requested this._currentPlacement, doing fallback if necessary
@@ -846,7 +847,7 @@ define([
                                 // Didn't fit, needs scrollbar
                                 this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
                                 this._needsScrolls = true;
-                                this._adjustedHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._cachedMarginBorderPadding;
+                                this._adjustedHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._verticalMarginBorderPadding;
                             }
                             centerHorizontally(anchor, flyout, this._currentAlignment);
                             break;
@@ -855,7 +856,7 @@ define([
                                 // Didn't fit, needs scrollbar
                                 this._nextTop = -1;
                                 this._needsScrolls = true;
-                                this._adjustedHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._cachedMarginBorderPadding;
+                                this._adjustedHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._verticalMarginBorderPadding;
                             }
                             centerHorizontally(anchor, flyout, this._currentAlignment);
                             break;
@@ -914,13 +915,13 @@ define([
                                 }
                             }
                             break;
-                        case "cartesian":
-                            this._nextTop = this._currentCoordinates.y;
-                            this._nextLeft = this._currentCoordinates.x;
+                            case "cartesian":
+                            this._nextTop = this._currentCoordinates.y - this._verticalMarginBorderPadding / 2;
+                            this._nextLeft = this._currentCoordinates.x - this._horizontalMarginBorderPadding / 2;
 
                             if (this._nextTop < 0) {
                                 this._nextTop = 0;
-                            } else if(this._nextTop > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
+                            } else if (this._nextTop + this._adjustedHeight + this._verticalMarginBorderPadding > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
                                 this._nextTop = -1;
                             }
 
@@ -1023,7 +1024,7 @@ define([
                     
                     var keyboardMovedUs = false;
                     var viewportHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight;
-                    var adjustedMarginBoxHeight = this._adjustedHeight + this._cachedMarginBorderPadding;
+                    var adjustedMarginBoxHeight = this._adjustedHeight + this._verticalMarginBorderPadding;
                     if (adjustedMarginBoxHeight > viewportHeight) {
                         // The Flyout is now too tall to fit in the viewport, pin to top and adjust height.
                         keyboardMovedUs = true;
