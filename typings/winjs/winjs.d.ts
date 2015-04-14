@@ -4877,6 +4877,18 @@ declare module WinJS.UI {
         **/
         show(anchor?: HTMLElement, placement?: string, alignment?: string): void;
 
+        /**
+         * Shows the Flyout, if hidden, regardless of other states, top and left aligned at the specified coordinates,
+         * @param coordinates Required. The point where the top left corner of the flyout will appear, relative to the top and left edge of the visual viewport.
+        **/
+        showAt(coordinates: { x: number; y: number; }): void;
+
+        /**
+         * Shows the Flyout, if hidden, regardless of other states, top and left aligned at the location of pointer event object,
+         * @param pointerEventObj Required. The PointerEvent Object specifying where to show the Flyout.
+        **/
+        showAt(pointerEventObj: PointerEvent): void;
+        
         //#endregion Methods
 
         //#region Properties

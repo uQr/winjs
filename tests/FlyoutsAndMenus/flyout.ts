@@ -510,7 +510,7 @@ module CorsicaTests {
                 complete();
             }
 
-            var flyout = new WinJS.UI.Flyout(_element, {anchor: document.body});
+            var flyout = new WinJS.UI.Flyout(_element, { anchor: document.body });
             flyout.addEventListener("afterhide", afterHide, false);
 
             OverlayHelpers.show(flyout).then(() => {
@@ -525,7 +525,7 @@ module CorsicaTests {
             var button = document.createElement("button");
             document.body.appendChild(button);
 
-            var flyout = new WinJS.UI.Flyout(_element, {anchor: document.body});
+            var flyout = new WinJS.UI.Flyout(_element, { anchor: document.body });
 
             var msg = "",
                 test1Ran = false,
@@ -561,9 +561,64 @@ module CorsicaTests {
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
                 return OverlayHelpers.hide(flyout);
             }).then(() => {
-                LiveUnit.Assert.isTrue(test2Ran, "TEST ERROR: Test 2 did not run.");
-                complete();
-            });
+                    LiveUnit.Assert.isTrue(test2Ran, "TEST ERROR: Test 2 did not run.");
+                    complete();
+                });
+        }
+
+        testShowAt(complete) {
+
+            var flyout = new WinJS.UI.Flyout(_element, { anchor: document.body });
+            var X = 5;
+            var Y = 5;
+
+            function testShowAt_WithCoordinates(): WinJS.Promise<any> {
+                var coordinates = { x: X, y: Y };
+                return verifyPosition(coordinates);
+            }
+
+            function testShowAt_WithPointerEvent(): WinJS.Promise<any> {
+                // Not every browser supports PointerEvents, but all Flyout.showAt API requires is the clientX abd clientY properties. 
+                var pointerEventObjectShim = { clientX: X, clientY: Y };
+                return verifyPosition(pointerEventObjectShim);
+            }
+
+            function verifyPosition(testParameter): WinJS.Promise<any> {
+                return new WinJS.Promise(function (completePromise) {
+                    flyout.onaftershow = () => {
+                        flyout.onaftershow = null;
+                        var flyoutStyle = getComputedStyle(flyout.element);
+                        var flyoutRect = flyout.element.getBoundingClientRect();
+                        var marginTop = WinJS.Utilities.convertToPixels(flyout.element, flyoutStyle.marginTop);
+                        var marginLeft = WinJS.Utilities.convertToPixels(flyout.element, flyoutStyle.marginLeft);
+
+                        LiveUnit.Assert.areEqual(Y, flyoutRect.top - marginTop, "Flyout should be top aligned with the y coordinate");
+                        LiveUnit.Assert.areEqual(X, flyoutRect.left - marginLeft, "Flyout should be left aligned with the x coordinate");
+
+                        flyout.onafterhide = function () {
+                            flyout.onafterhide = null;
+                            completePromise();
+                        }
+
+                        flyout.hide();
+                    };
+
+                    flyout.showAt(testParameter);
+                });
+            }
+
+            testShowAt_WithCoordinates()
+                .then(testShowAt_WithPointerEvent)
+                .then(complete);
+        }
+
+        testShowAtRTL() {
+            // RTL gives top right aligned
+        }
+
+        testshowAtBoundaries() {
+            //var eventObject = document.createEvent("MouseEvent");
+            //Helper.initMouseEvent(eventObject, "touchstart", eventProperties);
         }
     }
 }
