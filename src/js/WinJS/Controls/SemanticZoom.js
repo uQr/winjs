@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 // Semantic Zoom control
 define([
     '../Core/_Global',
@@ -33,8 +33,7 @@ define([
         /// <icon src="ui_winjs.ui.semanticzoom.16x16.png" width="16" height="16" />
         /// <htmlSnippet supportsContent="true"><![CDATA[<div data-win-control="WinJS.UI.SemanticZoom"><div class="zoomedInContainer" data-win-control="WinJS.UI.ListView"></div><div class="zoomedOutContainer" data-win-control="WinJS.UI.ListView"></div></div>]]></htmlSnippet>
         /// <part name="semanticZoom" class="win-semanticzoom" locid="WinJS.UI.SemanticZoom_part:semanticZoom">The entire SemanticZoom control.</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         SemanticZoom: _Base.Namespace._lazy(function () {
             var browserStyleEquivalents = _BaseUtils._browserStyleEquivalents;
@@ -479,6 +478,7 @@ define([
 
                 _createSemanticZoomButton: function () {
                     this._sezoButton = _Global.document.createElement("button");
+                    this._sezoButton.setAttribute("type", "button");
                     this._sezoButton.className = sezoButtonClass + " " + sezoButtonLocationClass;
                     this._sezoButton.tabIndex = -1;
                     this._sezoButton.style.visibility = "hidden";
@@ -1419,7 +1419,6 @@ define([
                 _setVisibility: function () {
                     function setVisibility(element, isVisible) {
                         element.style.visibility = (isVisible ? "visible" : "hidden");
-                        element.style.zIndex = (isVisible ? "1" : "0");
                     }
                     setVisibility(this._opticalViewportIn, !this._zoomedOut || _BaseUtils.isPhone);
                     setVisibility(this._opticalViewportOut, this._zoomedOut);

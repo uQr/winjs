@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     'exports',
     '../Core/_Global',
@@ -271,8 +271,25 @@ define([
             return Math.round(parseFloat(value)) || 0;
         }
     }
+
     function getDimension(element, property) {
         return convertToPixels(element, _Global.getComputedStyle(element, null)[property]);
+    }
+
+    function _convertToPrecisePixels(value) {
+        return parseFloat(value) || 0;
+    }
+    function _getPreciseDimension(element, property) {
+        return _convertToPrecisePixels(_Global.getComputedStyle(element, null)[property]);
+    }
+    function _getPreciseMargins(element) {
+        var style = _Global.getComputedStyle(element);
+        return {
+            top: _convertToPrecisePixels(style.marginTop),
+            right: _convertToPrecisePixels(style.marginRight),
+            bottom: _convertToPrecisePixels(style.marginBottom),
+            left: _convertToPrecisePixels(style.marginLeft),
+        };
     }
 
     var _MSGestureEvent = _Global.MSGestureEvent || {
@@ -673,7 +690,8 @@ define([
                 // prevent multiple events from firing when nesting observers
                 evt.stopPropagation();
 
-                if (this._attributeFilter.length && this._attributeFilter.indexOf(evt.attrName) === -1) {
+                var attrName = evt.attrName;
+                if (this._attributeFilter.length && this._attributeFilter.indexOf(attrName) === -1) {
                     return;
                 }
 
@@ -682,7 +700,7 @@ define([
                     return;
                 }
 
-                var attrName = evt.attrName;
+                var isAriaMutation = attrName.indexOf("aria") >= 0;
 
                 // DOM mutation events use different naming for this attribute
                 if (attrName === 'tabindex') {
@@ -695,7 +713,7 @@ define([
                     attributeName: attrName
                 });
 
-                if (this._observerCount === 1) {
+                if (this._observerCount === 1 && !isAriaMutation) {
                     this._dispatchEvent();
                 } else if (this._scheduled === false) {
                     this._scheduled = true;
@@ -1133,7 +1151,7 @@ define([
         _zoomToDuration: _zoomToDuration,
 
         _zoomTo: function _zoomTo(element, args) {
-            if (element.msZoomTo) {
+            if (this._supportsSnapPoints && element.msZoomTo) {
                 element.msZoomTo(args);
             } else {
                 // Schedule to ensure that we're not running from within an event handler. For example, if running
@@ -1196,7 +1214,7 @@ define([
                 if (_Global.HTMLElement && _Global.HTMLElement.prototype.setActive) {
                     element.setActive();
                 } else {
-                    // We are aware the unlike setActive(), focus() will scroll to the element that gets focus. However, this is
+                    // We are aware that, unlike setActive(), focus() will scroll to the element that gets focus. However, this is
                     // our current cross-browser solution until there is an equivalent for setActive() in other browsers.
                     //
                     // This _setActive polyfill does have limited support for preventing scrolling: via the scroller parameter, it
@@ -1735,6 +1753,46 @@ define([
             /// </field>
             F12: 123,
 
+            /// <field locid="WinJS.Utilities.Key.NavigationView" helpKeyword="WinJS.Utilities.Key.NavigationView">
+            /// XBox One Remote NavigationView key.
+            /// </field>
+            NavigationView: 136,
+
+            /// <field locid="WinJS.Utilities.Key.NavigationMenu" helpKeyword="WinJS.Utilities.Key.NavigationMenu">
+            /// XBox One Remote NavigationMenu key.
+            /// </field>
+            NavigationMenu: 137,
+
+            /// <field locid="WinJS.Utilities.Key.NavigationUp" helpKeyword="WinJS.Utilities.Key.NavigationUp">
+            /// XBox One Remote NavigationUp key.
+            /// </field>
+            NavigationUp: 138,
+
+            /// <field locid="WinJS.Utilities.Key.NavigationDown" helpKeyword="WinJS.Utilities.Key.NavigationDown">
+            /// XBox One Remote NavigationDown key.
+            /// </field>
+            NavigationDown: 139,
+
+            /// <field locid="WinJS.Utilities.Key.NavigationLeft" helpKeyword="WinJS.Utilities.Key.NavigationLeft">
+            /// XBox One Remote NavigationLeft key.
+            /// </field>
+            NavigationLeft: 140,
+
+            /// <field locid="WinJS.Utilities.Key.NavigationRight" helpKeyword="WinJS.Utilities.Key.NavigationRight">
+            /// XBox One Remote NavigationRight key.
+            /// </field>
+            NavigationRight: 141,
+
+            /// <field locid="WinJS.Utilities.Key.NavigationAccept" helpKeyword="WinJS.Utilities.Key.NavigationAccept">
+            /// XBox One Remote NavigationAccept key.
+            /// </field>
+            NavigationAccept: 142,
+
+            /// <field locid="WinJS.Utilities.Key.NavigationCancel" helpKeyword="WinJS.Utilities.Key.NavigationCancel">
+            /// XBox One Remote NavigationCancel key.
+            /// </field>
+            NavigationCancel: 143,
+
             /// <field locid="WinJS.Utilities.Key.numLock" helpKeyword="WinJS.Utilities.Key.numLock">
             /// NUMBER LOCK key.
             /// </field>
@@ -1789,6 +1847,126 @@ define([
             /// Accent grave key.
             /// </field>
             graveAccent: 192,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadA" helpKeyword="WinJS.Utilities.Key.GamepadA">
+            /// XBox One GamepadA key.
+            /// </field>
+            GamepadA: 195,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadB" helpKeyword="WinJS.Utilities.Key.GamepadB">
+            /// XBox One GamepadB key.
+            /// </field>
+            GamepadB: 196,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadX" helpKeyword="WinJS.Utilities.Key.GamepadX">
+            /// XBox One GamepadX key.
+            /// </field>
+            GamepadX: 197,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadY" helpKeyword="WinJS.Utilities.Key.GamepadY">
+            /// XBox One GamepadY key.
+            /// </field>
+            GamepadY: 198,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadRightShoulder" helpKeyword="WinJS.Utilities.Key.GamepadRightShoulder">
+            /// XBox One GamepadRightShoulder key.
+            /// </field>
+            GamepadRightShoulder: 199,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadLeftShoulder" helpKeyword="WinJS.Utilities.Key.GamepadLeftShoulder">
+            /// XBox One GamepadLeftShoulder key.
+            /// </field>
+            GamepadLeftShoulder: 200,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadLeftTrigger" helpKeyword="WinJS.Utilities.Key.GamepadLeftTrigger">
+            /// XBox One GamepadLeftTrigger key.
+            /// </field>
+            GamepadLeftTrigger: 201,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadRightTrigger" helpKeyword="WinJS.Utilities.Key.GamepadRightTrigger">
+            /// XBox One GamepadRightTrigger key.
+            /// </field>
+            GamepadRightTrigger: 202,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadDPadUp" helpKeyword="WinJS.Utilities.Key.GamepadDPadUp">
+            /// XBox One GamepadDPadUp key.
+            /// </field>
+            GamepadDPadUp: 203,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadDPadDown" helpKeyword="WinJS.Utilities.Key.GamepadDPadDown">
+            /// XBox One GamepadDPadDown key.
+            /// </field>
+            GamepadDPadDown: 204,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadDPadLeft" helpKeyword="WinJS.Utilities.Key.GamepadDPadLeft">
+            /// XBox One GamepadDPadLeft key.
+            /// </field>
+            GamepadDPadLeft: 205,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadDPadRight" helpKeyword="WinJS.Utilities.Key.GamepadDPadRight">
+            /// XBox One GamepadDPadRight key.
+            /// </field>
+            GamepadDPadRight: 206,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadMenu" helpKeyword="WinJS.Utilities.Key.GamepadMenu">
+            /// XBox One GamepadMenu key.
+            /// </field>
+            GamepadMenu: 207,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadView" helpKeyword="WinJS.Utilities.Key.GamepadView">
+            /// XBox One GamepadView key.
+            /// </field>
+            GamepadView: 208,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadLeftThumbstick" helpKeyword="WinJS.Utilities.Key.GamepadLeftThumbstick">
+            /// XBox One GamepadLeftThumbstick key.
+            /// </field>
+            GamepadLeftThumbstick: 209,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadRightThumbstick" helpKeyword="WinJS.Utilities.Key.GamepadRightThumbstick">
+            /// XBox One GamepadRightThumbstick key.
+            /// </field>
+            GamepadRightThumbstick: 210,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadLeftThumbstickUp" helpKeyword="WinJS.Utilities.Key.GamepadLeftThumbstickUp">
+            /// XBox One GamepadLeftThumbstickUp key.
+            /// </field>
+            GamepadLeftThumbstickUp: 211,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadLeftThumbstickDown" helpKeyword="WinJS.Utilities.Key.GamepadLeftThumbstickDown">
+            /// XBox One GamepadLeftThumbstickDown key.
+            /// </field>
+            GamepadLeftThumbstickDown: 212,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadLeftThumbstickRight" helpKeyword="WinJS.Utilities.Key.GamepadLeftThumbstickRight">
+            /// XBox One GamepadLeftThumbstickRight key.
+            /// </field>
+            GamepadLeftThumbstickRight: 213,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadLeftThumbstickLeft" helpKeyword="WinJS.Utilities.Key.GamepadLeftThumbstickLeft">
+            /// XBox One GamepadLeftThumbstickLeft key.
+            /// </field>
+            GamepadLeftThumbstickLeft: 214,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadRightThumbstickUp" helpKeyword="WinJS.Utilities.Key.GamepadRightThumbstickUp">
+            /// XBox One GamepadRightThumbstickUp key.
+            /// </field>
+            GamepadRightThumbstickUp: 215,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadRightThumbstickDown" helpKeyword="WinJS.Utilities.Key.GamepadRightThumbstickDown">
+            /// XBox One GamepadRightThumbstickDown key.
+            /// </field>
+            GamepadRightThumbstickDown: 216,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadRightThumbstickRight" helpKeyword="WinJS.Utilities.Key.GamepadRightThumbstickRight">
+            /// XBox One GamepadRightThumbstickRight key.
+            /// </field>
+            GamepadRightThumbstickRight: 217,
+
+            /// <field locid="WinJS.Utilities.Key.GamepadRightThumbstickLeft" helpKeyword="WinJS.Utilities.Key.GamepadRightThumbstickLeft">
+            /// XBox One GamepadRightThumbstickLeft key.
+            /// </field>
+            GamepadRightThumbstickLeft: 218,
 
             /// <field locid="WinJS.Utilities.Key.openBracket" helpKeyword="WinJS.Utilities.Key.openBracket">
             /// OPEN BRACKET key.
@@ -1985,6 +2163,11 @@ define([
                 padding = getDimension(element, "paddingLeft") + getDimension(element, "paddingRight");
             return element.offsetWidth - border - padding;
         },
+        _getPreciseContentWidth: function (element) {
+            var border = _getPreciseDimension(element, "borderLeftWidth") + _getPreciseDimension(element, "borderRightWidth"),
+                padding = _getPreciseDimension(element, "paddingLeft") + _getPreciseDimension(element, "paddingRight");
+            return element.offsetWidth - border - padding;
+        },
 
         getTotalWidth: function (element) {
             /// <signature helpKeyword="WinJS.Utilities.getTotalWidth">
@@ -1999,6 +2182,10 @@ define([
             /// </returns>
             /// </signature>
             var margin = getDimension(element, "marginLeft") + getDimension(element, "marginRight");
+            return element.offsetWidth + margin;
+        },
+        _getPreciseTotalWidth: function (element) {
+            var margin = _getPreciseDimension(element, "marginLeft") + _getPreciseDimension(element, "marginRight");
             return element.offsetWidth + margin;
         },
 
@@ -2018,6 +2205,11 @@ define([
                 padding = getDimension(element, "paddingTop") + getDimension(element, "paddingBottom");
             return element.offsetHeight - border - padding;
         },
+        _getPreciseContentHeight: function (element) {
+            var border = _getPreciseDimension(element, "borderTopWidth") + _getPreciseDimension(element, "borderBottomWidth"),
+                padding = _getPreciseDimension(element, "paddingTop") + _getPreciseDimension(element, "paddingBottom");
+            return element.offsetHeight - border - padding;
+        },
 
         getTotalHeight: function (element) {
             /// <signature helpKeyword="WinJS.Utilities.getTotalHeight">
@@ -2032,6 +2224,10 @@ define([
             /// </returns>
             /// </signature>
             var margin = getDimension(element, "marginTop") + getDimension(element, "marginBottom");
+            return element.offsetHeight + margin;
+        },
+        _getPreciseTotalHeight: function (element) {
+            var margin = _getPreciseDimension(element, "marginTop") + _getPreciseDimension(element, "marginBottom");
             return element.offsetHeight + margin;
         },
 
@@ -2082,6 +2278,9 @@ define([
         },
 
         convertToPixels: convertToPixels,
+        _convertToPrecisePixels: _convertToPrecisePixels,
+        _getPreciseMargins: _getPreciseMargins,
+
 
         eventWithinElement: function (element, event) {
             /// <signature helpKeyword="WinJS.Utilities.eventWithinElement">
@@ -2267,6 +2466,31 @@ define([
             return highestTabIndex;
         },
 
+        _hasCursorKeysBehaviors: function Utilities_hasCursorKeysBehaviors(element) {
+            if (element.tagName === "SELECT" ||
+                element.tagName === "TEXTAREA") {
+                return true;
+            }
+            if (element.tagName === "INPUT") {
+                return element.type === "" ||
+                    element.type === "date" ||
+                    element.type === "datetime" ||
+                    element.type === "datetime-local" ||
+                    element.type === "email" ||
+                    element.type === "month" ||
+                    element.type === "number" ||
+                    element.type === "password" ||
+                    element.type === "range" ||
+                    element.type === "search" ||
+                    element.type === "tel" ||
+                    element.type === "text" ||
+                    element.type === "time" ||
+                    element.type === "url" ||
+                    element.type === "week";
+            }
+            return false;
+        },
+
         _reparentChildren: function (originalParent, destinationParent) {
             var child = originalParent.firstChild;
             while (child) {
@@ -2274,6 +2498,16 @@ define([
                 destinationParent.appendChild(child);
                 child = sibling;
             }
+        },
+
+        // Ensures that the same element has focus before and after *callback* is
+        // called. Useful if moving focus is an unintentional side effect of *callback*.
+        // For example, this could happen if *callback* removes and reinserts elements
+        // to the DOM.
+        _maintainFocus: function ElementUtilities_maintainFocus(callback) {
+            var focusedElement = _Global.document.activeElement;
+            callback();
+            exports._trySetActive(focusedElement);
         },
 
         _trySetActive: function Utilities_trySetActive(elem, scroller) {

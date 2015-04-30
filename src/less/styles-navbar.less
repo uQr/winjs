@@ -1,24 +1,40 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 
 @import "base.less";
 @import "mixins.less";
 
 .win-navbar {
-    &.win-appbar-showing,
-    &.win-appbar-shown,
-    &.win-appbar-hiding {
+    &.win-navbar-showing,
+    &.win-navbar-shown,
+    &.win-navbar-hiding {
         min-height: 60px;
     }
 
-    .win-appbar-invokebutton {
-        width: 32px;
-        min-height: 0;
-        height: 24px;
-        bottom: 0;
-
-        .win-appbar-ellipsis {
+     .win-navbar-invokebutton {
             width: 32px;
-            top: 5px;
+            min-height: 0;
+            height: 24px;
+
+            .win-navbar-ellipsis {
+                width: 32px;
+            }
+        }
+
+    &.win-top {
+        .win-navbar-invokebutton {
+            bottom: 0;
+            .win-navbar-ellipsis {
+                top: 5px;
+            }
+        }
+    }
+
+    &.win-bottom {
+        .win-navbar-invokebutton {
+            top: 0;
+            .win-navbar-ellipsis {
+                top: 0;
+            }
         }
     }
 }
@@ -62,6 +78,7 @@
     max-height: 216px;
     -ms-overflow-style: -ms-autohiding-scrollbar;
     touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
 }
 .win-navbarcontainer-horizontal .win-navbarcontainer-surface {
     #flex > .display-flex();
@@ -79,11 +96,11 @@
     #flex > .flex-direction(column);
     #flex > .align-items(center);
     #flex > .justify-content(center);
-    font-family: "Segoe UI Symbol", "Symbols";
+    font-family: "Segoe MDL2 Assets", "Symbols";
 
     height: ~"calc(100% - 48px)";
     width: 20px;
-    font-size: 16pt;
+    font-size: 16px;
     overflow: hidden;
 }
 .win-navbarcontainer-vertical .win-navbarcontainer-navarrow {
@@ -110,6 +127,7 @@
 .win-navbarcommand {
     #flex > .display-flex();
     #flex > .flex(none);
+    touch-action: manipulation;
 }
 .win-navbarcontainer-horizontal .win-navbarcommand {
     margin: 4px;
@@ -121,7 +139,7 @@
 .win-navbarcommand-button {
     #flex > .flex(@grow: 1; @shrink: 1; @basis: 0%);
     position: relative;
-} 
+}
 .win-navbarcommand-button-content {
     position: relative;
     height: 48px; // Keep in sync with splitbutton's line-height
@@ -134,13 +152,14 @@
     outline: none;
 }
 .win-navbarcommand-icon {
-    font-family: "Segoe UI Symbol", "Symbols";
+    font-family: "Segoe MDL2 Assets", "Symbols";
     height: 16px;
     width: 16px;
-    font-size: 13px;
+    font-size: 16px;
     margin-left: 0;
     margin-right: 16px;
-    margin-top: 16px; /* Center icon vertically */
+    margin-top: 14px; /* Center icon vertically */
+    line-height: 1; /* Ensure icon is exactly font-size */
     #flex > .flex(none);
 }
 .win-navbarcommand-icon {
@@ -160,7 +179,7 @@
 .win-navbarcommand-splitbutton {
     #flex > .flex(none);
     width: 48px;
-    font-family: "Segoe UI Symbol", "Symbols";
+    font-family: "Segoe MDL2 Assets", "Symbols";
     font-size: 16px;
     margin-right: 0;
     margin-left: 2px;
@@ -182,7 +201,7 @@
     height: 100%;
     width: 100%;
     text-align: center;
-    
+
     line-height: 46px; // Keep in sync with splitbutton-content's height. Minus 2px for border.
     border: 1px dotted transparent; // Color is added for keyboard focus in colors styles
 }

@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ts" />
 /// <reference path="../TestLib/Helper.ListView.ts" />
@@ -153,7 +151,7 @@ module WinJSTests {
                             LiveUnit.Assert.areEqual("0px", getComputedStyle(focusOutlineElement).outlineWidth);
                         } else {
                             LiveUnit.Assert.areNotEqual("transparent", getComputedStyle(focusOutlineElement).outlineColor);
-                            LiveUnit.Assert.areEqual("solid", getComputedStyle(focusOutlineElement).outlineStyle);
+                            LiveUnit.Assert.areEqual("dashed", getComputedStyle(focusOutlineElement).outlineStyle);
                             LiveUnit.Assert.areEqual("2px", getComputedStyle(focusOutlineElement).outlineWidth);
                         }
                     } else {
@@ -247,7 +245,6 @@ module WinJSTests {
             newNode.id = "PropertyTests";
             newNode.innerHTML = "<div id='test1'></div>";
             document.body.appendChild(newNode);
-            Helper.ListView.removeListviewAnimations();
         }
 
         tearDown() {
@@ -255,7 +252,6 @@ module WinJSTests {
 
             var element = document.getElementById("PropertyTests");
             document.body.removeChild(element);
-            Helper.ListView.restoreListviewAnimations();
         }
 
         // Tests the winControl property after listView initialization

@@ -1,43 +1,7 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-/*
-AppBar/Flyout z-index values:
-    1000 - AppBar/settings click-eating div
-    1002 - AppBar
-    1004 - Settings Flyout
-    1006 - Flyout click-eating div
-    1008 - Flyout
-*/
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 
 @import "base.less";
 @import "mixins.less";
-
-.win-appbarclickeater {
-    z-index: 1000;
-    background-color: transparent;
-    display: none;
-    width: 110%;
-    height: 110%;
-    left: -5%;
-    top: -5%;
-    position: fixed;
-    touch-action: none;
-    outline: 1px solid Purple; /*Necessary to block passthrough over webviews*/
-    -ms-high-contrast-adjust: none;
-}
-
-.win-flyoutmenuclickeater {
-    z-index: 1006;
-    background-color: transparent;
-    display: none;
-    width: 110%;
-    height: 110%;
-    left: -5%;
-    top: -5%;
-    position: fixed;
-    touch-action: none;
-    outline: 1px solid Lime; /*Necessary to block passthrough over webviews*/
-    -ms-high-contrast-adjust: none;
-}
 
 /*
 Command buttons.
@@ -49,10 +13,10 @@ button.win-command {
     padding: 0;
     margin: 0;
     border: 1px dotted; /* reserve focus rect */
-    min-width: 40px; 
-    min-height: 48px; 
+    min-width: 40px;
+    min-height: 48px;
     text-align: center;
-    font-size: 9pt;
+    font-size: 12px;
     line-height: 16px;
     font-weight: normal;
     overflow: visible;
@@ -60,6 +24,11 @@ button.win-command {
     writing-mode: lr-tb;
     position: relative;
     z-index:0;
+
+    &::-moz-focus-inner {
+        padding: 0;
+        border: 0;
+    }
 }
 
 button {
@@ -68,7 +37,11 @@ button {
     });
 }
 
-button.win-command:focus {
+/*
+Always hide the outline, not just when :focus is applied.
+https://github.com/winjs/winjs/issues/859
+*/
+button.win-command {
     outline: none;
 }
 
@@ -98,7 +71,7 @@ Command button icons.
     letter-spacing: 0;
     /* Applications provide their own content, like &#xE0D5;. */
     vertical-align: middle;
-    font-size: 19pt;
+    font-size: 20px;
     margin: 0;
     line-height: 24px; /* line-height must match the content box height */
     background-position: 0 0;
@@ -112,7 +85,7 @@ Command button icons.
 
 .win-commandimage.win-commandglyph {
     position: absolute;
-    left:-4px; /* offset for font-size:19pt */
+    left: 0;
 }
 
 /*
@@ -200,10 +173,10 @@ div.win-command {
     display: inline-block;
     min-width: 0;
     min-height: 0;
-    padding: 9px 31px;
+    padding: 0px 31px;
     border: 1px dotted; /* reserve focus rect */
     text-align: center;
-    font-size: 9pt;
+    font-size: 12px;
     line-height: 16px;
     font-weight: normal;
     vertical-align: top;
@@ -225,8 +198,7 @@ div.win-command:focus {
 /*
 AppBar
 */
-.win-appbar {
-    z-index: 1002;
+.win-navbar {
     border-width: 0;
     width: 100%;
     height: auto;
@@ -235,43 +207,43 @@ AppBar
     position: -ms-device-fixed;
     min-height: 48px;
 
-    &.win-appbar-minimal {
+    &.win-navbar-minimal {
         min-height: 25px;
 
-        &.win-appbar-hidden .win-appbar-invokebutton .win-appbar-ellipsis {
+        &.win-navbar-closed .win-navbar-invokebutton .win-navbar-ellipsis {
             top: 5px;
         }
     }
 
-    &.win-appbar-hiding.win-appbar-minimal > :not(.win-appbar-invokebutton) {
+    &.win-navbar-closing.win-navbar-minimal > :not(.win-navbar-invokebutton) {
         opacity: 0;
     }
 
-    &.win-menulayout.win-appbar-hiding .win-appbar-menu {
+    &.win-menulayout.win-navbar-closing .win-navbar-menu {
         opacity: 1;
     }
 
-    &.win-appbar-hidden.win-appbar-minimal > :not(.win-appbar-invokebutton) {
+    &.win-navbar-closed.win-navbar-minimal > :not(.win-navbar-invokebutton) {
         display: none !important;
     }
 
-    &.win-appbar-hiding.win-appbar-minimal .win-appbar-invokebutton,
-    &.win-appbar-hidden.win-appbar-minimal .win-appbar-invokebutton {
+    &.win-navbar-closing.win-navbar-minimal .win-navbar-invokebutton,
+    &.win-navbar-closed.win-navbar-minimal .win-navbar-invokebutton {
         width: 100%;
     }
 
-    &.win-menulayout.win-appbar-showing, 
-    &.win-menulayout.win-appbar-shown, 
-    &.win-menulayout.win-appbar-hiding  {
-        .win-appbar-invokebutton {
+    &.win-menulayout.win-navbar-opening,
+    &.win-menulayout.win-navbar-opened,
+    &.win-menulayout.win-navbar-closing  {
+        .win-navbar-invokebutton {
             visibility: hidden;
         }
-        .win-toolbar.win-toolbar-inlinemenu .win-toolbar-overflowbutton {
+        .win-toolbar.win-toolbar-showndisplayfull .win-toolbar-overflowbutton {
             visibility: visible;
         }
     }
 
-    .win-appbar-invokebutton {
+    .win-navbar-invokebutton {
         width: 32px;
         height: 100%;
         min-height: 25px;
@@ -286,7 +258,7 @@ AppBar
         // Setting explicit z-index here works around draw ordering issue that occurs in IE when other positioned elements are present in a custom AppBar.
         z-index: 1;
 
-        .win-appbar-ellipsis {
+        .win-navbar-ellipsis {
             width: 32px;
             height: 100%;
             right: 0px;
@@ -295,7 +267,7 @@ AppBar
             display: inline-block;
             font-size: 14px;
             text-align: center;
-            font-family: "Segoe UI Symbol", "Symbols";
+            font-family: "Segoe MDL2 Assets", "Symbols";
 
             &::before {
                 content: "\E10C";
@@ -305,15 +277,15 @@ AppBar
     }
 
     .RTL({
-        .win-appbar-invokebutton,
-        .win-appbar-invokebutton .win-appbar-ellipsis {
+        .win-navbar-invokebutton,
+        .win-navbar-invokebutton .win-navbar-ellipsis {
             right: auto;
             left: 0px;
         }
     });
 
-    &.win-appbar-minimal .win-appbar-invokebutton,
-    &.win-appbar-compact .win-appbar-invokebutton {
+    &.win-navbar-minimal .win-navbar-invokebutton,
+    &.win-navbar-compact .win-navbar-invokebutton {
         display: block;
     }
 }
@@ -352,43 +324,43 @@ AppBar commands layout
         #flex > .flex(0; 0; auto);
     }
 
-    &.win-appbar-showing,
-    &.win-appbar-shown,
-    &.win-appbar-hiding {
+    &.win-navbar-opening,
+    &.win-navbar-opened,
+    &.win-navbar-closing {
         min-height: 62px;
     }
 
-    &.win-appbar-showing.win-appbar-compact,
-    &.win-appbar-shown.win-appbar-compact,
-    &.win-appbar-hiding.win-appbar-compact {
+    &.win-navbar-opening.win-navbar-compact,
+    &.win-navbar-opened.win-navbar-compact,
+    &.win-navbar-closing.win-navbar-compact {
         min-height: 48px;
     }
 
-    &.win-appbar-minimal,
-    &.win-appbar-compact {
+    &.win-navbar-minimal,
+    &.win-navbar-compact {
         // Minimal and compact AppBar with commands layout makes room for the invokeButton.
         padding-right: 32px;
         width: ~"calc(100% - 32px)";
     }
 
-    &.win-appbar-compact {
+    &.win-navbar-compact {
         button.win-command .win-label {
             display: none;
         }
     }
 
-    &.win-appbar-compact.win-appbar-hiding {
+    &.win-navbar-compact.win-navbar-closing {
         button.win-command .win-label {
             display: block;
             visibility: hidden;
         }
     }
 
-    &.win-appbar-compact.win-appbar-shown,
-    &.win-appbar-compact.win-appbar-showing {
+    &.win-navbar-compact.win-navbar-opened,
+    &.win-navbar-compact.win-navbar-opening {
         button.win-command .win-label {
             display: block;
-            visibility: visible;;
+            visibility: visible;
         }
     }
 }
@@ -396,8 +368,8 @@ AppBar commands layout
 /* CommandsLayout RTL */
 .win-commandlayout {
     .RTL({
-        &.win-appbar-minimal, 
-        &.win-appbar-compact {
+        &.win-navbar-minimal,
+        &.win-navbar-compact {
             padding-right: 0px;
             padding-left: 32px;
         }
@@ -405,10 +377,10 @@ AppBar commands layout
 }
 
 /*
-AppBar menu layout 
+AppBar menu layout
 */
 .win-menulayout {
-    .win-appbar-menu {
+    .win-navbar-menu {
         position:absolute;
         right:0;
         top:0;
@@ -417,47 +389,41 @@ AppBar menu layout
             left: 0;
             right: auto;
         });
-    }
 
-    .win-appbar-toolbarcontainer {
         overflow: hidden;
     }
 
-    &.win-bottom .win-appbar-toolbarcontainer {
-        overflow:visible;
+    &.win-bottom .win-navbar-menu {
+        overflow: visible;
     }
 
     .win-toolbar {
-        max-width:100vw;
-
-        &:not(.win-toolbar-empty) .win-toolbar-actionarea {
-            min-height: 48px;
-        }
+        max-width: 100vw;
     }
 
-    &.win-appbar-compact {
+    &.win-navbar-compact {
         button.win-command .win-label {
             display: none;
             visibility: hidden;
         }
     }
 
-    &.win-appbar-compact.win-appbar-hiding,
-    &.win-appbar-compact.win-appbar-showing {
+    &.win-navbar-compact.win-navbar-closing,
+    &.win-navbar-compact.win-navbar-opening {
         button.win-command .win-label {
             display: block;
             visibility: visible;
         }
     }
 
-    &.win-appbar-compact.win-appbar-shown  {
+    &.win-navbar-compact.win-navbar-opened  {
         button.win-command .win-label {
             display: block;
             visibility: visible;
         }
     }
 
-    &.win-appbar-compact.win-appbar-hidden {
+    &.win-navbar-compact.win-navbar-closed {
         overflow: hidden;
 
         .win-toolbar-overflowarea {
@@ -473,44 +439,44 @@ High contrast AppBar needs a border
     /*
     AppBar Borders
     */
-    .win-appbar {
+    .win-navbar {
         border: solid 2px;
     }
 
-    .win-appbar.win-top {
+    .win-navbar.win-top {
         border-top: none;
         border-left: none;
         border-right: none;
     }
 
-    .win-appbar.win-bottom {
+    .win-navbar.win-bottom {
         border-bottom: none;
         border-left: none;
         border-right: none;
     }
 
-    .win-appbar.win-top button.win-command,
-    .win-appbar.win-top div.win-command {
+    .win-navbar.win-top button.win-command,
+    .win-navbar.win-top div.win-command {
         padding-bottom: 7px; /* 7px - 2px smaller to account for the high-constrast appbar border */
     }
 
-    .win-appbar.win-bottom button.win-command,
-    .win-appbar.win-bottom div.win-command {
+    .win-navbar.win-bottom button.win-command,
+    .win-navbar.win-bottom div.win-command {
         padding-top: 7px; /* 7px - 2px smaller to account for the high-constrast appbar border */
     }
 
-    .win-appbar.win-top hr.win-command {
+    .win-navbar.win-top hr.win-command {
         margin-bottom: 28px;
     }
 
-    .win-appbar.win-bottom hr.win-command {
+    .win-navbar.win-bottom hr.win-command {
         margin-top: 8px;
     }
 
     .win-commandlayout {
-        &.win-appbar-showing,
-        &.win-appbar-shown,
-        &.win-appbar-hiding {
+        &.win-navbar-opening,
+        &.win-navbar-opened,
+        &.win-navbar-closing {
             min-height: 62px;
         }
     }
@@ -520,7 +486,6 @@ High contrast AppBar needs a border
 Flyout control.
 */
 .win-flyout {
-    z-index: 1008;
     position: fixed;
     position: -ms-device-fixed;
     padding: 12px;
@@ -568,9 +533,6 @@ Menu commands.
 */
 .win-menu button.win-command {
     display: block;
-    padding-top: 11px; 
-    padding-bottom: 13px;
-    min-height: 44px;
     margin-left: 0;
     margin-right: 0;
     text-align: left;
@@ -587,13 +549,14 @@ Menu commands.
         #flex > .flex-wrap(nowrap);
         #flex > .align-items(center);
         width:100%;
-    
+        position: relative;
+
         .win-toggleicon, .win-flyouticon {
             #flex > .flex(0; 0; auto);
             display: none;
             visibility: hidden;
             font-size: 16px;
-            font-family: "Segoe UI Symbol", "Symbols";
+            font-family: "Segoe MDL2 Assets", "Symbols";
         }
         .win-toggleicon {
             margin-left: 12px;
@@ -605,7 +568,7 @@ Menu commands.
             margin-left: 12px;
             margin-right: 16px;
             &::before {
-                content: "\E26B"; 
+                content: "\E26B";
             }
         }
         .win-label {
@@ -631,11 +594,21 @@ Menu commands.
                 margin-left: 16px;
                 margin-right: 12px;
                 &::before {
-                    content: "\E26C"; 
+                    content: "\E26C";
                 }
             }
         });
      }
+}
+.win-menu.win-menu-mousespacing button.win-command {
+    padding-top: 5px;
+    padding-bottom: 7px;
+    min-height: 32px;
+}
+.win-menu.win-menu-touchspacing button.win-command {
+    padding-top: 11px;
+    padding-bottom: 13px;
+    min-height: 44px;
 }
 
 .win-menu hr.win-command {
@@ -698,7 +671,6 @@ the style "-ms-touch-select: none;"
 Settings Pane
 */
 .win-settingsflyout {
-    z-index: 1004; /* above appbar and below flyouts */
     border-left: 1px solid;
     position: fixed;
     top: 0;
@@ -751,7 +723,7 @@ Settings Pane
 
         .win-label {
             .win-type-subtitle();
-        }        
+        }
 
         .win-settings-section {
             padding-top: 0;

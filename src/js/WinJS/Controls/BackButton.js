@@ -1,6 +1,7 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 // Back Button
 define([
+    'exports',
     '../Core/_Global',
     '../Core/_Base',
     '../Core/_ErrorFromName',
@@ -11,7 +12,7 @@ define([
     '../Utilities/_Hoverable',
     'require-style!less/styles-backbutton',
     'require-style!less/colors-backbutton'
-    ], function backButtonInit(_Global, _Base, _ErrorFromName, _Resources, Navigation, _Control, _ElementUtilities, _Hoverable) {
+    ], function backButtonInit(exports, _Global, _Base, _ErrorFromName, _Resources, Navigation, _Control, _ElementUtilities, _Hoverable) {
     "use strict";
 
     var Key = _ElementUtilities.Key;
@@ -81,7 +82,7 @@ define([
         };
     }()); // Immediate invoke creates and returns the Singleton
 
-    _Base.Namespace.define("WinJS.UI", {
+    _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
         /// <field>
         /// <summary locid="WinJS.UI.BackButton">
         /// Provides backwards navigation functionality.
@@ -93,8 +94,7 @@ define([
         /// <htmlSnippet><![CDATA[<button data-win-control="WinJS.UI.BackButton"></button>]]></htmlSnippet>
         /// <part name="BackButton" class="win-navigation-backbutton" locid="WinJS.UI.BackButton_part:BackButton">The BackButton control itself</part>
         /// <part name="BackArrowGlyph" class="win-back" locid="WinJS.UI.BackButton_part:BackArrowGlyph">The Back Arrow glyph</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         BackButton: _Base.Namespace._lazy(function () {
             // Statics

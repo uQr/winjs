@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 ///<reference path="Helper.ts" />
 
 module Helper.ListView {
@@ -439,51 +439,6 @@ module Helper.ListView {
         });
     }
 
-    export function createTrivialAnimationTracker() {
-        return {
-            getCompletionPromise: function () {
-                return WinJS.Promise.wrap();
-            }
-        };
-    }
-
-    export var trivialAnimationHelper = {
-        animateEntrance: function () {
-            return WinJS.Promise.wrap();
-        },
-        fadeInElement: function (e) {
-            return WinJS.Promise.wrap();
-        },
-        fadeOutElement: function (e) {
-            return WinJS.Promise.wrap();
-        }
-    }
-    export var realAnimationHelper = {
-    },
-        realHelperRecorded = false;
-    export function removeListviewAnimations() {
-        var functions;
-        if (!realHelperRecorded) {
-            functions = Object.keys(WinJS.UI._ListViewAnimationHelper);
-            for (var i = 0; i < functions.length; i++) {
-                realAnimationHelper[functions[i]] = WinJS.UI._ListViewAnimationHelper[functions[i]];
-            }
-            realHelperRecorded = true;
-        }
-        functions = Object.keys(trivialAnimationHelper);
-        for (var i = 0; i < functions.length; i++) {
-            WinJS.UI._ListViewAnimationHelper[functions[i]] = trivialAnimationHelper[functions[i]];
-        }
-    }
-    export function restoreListviewAnimations() {
-        if (realHelperRecorded) {
-            var functions = Object.keys(realAnimationHelper);
-            for (var i = 0; i < functions.length; i++) {
-                WinJS.UI._ListViewAnimationHelper[functions[i]] = realAnimationHelper[functions[i]];
-            }
-        }
-    }
-
     export function containerFrom(element) {
         while (element && !WinJS.Utilities.hasClass(element, WinJS.UI._containerClass)) {
             element = element.parentNode;
@@ -772,7 +727,7 @@ module Helper.ListView {
         var layoutInfo = computeExpectedLayoutInformation(options);
         var styleElement = addStylesForView(root, options);
         root.style.direction = options.rtl ? "rtl" : "ltr";
-        var bindingList = <WinJS.Binding.GroupedSortedListProjection<any>> getBasicDataSource(options.itemsCount, options.grouped, options.itemsPerGroup);
+        var bindingList = <WinJS.Binding.GroupedSortedListProjection<any, any>> getBasicDataSource(options.itemsCount, options.grouped, options.itemsPerGroup);
         var layoutOptions: any = {
             orientation: options.orientation
         };

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 // Menu
 /// <dictionary>Menu,Menus,Flyout,Flyouts,Statics</dictionary>
 define([
@@ -13,13 +13,13 @@ define([
     '../Utilities/_ElementUtilities',
     '../Utilities/_Hoverable',
     '../Utilities/_KeyboardBehavior',
-    './AppBar/_Constants',
+    './_LegacyAppBar/_Constants',
     './Flyout',
     './Flyout/_Overlay',
     './Menu/_Command'
 ], function menuInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Resources, _WriteProfilerMark, Promise, _ElementUtilities, _Hoverable, _KeyboardBehavior, _Constants, Flyout, _Overlay, _Command) {
     "use strict";
-
+    
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
         /// <field>
         /// <summary locid="WinJS.UI.Menu">Represents a menu flyout for displaying commands.</summary>
@@ -36,8 +36,7 @@ define([
         /// <event name="beforehide" locid="WinJS.UI.Menu_e:beforehide">Raised just before hiding a menu.</event>
         /// <event name="afterhide" locid="WinJS.UI.Menu_e:afterhide">Raised immediately after a menu is fully hidden.</event>
         /// <part name="menu" class="win-menu" locid="WinJS.UI.Menu_part:menu">The Menu control itself</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         Menu: _Base.Namespace._lazy(function () {
             var Key = _ElementUtilities.Key;
@@ -249,11 +248,22 @@ define([
                 },
 
                 _show: function Menu_show(anchor, placement, alignment) {
+                    if (!_ElementUtilities.hasClass(this.element, _Constants.menuMouseSpacingClass) && !_ElementUtilities.hasClass(this.element, _Constants.menuTouchSpacingClass)) {
+                        // The Menu's spacing shouldn't change while it is already shown. Only
+                        // add a spacing class if it doesn't already have one. It will get
+                        // removed after the Menu hides.
+                        _ElementUtilities.addClass(
+                            this.element,
+                            Flyout.Flyout._cascadeManager.inputType === _KeyboardBehavior._InputTypes.mouse || Flyout.Flyout._cascadeManager.inputType === _KeyboardBehavior._InputTypes.keyboard ?
+                                _Constants.menuMouseSpacingClass :
+                                _Constants.menuTouchSpacingClass
+                        );
+                    }
                     // Call flyout show
                     this._baseFlyoutShow(anchor, placement, alignment);
 
-                    // We need to adjust MenuCommand layouts based on the various types of 
-                    // commands visible in our Menu, but only after we send the beforeshow 
+                    // We need to adjust MenuCommand layouts based on the various types of
+                    // commands visible in our Menu, but only after we send the beforeshow
                     // event, so the developer has a chance to show or hide more commands.
                     // Flyout's _findPosition will make that call.
                 },
@@ -263,6 +273,12 @@ define([
                         this._hoverPromise.cancel();
                     }
                     Flyout.Flyout.prototype._hide.call(this);
+                },
+                
+                _beforeEndHide: function Menu_beforeEndHide() {
+                    _ElementUtilities.removeClass(this.element, _Constants.menuMouseSpacingClass);
+                    _ElementUtilities.removeClass(this.element, _Constants.menuTouchSpacingClass);
+                    Flyout.Flyout.prototype._beforeEndHide.call(this);
                 },
 
                 _addCommand: function Menu_addCommand(command) {
@@ -321,11 +337,7 @@ define([
                 },
 
                 _handleKeyDown: function Menu_handleKeyDown(event) {
-                    if (event.keyCode === Key.escape) {
-                        // Show a focus rect on what we move focus to
-                        this._keyboardInvoked = true;
-                        this._hide();
-                    } else if (event.keyCode === Key.upArrow) {
+                    if (event.keyCode === Key.upArrow) {
                         Menu._focusOnPreviousElement(this.element);
 
                         // Prevent the page from scrolling
@@ -345,7 +357,7 @@ define([
                 },
 
                 _handleFocusIn: function Menu_handleFocusIn(event) {
-                    // Menu focuses commands on mouseover. We need to handle cases involving activated flyout commands 
+                    // Menu focuses commands on mouseover. We need to handle cases involving activated flyout commands
                     // to ensure that mousing over different commands in a menu closes that command's sub flyout.
                     var target = event.target;
                     if (isCommandInMenu(target)) {
@@ -369,10 +381,14 @@ define([
                 },
 
                 _handleCommandInvoked: function Menu_handleCommandInvoked(event) {
-                    // Menu hides when invoking a command commits an action, not when a subFlyout is invoked.
+                    // Cascading Menus hide when invoking a command commits an action, not when invoking a command opens a subFlyout.
+                    if (this._hoverPromise) {
+                        // Prevent pending duplicate invoke triggered via hover.
+                        this._hoverPromise.cancel();
+                    }
                     var command = event.detail.command;
-                    if (command._type !== _Constants.typeFlyout) {
-                        this._hide();
+                    if (command._type !== _Constants.typeFlyout && command._type !== _Constants.typeSeparator) {
+                        this._lightDismiss(); // Collapse all Menus/Flyouts.
                     }
                 },
 

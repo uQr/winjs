@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     'exports',
     './Core/_Global',
@@ -163,14 +163,20 @@ define([
         /// </signature>
         var Ctor = get(uri);
         var control = new Ctor(element, options, null, parentedPromise);
-        return control.renderComplete;
+        return control.renderComplete.then(null, function (err) {
+            return Promise.wrapError({
+                error: err,
+                page: control
+            });
+        });
     }
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI.Pages", {
         define: Pages_define,
         get: get,
         _remove: _remove,
-        render: render
+        render: render,
+        _viewMap: _BasePage.viewMap
     });
 
 });

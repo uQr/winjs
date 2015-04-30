@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     "exports",
     "../Core/_Global",
@@ -21,6 +21,23 @@ define([
 ], function autoSuggestBoxInit(exports, _Global, _WinRT, _Base, _ErrorFromName, _Events, _Resources, _Control, _ElementListUtilities, _ElementUtilities, _Hoverable, Animations, BindingList, Promise, Repeater, _SuggestionManagerShim) {
     "use strict";
 
+    var ClassNames = {
+        asb: "win-autosuggestbox",
+        asbDisabled: "win-autosuggestbox-disabled",
+        asbFlyout: "win-autosuggestbox-flyout",
+        asbFlyoutAbove: "win-autosuggestbox-flyout-above",
+        asbBoxFlyoutHighlightText: "win-autosuggestbox-flyout-highlighttext",
+        asbHitHighlightSpan: "win-autosuggestbox-hithighlight-span",
+        asbInput: "win-autosuggestbox-input",
+        asbInputFocus: "win-autosuggestbox-input-focus",
+        asbSuggestionQuery: "win-autosuggestbox-suggestion-query",
+        asbSuggestionResult: "win-autosuggestbox-suggestion-result",
+        asbSuggestionResultText: "win-autosuggestbox-suggestion-result-text",
+        asbSuggestionResultDetailedText: "win-autosuggestbox-suggestion-result-detailed-text",
+        asbSuggestionSelected: "win-autosuggestbox-suggestion-selected",
+        asbSuggestionSeparator: "win-autosuggestbox-suggestion-separator",
+    };
+
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
         /// <field>
         /// <summary locid="WinJS.UI.AutoSuggestBox">
@@ -42,28 +59,10 @@ define([
         /// <part name="autosuggestbox-suggestion-result" class="win-autosuggestbox-suggestion-result" locid="WinJS.UI.AutoSuggestBox_part:Suggestion_Result">Styles the result type suggestion.</part>
         /// <part name="autosuggestbox-suggestion-selected" class="win-autosuggestbox-suggestion-selected" locid="WinJS.UI.AutoSuggestBox_part:Suggestion_Selected">Styles the currently selected suggestion.</part>
         /// <part name="autosuggestbox-suggestion-separator" class="win-autosuggestbox-suggestion-separator" locid="WinJS.UI.AutoSuggestBox_part:Suggestion_Separator">Styles the separator type suggestion.</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         AutoSuggestBox: _Base.Namespace._lazy(function () {
             var Key = _ElementUtilities.Key;
-
-            var ClassNames = {
-                asb: "win-autosuggestbox",
-                asbDisabled: "win-autosuggestbox-disabled",
-                asbFlyout: "win-autosuggestbox-flyout",
-                asbFlyoutAbove: "win-autosuggestbox-flyout-above",
-                asbBoxFlyoutHighlightText: "win-autosuggestbox-flyout-highlighttext",
-                asbHitHighlightSpan: "win-autosuggestbox-hithighlight-span",
-                asbInput: "win-autosuggestbox-input",
-                asbInputFocus: "win-autosuggestbox-input-focus",
-                asbSuggestionQuery: "win-autosuggestbox-suggestion-query",
-                asbSuggestionResult: "win-autosuggestbox-suggestion-result",
-                asbSuggestionResultText: "win-autosuggestbox-suggestion-result-text",
-                asbSuggestionResultDetailedText: "win-autosuggestbox-suggestion-result-detailed-text",
-                asbSuggestionSelected: "win-autosuggestbox-suggestion-selected",
-                asbSuggestionSeparator: "win-autosuggestbox-suggestion-separator",
-            };
 
             var EventNames = {
                 querychanged: "querychanged",
@@ -228,6 +227,7 @@ define([
                         return this._inputElement.value;
                     },
                     set: function (value) {
+                        this._inputElement.value = ""; // This finalizes the IME composition
                         this._inputElement.value = value;
                     }
                 },
@@ -363,11 +363,7 @@ define([
 
                 _setupSSM: function asb_setupSSM() {
                     // Get the search suggestion provider if it is available
-                    if (_WinRT.Windows.ApplicationModel.Search.Core.SearchSuggestionManager) {
-                        this._suggestionManager = new _WinRT.Windows.ApplicationModel.Search.Core.SearchSuggestionManager();
-                    } else {
-                        this._suggestionManager = new _SuggestionManagerShim._SearchSuggestionManagerShim();
-                    }
+                    this._suggestionManager = new _SuggestionManagerShim._SearchSuggestionManagerShim();
                     this._suggestions = this._suggestionManager.suggestions;
 
                     this._suggestions.addEventListener("vectorchanged", this._suggestionsChangedHandler);
@@ -382,7 +378,10 @@ define([
                 },
 
                 _showFlyout: function asb_showFlyout() {
-                    if (this._isFlyoutShown()) {
+                    var prevNumSuggestions = this._prevNumSuggestions || 0;
+                    this._prevNumSuggestions = this._suggestionsData.length;
+
+                    if (this._isFlyoutShown() && prevNumSuggestions === this._suggestionsData.length) {
                         return;
                     }
 
@@ -456,15 +455,19 @@ define([
                     var inputRect = this._inputElement.getBoundingClientRect();
                     var flyoutTop = inputRect.bottom;
                     var flyoutBottom = inputRect.bottom + flyoutRect.height;
-                    if (((imeRect.top < flyoutTop) || (imeRect.top > flyoutBottom)) &&
-                        ((imeRect.bottom < flyoutTop) || (imeRect.bottom > flyoutBottom))) {
+                    if (imeRect.top > flyoutBottom || imeRect.bottom < flyoutTop) {
                         return;
                     }
 
-                    // Shift the flyout down
-                    var rect = context.getCandidateWindowClientRect();
+                    // Shift the flyout down or to the right depending on IME/ASB width ratio.
+                    // When the IME width is less than 45% of the ASB's width, the flyout gets
+                    // shifted right, otherwise shifted down.
                     var animation = Animations.createRepositionAnimation(this._flyoutElement);
-                    this._flyoutElement.style.marginTop = (rect.bottom - rect.top + 4) + "px";
+                    if (imeRect.width < (inputRect.width * 0.45)) {
+                        this._flyoutElement.style.marginLeft = imeRect.width + "px";
+                    } else {
+                        this._flyoutElement.style.marginTop = (imeRect.bottom - imeRect.top + 4) + "px";
+                    }
                     animation.execute();
                 },
 
@@ -607,8 +610,14 @@ define([
                         }
 
                         if (_WinRT.Windows.ApplicationModel.Search.SearchQueryLinguisticDetails) {
-                            linguisticDetails = new _WinRT.Windows.ApplicationModel.Search.SearchQueryLinguisticDetails(fullCompositionAlternatives, compositionStartOffset, compositionLength);
-                        } else {
+                            try {
+                                linguisticDetails = new _WinRT.Windows.ApplicationModel.Search.SearchQueryLinguisticDetails(fullCompositionAlternatives, compositionStartOffset, compositionLength);
+                            } catch (e) {
+                                // WP10 currently exposes SQLD API but throws on instantiation.
+                            }
+                        }
+
+                        if (!linguisticDetails) {
                             // If we're in web compartment, create a script version of the WinRT SearchQueryLinguisticDetails object
                             linguisticDetails = {
                                 queryTextAlternatives: fullCompositionAlternatives,
@@ -763,6 +772,7 @@ define([
                         this._reflowImeOnPointerRelease = false;
                         var animation = Animations.createRepositionAnimation(this._flyoutElement);
                         this._flyoutElement.style.marginTop = "";
+                        this._flyoutElement.style.marginLeft = "";
                         animation.execute();
                     }
                 },
@@ -773,6 +783,7 @@ define([
                         this._element.classList.remove(ClassNames.asbInputFocus);
                         this._hideFlyout();
                     }
+                    this.queryText = this._prevQueryText; // Finalize IME composition
                     this._isProcessingDownKey = false;
                     this._isProcessingUpKey = false;
                     this._isProcessingTabKey = false;
@@ -935,7 +946,7 @@ define([
                                 event.preventDefault();
                                 event.stopPropagation();
                             }
-                        } else if (event.keyCode === Key.upArrow) {
+                        } else if ((this._flyoutBelowInput && event.keyCode === Key.upArrow) || (!this._flyoutBelowInput && event.keyCode === Key.downArrow)) {
                             var prevIndex;
                             if (this._currentSelectedIndex !== -1) {
                                 prevIndex = this._findPreviousSuggestionElementIndex(this._currentSelectedIndex);
@@ -948,7 +959,7 @@ define([
                             }
                             setSelection(prevIndex);
                             this._updateQueryTextWithSuggestionText(this._currentFocusedIndex);
-                        } else if (event.keyCode === Key.downArrow) {
+                        } else if ((this._flyoutBelowInput && event.keyCode === Key.downArrow) || (!this._flyoutBelowInput && event.keyCode === Key.upArrow)) {
                             var nextIndex = this._findNextSuggestionElementIndex(this._currentSelectedIndex);
                             // Restore user entered query when user navigates back to input.
                             if ((this._currentSelectedIndex !== -1) && (nextIndex === -1)) {
@@ -987,6 +998,7 @@ define([
                     if (!this._isFlyoutPointerDown) {
                         var animation = Animations.createRepositionAnimation(this._flyoutElement);
                         this._flyoutElement.style.marginTop = "";
+                        this._flyoutElement.style.marginLeft = "";
                         animation.execute();
                     } else {
                         this._reflowImeOnPointerRelease = true;
@@ -1312,4 +1324,5 @@ define([
             return AutoSuggestBox;
         })
     });
+    exports.ClassNames = ClassNames;
 });

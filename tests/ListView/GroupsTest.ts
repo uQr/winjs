@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ListView.ts" />
 /// <reference path="../TestLib/TestDataSource.ts" />
@@ -212,7 +210,6 @@ module WinJSTests {
             document.body.appendChild(testRootEl);
             _oldMaxTimePerCreateContainers = WinJS.UI._VirtualizeContentsView._maxTimePerCreateContainers;
             WinJS.UI._VirtualizeContentsView._maxTimePerCreateContainers = Number.MAX_VALUE;
-            Helper.ListView.removeListviewAnimations();
         }
 
         tearDown() {
@@ -221,7 +218,6 @@ module WinJSTests {
             WinJS.UI._VirtualizeContentsView._maxTimePerCreateContainers = _oldMaxTimePerCreateContainers;
             WinJS.Utilities.disposeSubTree(testRootEl);
             document.body.removeChild(testRootEl);
-            Helper.ListView.restoreListviewAnimations();
             WinJS.Utilities.stopLog();
             Helper.cleanupUnhandledErrors();
 
@@ -866,7 +862,6 @@ module WinJSTests {
 
     function generateAdd(layout) {
         GroupsTests.prototype["testAdd" + (layout == "GridLayout" ? "" : layout)] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
             var dataSource = Helper.ItemsManager.simpleSynchronousArrayDataSource(smallGroups);
             var listView = createListView(dataSource, { layout: { type: WinJS.UI[layout] } }, "groupAdd");
             Helper.ListView.runTests(listView, [
@@ -917,8 +912,6 @@ module WinJSTests {
 
     function generateAddGroup(layout) {
         GroupsTests.prototype["testAddGroup" + (layout == "GridLayout" ? "" : layout)] = function (complete) {
-
-            Helper.ListView.restoreListviewAnimations();
 
             function test(itemDataSource, groupDataSource, edit) {
                 return new WinJS.Promise(function (testComplete) {
@@ -1034,7 +1027,6 @@ module WinJSTests {
 
     function generateDelete(layout) {
         GroupsTests.prototype["testDelete" + (layout == "GridLayout" ? "" : layout)] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
             var dataSource = Helper.ItemsManager.simpleSynchronousArrayDataSource(smallGroups);
             var i, listView = createListView(dataSource, { layout: { type: WinJS.UI[layout] } }, "groupDelete");
 
@@ -1096,7 +1088,6 @@ module WinJSTests {
 
     function generateDeleteAll(layout) {
         GroupsTests.prototype["testDeleteAll" + (layout == "GridLayout" ? "" : layout)] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
 
             function test(itemDataSource, groupDataSource) {
                 return new WinJS.Promise(function (testComplete) {

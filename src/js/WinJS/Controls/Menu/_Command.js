@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 // Menu Command
 /// <dictionary>appbar,appbars,Flyout,Flyouts,onclick,Statics</dictionary>
 define([
@@ -10,7 +10,7 @@ define([
     '../../Promise',
     '../../Utilities/_Control',
     '../../Utilities/_ElementUtilities',
-    '../AppBar/_Constants',
+    '../_LegacyAppBar/_Constants',
     '../Flyout/_Overlay'
 ], function menuCommandInit(exports, _Global, _Base, _ErrorFromName, _Resources, Promise, _Control, _ElementUtilities, _Constants, _Overlay) {
     "use strict";
@@ -27,8 +27,7 @@ define([
         /// <icon src="ui_winjs.ui.menucommand.16x16.png" width="16" height="16" />
         /// <htmlSnippet><![CDATA[<button data-win-control="WinJS.UI.MenuCommand" data-win-options="{type:'button',label:'Button'}"></button>]]></htmlSnippet>
         /// <part name="MenuCommand" class="win-command" locid="WinJS.UI.MenuCommand_name">The MenuCommand control itself</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         MenuCommand: _Base.Namespace._lazy(function () {
 
@@ -41,7 +40,7 @@ define([
             };
 
             var MenuCommand = _Base.Class.define(function MenuCommand_ctor(element, options) {
-                /// <signature helpKeyword="WinJS.UI.AppBarCommand.MenuCommand">
+                /// <signature helpKeyword="WinJS.UI.MenuCommand.MenuCommand">
                 /// <summary locid="WinJS.UI.MenuCommand.constructor">
                 /// Creates a new MenuCommand object.
                 /// </summary>
@@ -482,7 +481,7 @@ define([
                 // Statics
                 _activateFlyoutCommand: function MenuCommand_activateFlyoutCommand(menuCommand) {
                     // Activates the associated Flyout command and returns a promise once complete.
-                    // A command is considered to be activated once the proper CSS class has been applied and its associated flyout has begun to show.
+                    // A command is considered to be activated once the proper CSS class has been applied and its associated flyout has finished showing.
                     return new Promise(function (c, e) {
                         menuCommand = menuCommand.winControl || menuCommand;
                         var subFlyout = menuCommand.flyout;
@@ -496,8 +495,8 @@ define([
                                 _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
                             }, false);
 
-                            subFlyout.addEventListener("beforeshow", function beforeShow() {
-                                subFlyout.removeEventListener("beforeshow", beforeShow, false);
+                            subFlyout.addEventListener("aftershow", function afterShow() {
+                                subFlyout.removeEventListener("aftershow", afterShow, false);
                                 // We are considered activated once we start showing the flyout.
                                 c();
                             }, false);
@@ -512,7 +511,7 @@ define([
 
                 _deactivateFlyoutCommand: function MenuCommand_deactivateFlyoutCommand(menuCommand) {
                     // Deactivates the associated Flyout command and returns a promise once complete.
-                    // A command is considered to be deactivated once the proper CSS class has been applied and its associated flyout has begun to hide. 
+                    // A command is considered to be deactivated once the proper CSS class has been applied and its associated flyout has finished hiding.
                     return new Promise(function (c) {
                         menuCommand = menuCommand.winControl || menuCommand;
                         _ElementUtilities.removeClass(menuCommand.element, _Constants.menuCommandFlyoutActivatedClass);
@@ -521,8 +520,8 @@ define([
                         // Flyout may not have processAll'd, so this may be a DOM object
                         if (subFlyout && !subFlyout.hidden && subFlyout.hide) {
 
-                            subFlyout.addEventListener("beforehide", function beforeHide() {
-                                subFlyout.removeEventListener("beforehide", beforeHide, false);
+                            subFlyout.addEventListener("afterhide", function afterHide() {
+                                subFlyout.removeEventListener("afterhide", afterHide, false);
                                 c();
                             }, false);
 

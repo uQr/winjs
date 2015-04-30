@@ -1,12 +1,10 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 //-----------------------------------------------------------------------------
 //  Hide tests for the tooltip.  Make sure that the tooltip vanishes on the correct events.
 //  These are primarily for edge cases (ex. MSPointerCancel, etc.).  Our main
 //  scenarios are mostly covered by all our other "regular" tests (MSPointerOver->MSPointerOut, etc.)
 //-----------------------------------------------------------------------------
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ts"/>
 /// <reference path="TooltipUtils.ts"/>

@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ts"/>
 
@@ -9,6 +7,27 @@ declare var Windows;
 
 module SearchBoxTests {
     "use strict";
+
+    function waitForSuggestionFlyoutRender(sb) {
+        return new WinJS.Promise(function (c) {
+            function register() {
+                sb._repeater.addEventListener("iteminserted", handle);
+                sb._repeater.addEventListener("itemremoved", handle);
+            }
+
+            function unregister() {
+                sb._repeater.removeEventListener("iteminserted", handle);
+                sb._repeater.removeEventListener("itemremoved", handle);
+            }
+
+            function handle() {
+                unregister();
+                WinJS.Promise.timeout().then(c);
+            }
+
+            register();
+        });
+    }
 
     export class SearchBoxTests {
         setUp() {
@@ -114,6 +133,52 @@ module SearchBoxTests {
             });
             Helper.keydown(document, WinJS.Utilities.Key.t);
             WinJS.Promise.timeout().done(complete);
+        }
+
+        testLegacyClassNames(complete) {
+            var searchBox: WinJS.UI.PrivateAutoSuggestBox = document.getElementById("SearchBoxID").winControl;
+            searchBox.addEventListener("suggestionsrequested", function (e) {
+                e.detail.searchSuggestionCollection.appendQuerySuggestions(["Test query Suggestion1 test", "Test query Suggestion2 test"]);
+                e.detail.searchSuggestionCollection.appendSearchSeparator("Separator");
+                e.detail.searchSuggestionCollection.appendResultSuggestion("Test result Suggestion4 test", "Query suggestion4 detailed text", "tag4", WinJS.UI.SearchBox.createResultSuggestionImage("http://fakeurl"), "");
+
+                waitForSuggestionFlyoutRender(searchBox).then(() => {
+                    LiveUnit.Assert.isTrue(searchBox.element.classList.contains("win-searchbox"));
+                    LiveUnit.Assert.isTrue(searchBox.element.classList.contains("win-searchbox-input-focus"));
+
+                    var el: HTMLElement = <any>searchBox.element.querySelector(".win-searchbox-input");
+                    LiveUnit.Assert.isTrue(el && el.classList.contains("win-autosuggestbox-input"));
+
+                    el = <any>searchBox.element.querySelector(".win-searchbox-flyout");
+                    LiveUnit.Assert.isTrue(el && el.classList.contains("win-autosuggestbox-flyout"));
+
+                    el = <any>searchBox.element.querySelector(".win-searchbox-suggestion-result");
+                    LiveUnit.Assert.isTrue(el && el.classList.contains("win-autosuggestbox-suggestion-result"));
+
+                    el = <any>searchBox.element.querySelector(".win-searchbox-suggestion-result-text");
+                    LiveUnit.Assert.isTrue(el && el.classList.contains("win-autosuggestbox-suggestion-result-text"));
+
+                    el = <any>searchBox.element.querySelector(".win-searchbox-suggestion-result-detailed-text");
+                    LiveUnit.Assert.isTrue(el && el.classList.contains("win-autosuggestbox-suggestion-result-detailed-text"));
+
+                    el = <any>searchBox.element.querySelector(".win-searchbox-suggestion-query");
+                    LiveUnit.Assert.isTrue(el && el.classList.contains("win-autosuggestbox-suggestion-query"));
+
+                    el = <any>searchBox.element.querySelector(".win-searchbox-suggestion-separator");
+                    LiveUnit.Assert.isTrue(el && el.classList.contains("win-autosuggestbox-suggestion-separator"));
+
+                    searchBox.disabled = true;
+                    LiveUnit.Assert.isTrue(searchBox.element.classList.contains("win-searchbox-disabled"));
+
+                    complete();
+                });
+            });
+            searchBox._inputElement.value = "a";
+            searchBox._inputElement.focus();
+        }
+
+        testInitializeDisabledSearchBox() {
+            var sb = new WinJS.UI.SearchBox(null, { disabled: true });
         }
     };
 }

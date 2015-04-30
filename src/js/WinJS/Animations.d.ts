@@ -1,6 +1,6 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 
-import Promise = require("Promise");
+import Promise = require("./Promise");
 
 /**
  * Provides access to the Windows animations. These functions provide developers with the ability to use animations in their custom controls that are consistent with animations used by Windows controls.
@@ -11,16 +11,16 @@ import Promise = require("Promise");
 /**
  * Creates an object that performs an animation that adds an item or items to a list.
  * @param added Element or elements to add to the list.
- * @param affected Element or elements affected by the added items.
+ * @param affected Element or elements affected by the added items. Typically, this is all other items displayed in the list.
  * @returns An object whose execute method is used to execute the animation. The execute method returns a Promise that completes when the animation is finished.
 **/
 export declare function createAddToListAnimation(added: any, affected: any): IAnimationMethodResponse;
 
 /**
- * Creates an object that performs an animation that adds an item or items to a list.
+ * Creates an object that performs an animation that adds and removes items to a list.
  * @param added Element or elements to add to the list.
  * @param removed Element or elements to remove from the list.
- * @param affected Element or elements affected by the added items.
+ * @param affected Element or elements affected by the added items. Typically, this is all other items displayed in the list.
  * @returns An object whose execute method is used to execute the animation. The execute method returns a Promise that completes when the animation is finished.
 **/
 export declare function _createUpdateListAnimation(added: any, removed: any, affected: any): IAnimationMethodResponse;
@@ -28,7 +28,7 @@ export declare function _createUpdateListAnimation(added: any, removed: any, aff
 /**
  * Creates an object that performs an animation that adds an item or items to a list of search results.
  * @param added Element or elements to add to the list.
- * @param affected Element or elements affected by the added items.
+ * @param affected Element or elements affected by the added items. Typically, this is all other items displayed in the list.
  * @returns An object whose execute method is used to execute the animation. The execute method returns a Promise that completes when the animation is finished.
 **/
 export declare function createAddToSearchListAnimation(added: any, affected: any): IAnimationMethodResponse;
@@ -36,7 +36,7 @@ export declare function createAddToSearchListAnimation(added: any, affected: any
 /**
  * Creates an object that performs an animation that collapses a list.
  * @param hidden Element or elements hidden as a result of the collapse.
- * @param affected Element or elements affected by the hidden items.
+ * @param affected Element or elements affected by the hidden items. Typically, this is all other items displayed in the list.
  * @returns An object whose execute method is used to execute the animation. The execute method returns a Promise that completes when the animation is finished.
 **/
 export declare function createCollapseAnimation(hidden: any, affected: any): IAnimationMethodResponse;
@@ -44,7 +44,7 @@ export declare function createCollapseAnimation(hidden: any, affected: any): IAn
 /**
  * Creates an object that performs an animation that removes an item or items from a list.
  * @param deleted Element or elements to delete from the list.
- * @param remaining Element or elements affected by the removal of the deleted items.
+ * @param remaining Element or elements affected by the removal of the deleted items. Typically, this is all other items displayed in the list.
  * @returns An object whose execute method is used to execute the animation. The execute method returns a Promise that completes when the animation is finished.
 **/
 export declare function createDeleteFromListAnimation(deleted: any, remaining: any): IAnimationMethodResponse;
@@ -52,7 +52,7 @@ export declare function createDeleteFromListAnimation(deleted: any, remaining: a
 /**
  * Creates an object that performs an animation that removes an item or items from a list of search results.
  * @param deleted Element or elements to delete from the list.
- * @param remaining Element or elements affected by the removal of the deleted items.
+ * @param remaining Element or elements affected by the removal of the deleted items. Typically, this is all other items displayed in the list.
  * @returns An object whose execute method is used to execute the animation. The execute method returns a Promise that completes when the animation is finished.
 **/
 export declare function createDeleteFromSearchListAnimation(deleted: any, remaining: any): IAnimationMethodResponse;
@@ -60,7 +60,7 @@ export declare function createDeleteFromSearchListAnimation(deleted: any, remain
 /**
  * Creates an object that performs an animation that expands a list.
  * @param revealed Element or elements revealed by the expansion.
- * @param affected Element or elements affected by the newly revealed items.
+ * @param affected Element or elements affected by the newly revealed items. Typically, this is all other items displayed in the list.
  * @returns An object whose execute method is used to execute the animation. The execute method returns a Promise that completes when the animation is finished.
 **/
 export declare function createExpandAnimation(revealed: any, affected: any): IAnimationMethodResponse;
@@ -375,6 +375,33 @@ export declare function turnstileBackwardIn(incoming: any): Promise<any>;
 **/
 export declare function turnstileBackwardOut(outgoing: any): Promise<any>;
 
+/**
+ * Execute a drill in incoming animation.
+ * @param incoming Single element or collection of elements to animate.
+ * @returns A Promise that completes when the animation is finished.
+**/
+export declare function drillInIncoming(incoming: any): Promise<any>;
+
+/**
+ * Execute a drill in outgoing animation.
+ * @param outgoing Single element or collection of elements to animate.
+ * @returns A Promise that completes when the animation is finished.
+**/
+export declare function drillInOutgoing(outgoing: any): Promise<any>;
+
+/**
+ * Execute a drill out incoming animation.
+ * @param incoming Single element or collection of elements to animate.
+ * @returns A Promise that completes when the animation is finished.
+**/
+export declare function drillOutIncoming(incoming: any): Promise<any>;
+
+/**
+ * Execute a drill out outgoing animation.
+ * @param outgoing Single element or collection of elements to animate.
+ * @returns A Promise that completes when the animation is finished.
+**/
+export declare function drillOutOutgoing(outgoing: any): Promise<any>;
 
 //#endregion export declare functions
 
@@ -386,8 +413,28 @@ export interface IAnimationMethodResponse {
 
 //#endregion Interfaces
 
-export interface IThickness {
-    content: number;
-    total: number;
+export interface IResizeTransitionOptions {
+    from: number;
+    to: number;
+    actualSize: number;
+    dimension: string;
+
+    anchorTrailingEdge?: boolean;
+    duration?: number;
+    timing?: string;
 }
-export declare function _resizeTransition(elementClipper: HTMLElement, element: HTMLElement, options: { from: IThickness; to: IThickness; dimension: string; anchorTrailingEdge: boolean; }): Promise<any>
+export declare function _resizeTransition(elementClipper: HTMLElement, element: HTMLElement, options: IResizeTransitionOptions): Promise<any>;
+
+export interface ICommandingSurfaceTransitionArgs {
+    actionAreaClipper: HTMLElement;
+    actionArea: HTMLElement;
+    overflowAreaClipper: HTMLElement;
+    overflowArea: HTMLElement;
+    oldHeight: number;
+    newHeight: number;
+    overflowAreaHeight: number;
+    menuPositionedAbove: boolean;
+}
+
+export declare function _commandingSurfaceOpenAnimation(args: ICommandingSurfaceTransitionArgs): Promise<any>;
+export declare function _commandingSurfaceCloseAnimation(args: ICommandingSurfaceTransitionArgs): Promise<any>;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 .Colors(@theme) {
     .colorDefinitions(@theme);
 
@@ -71,6 +71,7 @@
         }
 
         &:checked::-ms-check {
+            color: #fff;
             background-color: @accentColor;
             border-color: transparent;
         }
@@ -138,12 +139,18 @@
     progress {
       // Main colors
       color: @accentColor;
-      background-color: @baseLow;
+
+      // Only style background color in determinate mode to leave
+      // indeterminate background transparent and preserve firefox's
+      // default animation
+      &:not(:indeterminate) {
+        background-color: @baseLow;
+      }
 
       &::-webkit-progress-value {
         background-color: @accentColor;
       }
-      &::-moz-progress-bar {
+      &:not(:indeterminate)::-moz-progress-bar {
         background-color: @accentColor;
       }
 
@@ -191,6 +198,7 @@
 
     input[type=submit],
     button[type=submit] {
+        color: #fff;
         background-color: @accentColor;
     }
 
@@ -203,12 +211,13 @@
         border-color: @baseMediumMid;
 
         &::-ms-expand {
-            color: @baseHigh;
+            color: @baseMediumHigh;
             background-color: transparent;
         }
 
         &:hover {
-            background-color: @baseMediumMid;
+            background-color: @chromeMediumMid;
+            border-color: @baseMid;
         }
 
         &:disabled {
@@ -217,11 +226,13 @@
         }
         &:disabled::-ms-expand {
             color: @baseLow;
+            border-color: @baseLow;
         }
     }
 
     option {
-        color: @baseBlack;
+        color: @baseHigh;
+        background-color: @chromeMediumMid;
 
         &:checked {
             color: @baseWhite;
@@ -229,8 +240,16 @@
         }
         &:hover, &:active {
             background-color: fade(@baseBlack, 20%);
-            color: @baseBlack;
+            color: @baseHigh;
         }
+    }
+
+    optgroup {
+        color: @baseHigh;
+        background-color: @chromeMediumMid;
+    }
+    optgroup:disabled {
+        color: @baseLow;
     }
 
     select[multiple] {
@@ -331,6 +350,8 @@
     //
     // Text box
     //
+    input:not([type]),
+    input[type=""], 
     input[type=text],
     input[type=password],
     input[type=email],
@@ -376,5 +397,9 @@
             color: @baseWhite;
             background-color: @accentColor;
         }
+    }
+
+    .win-xbox :focus {
+        outline: 2px solid white;
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 //
 // UTIL.JS
 // Put non-feature specific functions used in > 1 test file in here to share with other tests
@@ -45,19 +45,17 @@ module Helper {
 
     export function createPointerEvent(fallbackType: string) {
         // PointerEvent is already supported, so just use that
+        var e:any;
         if ((<any>window).PointerEvent) {
-            var e = document.createEvent("PointerEvent");
-            return e;
+            return document.createEvent("PointerEvent");
         } else if ((<any>window).MSPointerEvent) {
             // Fallback to the ms prefix version from IE 10
-            var e = document.createEvent("MSPointerEvent");
-            return e;
+            return document.createEvent("MSPointerEvent");
         } else if (fallbackType === "mouse") {
-            var e = document.createEvent("MouseEvent");
-            return e;
+            return document.createEvent("MouseEvent");
         } else if (fallbackType === "touch") {
-            var e = document.createEvent("MouseEvent");
-            (<any>e).isTouch = true;
+            e = document.createEvent("MouseEvent");
+            e.isTouch = true;
             return e;
         }
     }
@@ -1053,8 +1051,8 @@ module Helper {
     // Best used through Helper.translateCSSProperty and Helper.translateCSSValue
     // Please add to this list as neccessary and use it where possible in test code
     export var cssTranslations = {
-        "touch-action": function() {
-            var obj = {property: {}, value: {}};
+        "touch-action": function () {
+            var obj = { property: {}, value: {} };
             if ("touchAction" in document.documentElement.style) {
                 obj = null;
             } else if ("msTouchAction" in document.documentElement.style) {
@@ -1062,8 +1060,8 @@ module Helper {
             }
             return obj;
         },
-        "display": function() {
-            var obj = {property: {}, value: {}};
+        "display": function () {
+            var obj = { property: {}, value: {} };
             if ("flex" in document.documentElement.style) {
                 obj = null;
             } else if ("msFlex" in document.documentElement.style) {
@@ -1075,8 +1073,8 @@ module Helper {
             }
             return obj;
         },
-        "flex": function() {
-            var obj = {property: {}, value: {}};
+        "flex": function () {
+            var obj = { property: {}, value: {} };
             if ("flex" in document.documentElement.style) {
                 obj = null;
             } else if ("msFlex" in document.documentElement.style) {
@@ -1086,8 +1084,8 @@ module Helper {
             }
             return obj;
         },
-        "flex-grow": function() {
-            var obj = {property: {}, value: {}};
+        "flex-grow": function () {
+            var obj = { property: {}, value: {} };
             if ("flexGrow" in document.documentElement.style) {
                 obj = null;
             } else if ("msFlexGrow" in document.documentElement.style) {
@@ -1099,8 +1097,8 @@ module Helper {
             }
             return obj;
         },
-        "flex-shrink": function() {
-            var obj = {property: {}, value: {}};
+        "flex-shrink": function () {
+            var obj = { property: {}, value: {} };
             if ("flexShrink" in document.documentElement.style) {
                 obj = null;
             } else if ("msFlexShrink" in document.documentElement.style) {
@@ -1112,8 +1110,8 @@ module Helper {
             }
             return obj;
         },
-        "flex-basis": function() {
-            var obj = {property: {}, value: {}};
+        "flex-basis": function () {
+            var obj = { property: {}, value: {} };
             if ("flexBasis" in document.documentElement.style) {
                 obj = null;
             } else if ("msFlexBasis" in document.documentElement.style) {
@@ -1260,13 +1258,13 @@ module Helper {
                 normalizedCssValue(attributeName, expected),
                 normalizedCssValue(attributeName, actual),
                 message
-            );
+                );
         };
     }
 
     export module Assert {
         export function areArraysEqual(expectedArray, actualArray, message) {
-            if (!Array.isArray(expectedArray)|| !(Array.isArray(actualArray))) {
+            if (!Array.isArray(expectedArray) || !(Array.isArray(actualArray))) {
                 LiveUnit.Assert.fail(message);
             }
 
@@ -1312,7 +1310,16 @@ module Helper {
             LiveUnit.Assert.isTrue(diff <= tolerance, message + " (expected = " + expectedValue +
                 ", actual = " + actualValue + ", tolerance = " + tolerance + ")");
         }
-        
+
+        export function areBoundingClientRectsEqual(expectedBoundingRect, actualBoundingRect, message = "", tolerance = 0.1) {
+            for (var key in expectedBoundingRect) {
+                var expectedValue = expectedBoundingRect[key],
+                    actualValue = actualBoundingRect[key],
+                    msg = message + " >> BoundingClientRect. " + key + ":";
+                Helper.Assert.areFloatsEqual(expectedValue, actualValue, msg, tolerance);
+            }
+        }
+
         // Asserts that each key of *object* is a member of *validKeys*.
         export function areKeysValid(object, validKeys) {
             Object.keys(object).forEach(function (key) {
@@ -1703,10 +1710,29 @@ module Helper {
         }
         return str;
     }
-    
+
     // Removes the element if it has a parent
     export function removeElement(element: HTMLElement): void {
         var parent = element.parentNode;
         parent && parent.removeChild(element);
+    }
+}
+
+module Helper {
+    export module Promise {
+        export function forEach(array: Array<any>, asyncCallbackFn: (value?, index?, array?) => any): WinJS.Promise<any> {
+            // Execute an asynchronous forEach loop over an array. The asynchronous forEach loop only applies asyncCallbackFn to each subsequent value in the array,
+            // after the Promise returned by applying asyncCallbackFn to the previous array value completes.
+            //
+            // Returns a Promise that completes when all promises that were returned by applying asyncCallbackFn to every value in the array have been completed.
+            var p = WinJS.Promise.as();
+            array.forEach((value, index, array) => {
+                p = p.then(() => {
+                    return asyncCallbackFn(value, index, array);
+                });
+
+            });
+            return p;
+        }
     }
 }

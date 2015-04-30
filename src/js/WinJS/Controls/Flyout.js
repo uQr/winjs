@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 /// <dictionary>appbar,Flyout,Flyouts,Statics</dictionary>
 define([
     'exports',
@@ -6,16 +6,20 @@ define([
     '../Core/_Base',
     '../Core/_BaseUtils',
     '../Core/_ErrorFromName',
+    '../Core/_Events',
     '../Core/_Log',
     '../Core/_Resources',
     '../Core/_WriteProfilerMark',
     '../Animations',
+    '../_Signal',
+    '../_LightDismissService',
     '../Utilities/_Dispose',
     '../Utilities/_ElementUtilities',
+    '../Utilities/_KeyboardBehavior',
     '../Utilities/_Hoverable',
-    './AppBar/_Constants',
+    './_LegacyAppBar/_Constants',
     './Flyout/_Overlay'
-], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Log, _Resources, _WriteProfilerMark, Animations, _Dispose, _ElementUtilities, _Hoverable, _Constants, _Overlay) {
+], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Events, _Log, _Resources, _WriteProfilerMark, Animations, _Signal, _LightDismissService, _Dispose, _ElementUtilities, _KeyboardBehavior, _Hoverable, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -35,8 +39,7 @@ define([
         /// <event name="beforehide" locid="WinJS.UI.Flyout_e:beforehide">Raised just before hiding a flyout.</event>
         /// <event name="afterhide" locid="WinJS.UI.Flyout_e:afterhide">Raised immediately after a flyout is fully hidden.</event>
         /// <part name="flyout" class="win-flyout" locid="WinJS.UI.Flyout_part:flyout">The Flyout control itself.</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         Flyout: _Base.Namespace._lazy(function () {
             var Key = _ElementUtilities.Key;
@@ -47,30 +50,183 @@ define([
 
             var strings = {
                 get ariaLabel() { return _Resources._getWinJSString("ui/flyoutAriaLabel").value; },
-                get noAnchor() { return "Invalid argument: Showing flyout requires a DOM element as its parameter."; },
+                get noAnchor() { return "Invalid argument: Flyout anchor element not found in DOM."; },
                 get badPlacement() { return "Invalid argument: Flyout placement should be 'top' (default), 'bottom', 'left', 'right', 'auto', 'autohorizontal', or 'autovertical'."; },
                 get badAlignment() { return "Invalid argument: Flyout alignment should be 'center' (default), 'left', or 'right'."; }
             };
 
+            var createEvent = _Events._createEventProperty;
+
+            // _LightDismissableLayer is an ILightDismissable which manages a set of ILightDismissables.
+            // It acts as a proxy between the LightDismissService and the light dismissables it manages.
+            // It enables multiple dismissables to be above the click eater at the same time.
+            var _LightDismissableLayer = _Base.Class.define(function _LightDismissableLayer_ctor(onLightDismiss) {
+                this._onLightDismiss = onLightDismiss;
+                this._currentlyFocusedClient = null;
+                this._clients = []; // Array of ILightDismissables
+            }, {
+                // Dismissables should call this as soon as they are ready to be shown. More specifically, they should call this:
+                //   - After they are in the DOM and ready to receive focus (e.g. style.display cannot be "none")
+                //   - Before their entrance animation is played
+                shown: function _LightDismissableLayer_shown(client /*: ILightDismissable */) {
+                    client._focusable = true;
+                    var index = this._clients.indexOf(client);
+                    if (index === -1) {
+                        this._clients.push(client);
+                        if (!_LightDismissService.isShown(this)) {
+                            _LightDismissService.shown(this);
+                        } else {
+                            _LightDismissService.updated(this);
+                            this._activateTopFocusableClientIfNeeded();
+                        }
+                    }
+                },
+
+                // Dismissables should call this at the start of their exit animation. A "hiding",
+                // dismissable will still be rendered with the proper z-index but it will no
+                // longer be given focus. Also, focus is synchronously moved out of this dismissable.
+                hiding: function _LightDismissableLayer_hiding(client /*: ILightDismissable */) {
+                    var index = this._clients.indexOf(client);
+                    if (index !== -1) {
+                        this._clients[index]._focusable = false;
+                        this._activateTopFocusableClientIfNeeded();
+                    }
+                },
+
+                // Dismissables should call this when they are done being dismissed (i.e. after their exit animation has finished)
+                hidden: function _LightDismissableLayer_hidden(client /*: ILightDismissable */) {
+                    var index = this._clients.indexOf(client);
+                    if (index !== -1) {
+                        this._clients.splice(index, 1);
+                        client.setZIndex("");
+                        client.onHide();
+                        if (this._clients.length === 0) {
+                            _LightDismissService.hidden(this);
+                        } else {
+                            _LightDismissService.updated(this);
+                            this._activateTopFocusableClientIfNeeded();
+                        }
+                    }
+                },
+
+                // Used by tests.
+                clients: {
+                    get: function _LightDismissableLayer_clients_get () {
+                        return this._clients;
+                    }
+                },
+
+                _clientForElement: function _LightDismissableLayer_clientForElement(element) {
+                    for (var i = this._clients.length - 1; i >= 0; i--) {
+                        if (this._clients[i].containsElement(element)) {
+                            return this._clients[i];
+                        }
+                    }
+                    return null;
+                },
+
+                _focusableClientForElement: function _LightDismissableLayer_focusableClientForElement(element) {
+                    for (var i = this._clients.length - 1; i >= 0; i--) {
+                        if (this._clients[i]._focusable && this._clients[i].containsElement(element)) {
+                            return this._clients[i];
+                        }
+                    }
+                    return null;
+                },
+
+                _getTopmostFocusableClient: function _LightDismissableLayer_getTopmostFocusableClient() {
+                    for (var i = this._clients.length - 1; i >= 0; i--) {
+                        var client = this._clients[i];
+                        if (client && client._focusable) {
+                            return client;
+                        }
+                    }
+                    return null;
+                },
+
+                _activateTopFocusableClientIfNeeded: function _LightDismissableLayer_activateTopFocusableClientIfNeeded() {
+                    var topClient = this._getTopmostFocusableClient();
+                    if (topClient && _LightDismissService.isTopmost(this)) {
+                        // If the last input type was keyboard, use focus() so a keyboard focus visual is drawn.
+                        // Otherwise, use setActive() so no focus visual is drawn.
+                        var useSetActive = !_KeyboardBehavior._keyboardSeenLast;
+                        topClient.onActivate(useSetActive);
+                    }
+                },
+
+                // ILightDismissable
+                //
+
+                setZIndex: function _LightDismissableLayer_setZIndex(zIndex) {
+                    this._clients.forEach(function (client, index) {
+                        client.setZIndex(zIndex + index);
+                    }, this);
+                },
+                getZIndexCount: function _LightDismissableLayer_getZIndexCount() {
+                    return this._clients.length;
+                },
+                containsElement: function _LightDismissableLayer_containsElement(element) {
+                    return !!this._clientForElement(element);
+                },
+                onActivate: function _LightDismissableLayer_onActivate(useSetActive) {
+                    // Prefer the client that has focus
+                    var client = this._focusableClientForElement(_Global.document.activeElement);
+
+                    if (!client && this._clients.indexOf(this._currentlyFocusedClient) !== -1 && this._currentlyFocusedClient._focusable) {
+                        // Next try the client that had focus most recently
+                        client = this._currentlyFocusedClient;
+                    }
+
+                    if (!client) {
+                        // Finally try the client at the top of the stack
+                        client = this._getTopmostFocusableClient();
+                    }
+
+                    this._currentlyFocusedClient = client;
+                    client && client.onActivate(useSetActive);
+                },
+                onFocus: function _LightDismissableLayer_onFocus(element) {
+                    this._currentlyFocusedClient = this._clientForElement(element);
+                    this._currentlyFocusedClient && this._currentlyFocusedClient.onFocus(element);
+                },
+                onHide: function _LightDismissableLayer_onHide() {
+                    this._currentlyFocusedClient = null;
+                },
+                onShouldLightDismiss: function _LightDismissableLayer_onShouldLightDismiss(info) {
+                    return _LightDismissService.DismissalPolicies.light(info);
+                },
+                onLightDismiss: function _LightDismissableLayer_onLightDismiss(info) {
+                    this._onLightDismiss(info);
+                }
+            });
 
             // Singleton class for managing cascading flyouts
             var _CascadeManager = _Base.Class.define(function _CascadeManager_ctor() {
+                var that = this;
+                this._dismissableLayer = new _LightDismissableLayer(function _CascadeManager_onLightDismiss(info) {
+                    if (info.reason === _LightDismissService.LightDismissalReasons.escape) {
+                        that.collapseFlyout(that.getAt(that.length - 1));
+                    } else {
+                        that.collapseAll();
+                    }
+                });
                 this._cascadingStack = [];
                 this._handleKeyDownInCascade_bound = this._handleKeyDownInCascade.bind(this);
+                this._inputType = null;
             },
             {
                 appendFlyout: function _CascadeManager_appendFlyout(flyoutToAdd) {
                     // PRECONDITION: flyoutToAdd must not already be in the cascade.
-                    _Log.log && this.indexOF(flyoutToAdd) >= 0 && _Log.log('_CascadeManager is attempting to append a Flyout that is already in the cascade.', "winjs _CascadeManager", "error");
+                    _Log.log && this.indexOf(flyoutToAdd) >= 0 && _Log.log('_CascadeManager is attempting to append a Flyout that is already in the cascade.', "winjs _CascadeManager", "error");
                     // PRECONDITION: this.reentrancyLock must be false. appendFlyout should only be called from baseFlyoutShow() which is the function responsible for preventing reentrancy.
                     _Log.log && this.reentrancyLock && _Log.log('_CascadeManager is attempting to append a Flyout through reentrancy.', "winjs _CascadeManager", "error");
 
-                    // IF the anchor element for flyoutToAdd is contained within another flyout, 
+                    // IF the anchor element for flyoutToAdd is contained within another flyout,
                     // && that flyout is currently in the cascadingStack, consider that flyout to be the parent of flyoutToAdd:
                     //  Remove from the cascadingStack, any subflyout descendants of the parent flyout.
                     // ELSE flyoutToAdd isn't anchored to any of the Flyouts in the existing cascade
                     //  Collapse the entire cascadingStack to start a new cascade.
-                    // FINALLY: 
+                    // FINALLY:
                     //  add flyoutToAdd to the end of the cascading stack. Monitor it for events.
                     var indexOfParentFlyout = this.indexOfElement(flyoutToAdd._currentAnchor);
                     if (indexOfParentFlyout >= 0) {
@@ -81,11 +237,14 @@ define([
 
                     flyoutToAdd.element.addEventListener("keydown", this._handleKeyDownInCascade_bound, false);
                     this._cascadingStack.push(flyoutToAdd);
+                    this._dismissableLayer.shown(flyoutToAdd._dismissable);
                 },
                 collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
                     // Removes flyout param and its subflyout descendants from the _cascadingStack.
                     if (!this.reentrancyLock && flyout && this.indexOf(flyout) >= 0) {
                         this.reentrancyLock = true;
+                        var signal = new _Signal();
+                        this.unlocked = signal.promise;
 
                         var subFlyout;
                         while (this.length && flyout !== subFlyout) {
@@ -93,15 +252,28 @@ define([
                             subFlyout.element.removeEventListener("keydown", this._handleKeyDownInCascade_bound, false);
                             subFlyout._hide(); // We use the reentrancyLock to prevent reentrancy here.
                         }
+                        
+                        if (this._cascadingStack.length === 0) {
+                            // The cascade is empty so clear the input type. This gives us the opportunity
+                            // to recalculate the input type when the next cascade starts.
+                            this._inputType = null;
+                        }
 
                         this.reentrancyLock = false;
+                        this.unlocked = null;
+                        signal.complete();
                     }
                 },
-                collapseAll: function _CascadeManager_collapseAll(keyboardInvoked) {
+                flyoutHiding: function _CascadeManager_flyoutHiding(flyout) {
+                    this._dismissableLayer.hiding(flyout._dismissable);
+                },
+                flyoutHidden: function _CascadeManager_flyoutHidden(flyout) {
+                    this._dismissableLayer.hidden(flyout._dismissable);
+                },
+                collapseAll: function _CascadeManager_collapseAll() {
                     // Empties the _cascadingStack and hides all flyouts.
                     var headFlyout = this.getAt(0);
                     if (headFlyout) {
-                        headFlyout._keyboardInvoked = keyboardInvoked;
                         this.collapseFlyout(headFlyout);
                     }
                 },
@@ -137,10 +309,21 @@ define([
                         this.collapseFlyout(subFlyout);
                     }
                 },
-                handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(event) {
-                    // Hide the entire cascade if focus has moved somewhere outside of it
-                    if (this.indexOfElement(event.relatedTarget) < 0) {
-                        this.collapseAll();
+                // Compute the input type that is associated with the cascading stack on demand. Allows
+                // each Flyout in the cascade to adjust its sizing based on the current input type
+                // and to do it in a way that is consistent with the rest of the Flyouts in the cascade.
+                inputType: {
+                    get: function _CascadeManager_inputType_get() {
+                        if (!this._inputType) {
+                            this._inputType = _KeyboardBehavior._lastInputType;
+                        }
+                        return this._inputType;
+                    }
+                },
+                // Used by tests.
+                dismissableLayer: {
+                    get: function _CascadeManager_dismissableLayer_get () {
+                        return this._dismissableLayer;
                     }
                 },
                 _handleKeyDownInCascade: function _CascadeManager_handleKeyDownInCascade(event) {
@@ -149,21 +332,18 @@ define([
                         target = event.target;
 
                     if (event.keyCode === leftKey) {
-                        // Left key press in a SubFlyout will close that subFlyout and any subFlyouts cascading from it. 
+                        // Left key press in a SubFlyout will close that subFlyout and any subFlyouts cascading from it.
                         var index = this.indexOfElement(target);
                         if (index >= 1) {
                             var subFlyout = this.getAt(index);
-                            // Show a focus rect where focus is restored.
-                            subFlyout._keyboardInvoked = true;
                             this.collapseFlyout(subFlyout);
                             // Prevent document scrolling
                             event.preventDefault();
                         }
                     } else if (event.keyCode === Key.alt || event.keyCode === Key.F10) {
-                        // Show a focus rect where focus is restored.
-                        this.collapseAll(true);
+                        this.collapseAll();
                     }
-                },
+                }
             });
 
             var Flyout = _Base.Class.derive(_Overlay._Overlay, function Flyout_ctor(element, options) {
@@ -215,15 +395,34 @@ define([
                     // Call the base overlay constructor helper
                     this._baseOverlayConstructor(element, options);
 
-                    // Make a click eating div
-                    _Overlay._Overlay._createClickEatingDivFlyout();
-
                     // Start flyouts hidden
                     this._element.style.visibilty = "hidden";
                     this._element.style.display = "none";
 
                     // Attach our css class
                     _ElementUtilities.addClass(this._element, _Constants.flyoutClass);
+                    
+                    var that = this;
+                    // Each flyout has an ILightDismissable that is managed through the
+                    // CascasdeManager rather than by the _LightDismissService directly.
+                    this._dismissable = new _LightDismissService.LightDismissableElement({
+                        element: this._element,
+                        tabIndex: this._element.hasAttribute("tabIndex") ? this._element.tabIndex : -1,
+                        onLightDismiss: function () {
+                            that.hide();
+                        },
+                        onActivate: function (useSetActive) {
+                            if (!that._dismissable.restoreFocus()) {
+                                if (!_ElementUtilities.hasClass(that.element, _Constants.menuClass)) {
+                                    // Put focus on the first child in the Flyout
+                                    that._focusOnFirstFocusableElementOrThis();
+                                } else {
+                                    // Make sure the menu has focus, but don't show a focus rect
+                                    _Overlay._Overlay._trySetActive(that._element);
+                                }
+                            }
+                        }
+                    });
 
                     // Make sure we have an ARIA role
                     var role = this._element.getAttribute("role");
@@ -244,10 +443,6 @@ define([
                     this._currentAnimateOut = this._flyoutAnimateOut;
 
                     _ElementUtilities._addEventListener(this.element, "focusin", this._handleFocusIn.bind(this), false);
-                    _ElementUtilities._addEventListener(this.element, "focusout", this._handleFocusOut.bind(this), false);
-
-                    // Make sure additional _Overlay event handlers are hooked up
-                    this._handleOverlayEventsForFlyoutOrSettingsFlyout();
                 },
 
                 /// <field type="String" locid="WinJS.UI.Flyout.anchor" helpKeyword="WinJS.UI.Flyout.anchor">
@@ -298,9 +493,49 @@ define([
                     }
                 },
 
+                /// <field type="Boolean" locid="WinJS.UI.Flyout.disabled" helpKeyword="WinJS.UI.Flyout.disabled">Disable a Flyout, setting or getting the HTML disabled attribute.  When disabled the Flyout will no longer display with show(), and will hide if currently visible.</field>
+                disabled: {
+                    get: function () {
+                        // Ensure it's a boolean because we're using the DOM element to keep in-sync
+                        return !!this._element.disabled;
+                    },
+                    set: function (value) {
+                        // Force this check into a boolean because our current state could be a bit confused since we tie to the DOM element
+                        value = !!value;
+                        var oldValue = !!this._element.disabled;
+                        if (oldValue !== value) {
+                            this._element.disabled = value;
+                            if (!this.hidden && this._element.disabled) {
+                                this.hide();
+                            }
+                        }
+                    }
+                },
+
+                /// <field type="Function" locid="WinJS.UI.Flyout.onbeforeshow" helpKeyword="WinJS.UI.Flyout.onbeforeshow">
+                /// Occurs immediately before the control is shown.
+                /// </field>
+                onbeforeshow: createEvent(_Overlay._Overlay.beforeShow),
+
+                /// <field type="Function" locid="WinJS.UI.Flyout.onaftershow" helpKeyword="WinJS.UI.Flyout.onaftershow">
+                /// Occurs immediately after the control is shown.
+                /// </field>
+                onaftershow: createEvent(_Overlay._Overlay.afterShow),
+
+                /// <field type="Function" locid="WinJS.UI.Flyout.onbeforehide" helpKeyword="WinJS.UI.Flyout.onbeforehide">
+                /// Occurs immediately before the control is hidden.
+                /// </field>
+                onbeforehide: createEvent(_Overlay._Overlay.beforeHide),
+
+                /// <field type="Function" locid="WinJS.UI.Flyout.onafterhide" helpKeyword="WinJS.UI.Flyout.onafterhide">
+                /// Occurs immediately after the control is hidden.
+                /// </field>
+                onafterhide: createEvent(_Overlay._Overlay.afterHide),
+
                 _dispose: function Flyout_dispose() {
                     _Dispose.disposeSubTree(this.element);
                     this._hide();
+                    Flyout._cascadeManager.flyoutHidden(this);
                     this.anchor = null;
                 },
 
@@ -339,7 +574,6 @@ define([
                     /// </signature>
                     // Just wrap the private one, turning off keyboard invoked flag
                     this._writeProfilerMark("hide,StartTM"); // The corresponding "stop" profiler mark is handled in _Overlay._baseEndHide().
-                    this._keyboardInvoked = false;
                     this._hide();
                 },
 
@@ -350,53 +584,12 @@ define([
                     Flyout._cascadeManager.collapseFlyout(this);
 
                     if (this._baseHide()) {
-                        // Return focus if this or the flyout CED has focus
-                        var active = _Global.document.activeElement;
-                        if (this._previousFocus
-                           && active
-                           && (this._element.contains(active)
-                               || _ElementUtilities.hasClass(active, _Overlay._Overlay._clickEatingFlyoutClass))
-                           && this._previousFocus.focus !== undefined) {
-
-                            // _isAppBarOrChild may return a CED or sentinal
-                            var appBar = _Overlay._Overlay._isAppBarOrChild(this._previousFocus);
-                            if (!appBar || (appBar.winControl && !appBar.winControl.hidden && !appBar.winAnimating)) {
-                                // Don't move focus back to a appBar that is hidden
-                                // We cannot rely on element.style.visibility because it will be visible while animating
-                                var role = this._previousFocus.getAttribute("role");
-                                var fHideRole = _Overlay._Overlay._keyboardInfo._visible && !this._keyboardWasUp;
-                                if (fHideRole) {
-                                    // Convince IHM to dismiss because it only came up after the flyout was up.
-                                    // Change aria role and back to get IHM to dismiss.
-                                    this._previousFocus.setAttribute("role", "");
-                                }
-
-                                if (this._keyboardInvoked) {
-                                    this._previousFocus.focus();
-                                } else {
-                                    _Overlay._Overlay._trySetActive(this._previousFocus);
-                                }
-                                active = _Global.document.activeElement;
-
-                                if (fHideRole) {
-                                    // Restore the role so that css is applied correctly
-                                    var previousFocus = this._previousFocus;
-                                    if (previousFocus) {
-                                        _BaseUtils._yieldForDomModification(function () {
-                                            previousFocus.setAttribute("role", role);
-                                        });
-                                    }
-                                }
-                            }
-                        }
-
-                        this._previousFocus = null;
-
-                        // Need click-eating div to be hidden if there are no other visible flyouts
-                        if (!this._isThereVisibleFlyout()) {
-                            _Overlay._Overlay._hideClickEatingDivFlyout();
-                        }
+                        Flyout._cascadeManager.flyoutHiding(this);
                     }
+                },
+
+                _beforeEndHide: function Flyout_beforeEndHide() {
+                   Flyout._cascadeManager.flyoutHidden(this);
                 },
 
                 _baseFlyoutShow: function Flyout_baseFlyoutShow(anchor, placement, alignment) {
@@ -426,11 +619,11 @@ define([
                     // We expect an anchor
                     if (!anchor) {
                         // If we have _nextLeft, etc., then we were continuing an old animation, so that's OK
-                        if (!this._retryLast) {
+                        if (!this._reuseCurrent) {
                             throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
                         }
-                        // Last call was incomplete, so use the previous _current values.
-                        this._retryLast = null;
+                        // Last call was incomplete, so reuse the previous _current values.
+                        this._reuseCurrent = null;
                     } else {
                         // Remember the anchor so that if we lose focus we can go back
                         this._currentAnchor = anchor;
@@ -439,76 +632,54 @@ define([
                         this._currentAlignment = alignment;
                     }
 
-                    // Need click-eating div to be visible, no matter what
-                    if (!this._sticky) {
-                        _Overlay._Overlay._showClickEatingDivFlyout();
-                    }
-
                     // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of a updating the cascade,
-                    // then don't mess up our current state. Queue us up to wait for current operation to finish first.
-                    if (this._element.winAnimating || Flyout._cascadeManager.reentrancyLock) {
+                    // then don't mess up our current state.
+                    if (this._element.winAnimating) {
+                        this._reuseCurrent = true;
+                        // Queue us up to wait for the current animation to finish.
+                        // _checkDoNext() is always scheduled after the current animation completes.
                         this._doNext = "show";
-                        this._retryLast = true;
-                        return;
-                    }
+                    } else if (Flyout._cascadeManager.reentrancyLock) {
+                        this._reuseCurrent = true;
+                        // Queue us up to wait for the current animation to finish.
+                        // Schedule a call to _checkDoNext() for when the cascadeManager unlocks.
+                        this._doNext = "show";
+                        var that = this;
+                        Flyout._cascadeManager.unlocked.then(function () { that._checkDoNext(); });
+                    } else {
+                        // We call our base _baseShow to handle the actual animation
+                        if (this._baseShow()) {
+                            // (_baseShow shouldn't ever fail because we tested winAnimating above).
+                            if (!_ElementUtilities.hasClass(this.element, "win-menu")) {
+                                // Verify that the firstDiv is in the correct location.
+                                // Move it to the correct location or add it if not.
+                                var _elms = this._element.getElementsByTagName("*");
+                                var firstDiv = this.element.querySelectorAll(".win-first");
+                                if (this.element.children.length && !_ElementUtilities.hasClass(this.element.children[0], _Constants.firstDivClass)) {
+                                    if (firstDiv && firstDiv.length > 0) {
+                                        firstDiv.item(0).parentNode.removeChild(firstDiv.item(0));
+                                    }
 
-                    // We call our base _baseShow to handle the actual animation
-                    if (this._baseShow()) {
-                        // (_baseShow shouldn't ever fail because we tested winAnimating above).
-                        if (!_ElementUtilities.hasClass(this.element, "win-menu")) {
-                            // Verify that the firstDiv is in the correct location.
-                            // Move it to the correct location or add it if not.
-                            var _elms = this._element.getElementsByTagName("*");
-                            var firstDiv = this.element.querySelectorAll(".win-first");
-                            if (this.element.children.length && !_ElementUtilities.hasClass(this.element.children[0], _Constants.firstDivClass)) {
-                                if (firstDiv && firstDiv.length > 0) {
-                                    firstDiv.item(0).parentNode.removeChild(firstDiv.item(0));
+                                    firstDiv = this._addFirstDiv();
                                 }
+                                firstDiv.tabIndex = _ElementUtilities._getLowestTabIndexInList(_elms);
 
-                                firstDiv = this._addFirstDiv();
-                            }
-                            firstDiv.tabIndex = _ElementUtilities._getLowestTabIndexInList(_elms);
+                                // Verify that the finalDiv is in the correct location.
+                                // Move it to the correct location or add it if not.
+                                var finalDiv = this.element.querySelectorAll(".win-final");
+                                if (!_ElementUtilities.hasClass(this.element.children[this.element.children.length - 1], _Constants.finalDivClass)) {
+                                    if (finalDiv && finalDiv.length > 0) {
+                                        finalDiv.item(0).parentNode.removeChild(finalDiv.item(0));
+                                    }
 
-                            // Verify that the finalDiv is in the correct location.
-                            // Move it to the correct location or add it if not.
-                            var finalDiv = this.element.querySelectorAll(".win-final");
-                            if (!_ElementUtilities.hasClass(this.element.children[this.element.children.length - 1], _Constants.finalDivClass)) {
-                                if (finalDiv && finalDiv.length > 0) {
-                                    finalDiv.item(0).parentNode.removeChild(finalDiv.item(0));
+                                    finalDiv = this._addFinalDiv();
                                 }
-
-                                finalDiv = this._addFinalDiv();
+                                finalDiv.tabIndex = _ElementUtilities._getHighestTabIndexInList(_elms);
                             }
-                            finalDiv.tabIndex = _ElementUtilities._getHighestTabIndexInList(_elms);
-                        }
 
-                        Flyout._cascadeManager.appendFlyout(this);
-
-                        // Store what had focus before showing the Flyout. This must happen after we've appended this 
-                        // Flyout to the cascade and subsequently triggered other branches of cascading flyouts to 
-                        // collapse, so that focus has already been restored to the correct element by the previous 
-                        // branch before we try to record it here.
-                        this._previousFocus = _Global.document.activeElement;
-
-                        if (!_ElementUtilities.hasClass(this.element, _Constants.menuClass)) {
-                            // Put focus on the first child in the Flyout
-                            this._focusOnFirstFocusableElementOrThis();
-                        } else {
-                            // Make sure the menu has focus, but don't show a focus rect
-                            _Overlay._Overlay._trySetActive(this._element);
+                            Flyout._cascadeManager.appendFlyout(this);
                         }
                     }
-                },
-
-                _endShow: function Flyout_endShow() {
-                    // Remember if the IHM was up since we may need to hide it when the flyout hides.
-                    // This check needs to happen after we've hidden any other visible flyouts from 
-                    // the cascasde as a result of showing this flyout.
-                    this._keyboardWasUp = _Overlay._Overlay._keyboardInfo._visible;
-                },
-
-                _isLightDismissible: function Flyout_isLightDismissible() {
-                    return (!this.hidden);
                 },
 
                 _lightDismiss: function Flyout_lightDismiss() {
@@ -593,9 +764,17 @@ define([
                 //   - this is because right handed users would be more likely to obscure a flyout on the right of the anchor.
                 // All three auto placements will add a vertical scrollbar if necessary.
                 _getTopLeft: function Flyout_getTopLeft() {
-                    var anchorRawRectangle = this._currentAnchor.getBoundingClientRect(),
+
+                    var anchorRawRectangle,
                         flyout = {},
                         anchor = {};
+
+                    try {
+                        anchorRawRectangle = this._currentAnchor.getBoundingClientRect();
+                    }
+                    catch (e) {
+                        throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
+                    }
 
                     // Adjust for the anchor's margins.
                     anchor.top = anchorRawRectangle.top;
@@ -854,18 +1033,21 @@ define([
 
                 _resize: function Flyout_resize() {
                     // If hidden and not busy animating, then nothing to do
-                    if (this.hidden && !this._animating) {
-                        return;
-                    }
+                    if (!this.hidden || this._animating) {
 
-                    // This should only happen if the IHM is dismissing,
-                    // the only other way is for viewstate changes, which
-                    // would dismiss any flyout.
-                    if (this._needToHandleHidingKeyboard) {
-                        // Hiding keyboard, update our position, giving the anchor a chance to update first.
-                        var that = this;
-                        _BaseUtils._setImmediate(function () { that._findPosition(); });
-                        this._needToHandleHidingKeyboard = false;
+                        // This should only happen if the IHM is dismissing,
+                        // the only other way is for viewstate changes, which
+                        // would dismiss any flyout.
+                        if (this._needToHandleHidingKeyboard) {
+                            // Hiding keyboard, update our position, giving the anchor a chance to update first.
+                            var that = this;
+                            _BaseUtils._setImmediate(function () {
+                                if (!that.hidden || that._animating) {
+                                    that._findPosition();
+                                }
+                            });
+                            this._needToHandleHidingKeyboard = false;
+                        }
                     }
                 },
 
@@ -912,19 +1094,22 @@ define([
                 _hidingKeyboard: function Flyout_hidingKeyboard() {
                     // If we aren't visible and not animating, or haven't been repositioned, then nothing to do
                     // We don't know if the keyboard moved the anchor, so _keyboardMovedUs doesn't help here
-                    if (this.hidden && !this._animating) {
-                        return;
-                    }
+                    if (!this.hidden || this._animating) {
 
-                    // Snap to the final position
-                    // We'll either just reveal the current space or resize the window
-                    if (_Overlay._Overlay._keyboardInfo._isResized) {
-                        // Flag resize that we'll need an updated position
-                        this._needToHandleHidingKeyboard = true;
-                    } else {
-                        // Not resized, update our final position, giving the anchor a chance to update first.
-                        var that = this;
-                        _BaseUtils._setImmediate(function () { that._findPosition(); });
+                        // Snap to the final position
+                        // We'll either just reveal the current space or resize the window
+                        if (_Overlay._Overlay._keyboardInfo._isResized) {
+                            // Flag resize that we'll need an updated position
+                            this._needToHandleHidingKeyboard = true;
+                        } else {
+                            // Not resized, update our final position, giving the anchor a chance to update first.
+                            var that = this;
+                            _BaseUtils._setImmediate(function () {
+                                if (!that.hidden || that._animating) {
+                                    that._findPosition();
+                                }
+                            });
+                        }
                     }
                 },
 
@@ -976,34 +1161,11 @@ define([
                     }
                 },
 
-                // Returns true if there is a flyout in the DOM that is not hidden
-                _isThereVisibleFlyout: function Flyout_isThereVisibleFlyout() {
-                    var flyouts = _Global.document.querySelectorAll("." + _Constants.flyoutClass);
-                    for (var i = 0; i < flyouts.length; i++) {
-                        var flyoutControl = flyouts[i].winControl;
-                        if (flyoutControl && !flyoutControl.hidden) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                },
-
                 _handleKeyDown: function Flyout_handleKeyDown(event) {
-                    // Escape closes flyouts but if the user has a text box with an IME candidate
-                    // window open, we want to skip the ESC key event since it is handled by the IME.
-                    // When the IME handles a key it sets event.keyCode === Key.IME for an easy check.
-                    if (event.keyCode === Key.escape && event.keyCode !== Key.IME) {
-                        // Show a focus rect on what we move focus to
-                        event.preventDefault();
-                        event.stopPropagation();
-                        this.winControl._keyboardInvoked = true;
-                        this.winControl._hide();
-                    } else if ((event.keyCode === Key.space || event.keyCode === Key.enter)
+                    if ((event.keyCode === Key.space || event.keyCode === Key.enter)
                          && (this === _Global.document.activeElement)) {
                         event.preventDefault();
                         event.stopPropagation();
-                        this.winControl._keyboardInvoked = true;
                         this.winControl.hide();
                     } else if (event.shiftKey && event.keyCode === Key.tab
                           && this === _Global.document.activeElement
@@ -1018,17 +1180,9 @@ define([
                     if (!this.element.contains(event.relatedTarget)) {
                         Flyout._cascadeManager.handleFocusIntoFlyout(event);
                     }
-                    // Else focus is only moving between elements in the flyout. 
-                    // Doesn't need to be handled by cascadeManager.
-                },
-                _handleFocusOut: function Flyout_handleFocusOut(event) {
-                    if (!this.element.contains(event.relatedTarget)) {
-                        Flyout._cascadeManager.handleFocusOutOfCascade(event);
-                    }
                     // Else focus is only moving between elements in the flyout.
                     // Doesn't need to be handled by cascadeManager.
                 },
-
 
                 // Create and add a new first div as the first child
                 _addFirstDiv: function Flyout_addFirstDiv() {

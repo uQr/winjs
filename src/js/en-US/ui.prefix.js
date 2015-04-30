@@ -1,11 +1,16 @@
 ﻿/*!
-  Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+  Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
   Build: $(build.version).$(build.branch).$(build.date)
   Version: $(TARGET_DESTINATION)
 */
 
-(function (global) {
-    global.strings = global.strings || {};
+(function () {
+    var globalObject =
+        typeof window !== 'undefined' ? window :
+        typeof self !== 'undefined' ? self :
+        typeof global !== 'undefined' ? global :
+        {};
+    globalObject.strings = globalObject.strings || {};
 
     var appxVersion = "$(TARGET_DESTINATION)";
     var developerPrefix = "Developer.";
@@ -15,7 +20,7 @@
 
     function addStrings(keyPrefix,  strings) {
         Object.keys(strings).forEach(function (key) {
-            global.strings[keyPrefix + key.replace("\\", "/")] = strings[key];
+            globalObject.strings[keyPrefix + key.replace("\\", "/")] = strings[key];
         });
     }
     addStrings("ms-resource://"+appxVersion+"/ui/",

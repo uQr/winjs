@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 // AppBarCommand
 /// <dictionary>appbar,appbars,Flyout,Flyouts,onclick,Statics</dictionary>
 define([
@@ -13,7 +13,7 @@ define([
     '../../Utilities/_ElementUtilities',
     '../Flyout/_Overlay',
     '../Tooltip',
-    './_Constants',
+    '../_LegacyAppBar/_Constants',
     './_Icon'
     ], function appBarCommandInit(exports, _Global, _WinRT, _Base, _ErrorFromName, _Resources, _Control, _Dispose, _ElementUtilities, _Overlay, Tooltip, _Constants, _Icon) {
     "use strict";
@@ -32,8 +32,7 @@ define([
         /// <part name="appBarCommandIcon" class="win-commandicon" locid="WinJS.UI.AppBarCommand_part:appBarCommandIcon">The AppBarCommand's icon box.</part>
         /// <part name="appBarCommandImage" class="win-commandimage" locid="WinJS.UI.AppBarCommand_part:appBarCommandImage">The AppBarCommand's icon's image formatting.</part>
         /// <part name="appBarCommandLabel" class="win-label" locid="WinJS.UI.AppBarCommand_part:appBarCommandLabel">The AppBarCommand's label</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         AppBarCommand: _Base.Namespace._lazy(function () {
 
@@ -281,11 +280,11 @@ define([
                     },
                     set: function (value) {
                         if (value === undefined || (typeof value === "number" && value >= 0)) {
-                            this._priority = value; 
+                            this._priority = value;
                         } else {
                             throw new _ErrorFromName("WinJS.UI.AppBarCommand.BadPriority", _Resources._formatString(strings.badPriority, "AppBarCommand"));
                         }
-                        
+
                     }
                 },
 
@@ -435,7 +434,6 @@ define([
                         if (!this._sendEvent(_Constants.commandVisibilityChanged)) {
                             style.visibility = originalVisibility;
                             style.display = originalDisplay;
-                            throw new _ErrorFromName("WinJS.UI.AppBarCommand.CannotChangeHiddenProperty", _Resources._formatString(_Overlay._Overlay.commonstrings.cannotChangeHiddenProperty, ""));
                         }
                     }
                 },
@@ -496,7 +494,7 @@ define([
                     /// Registers an event handler for the specified event.
                     /// </summary>
                     /// <param name="type" type="String" locid="WinJS.UI.AppBarCommand.addEventListener_p:type">
-                    /// Required. The name of the event to register. It must be "beforeshow", "beforehide", "aftershow", or "afterhide".
+                    /// Required. The name of the event to register.
                     /// </param>
                     /// <param name="listener" type="Function" locid="WinJS.UI.AppBarCommand.addEventListener_p:listener">Required. The event handler function to associate with this event.</param>
                     /// <param name="useCapture" type="Boolean" locid="WinJS.UI.AppBarCommand.addEventListener_p:useCapture">

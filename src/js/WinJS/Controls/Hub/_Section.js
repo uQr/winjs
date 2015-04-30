@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     'exports',
     '../../Core/_Global',
@@ -31,12 +31,12 @@ define([
         /// <part name="headercontent" class="win-hub-section-header-content" locid="WinJS.UI.HubSection_part:headercontent">The content region of the header region of the HubSection.</part>
         /// <part name="headerchevron" class="win-hub-section-header-chevron" locid="WinJS.UI.HubSection_part:headerchevron">The chevron region of the header region of the HubSection.</part>
         /// <part name="content" class="win-hub-section-content" locid="WinJS.UI.HubSection_part:content">The content region of the HubSection.</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         HubSection: _Base.Namespace._lazy(function () {
             var strings = {
-                get duplicateConstruction() { return "Invalid argument: Controls may only be instantiated one time for each DOM element"; }
+                get duplicateConstruction() { return "Invalid argument: Controls may only be instantiated one time for each DOM element"; },
+                get seeMore() { return _Resources._getWinJSString("ui/seeMore").value; }
             };
 
             var HubSection = _Base.Class.define(function HubSection_ctor(element, options) {
@@ -75,8 +75,8 @@ define([
                 this._headerElement.innerHTML =
                     '<button type="button" role="link" class="' + HubSection._ClassName.hubSectionInteractive + ' ' + HubSection._ClassName.hubSectionHeaderTabStop + '">' +
                         '<div class="' +  HubSection._ClassName.hubSectionHeaderWrapper + '" tabindex="-1">' +
-                            '<h2 class="' + HubSection._ClassName.hubSectionHeaderContent + ' ' + HubSection._Constants.ellipsisTypeClassName + ' ' + HubSection._Constants.xLargeTypeClassName + '"></h2>' +
-                            '<span class="' + HubSection._ClassName.hubSectionHeaderChevron + ' ' + HubSection._Constants.ellipsisTypeClassName + ' ' + HubSection._Constants.xLargeTypeClassName + '"></span>' +
+                            '<h2 class="' + HubSection._ClassName.hubSectionHeaderContent + '"></h2>' +
+                            '<span class="' + HubSection._ClassName.hubSectionHeaderChevron + '">' + strings.seeMore + '</span>' +
                         '</div>' +
                     '</button>';
                 this._headerTabStopElement = this._headerElement.firstElementChild;
@@ -209,10 +209,6 @@ define([
                     hubSectionHeaderContent: "win-hub-section-header-content",
                     hubSectionHeaderChevron: "win-hub-section-header-chevron",
                     hubSectionContent: "win-hub-section-content"
-                },
-                _Constants: {
-                    ellipsisTypeClassName: "win-type-ellipsis",
-                    xLargeTypeClassName: "win-type-x-large"
                 },
                 isDeclarativeControlContainer: _BaseUtils.markSupportedForProcessing(function (section, callback) {
                     if (callback === ControlProcessor.processAll) {

@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ts"/>
 /// <reference path="NavBarUtils.ts"/>
@@ -62,7 +60,7 @@ module WinJSTests {
                 data: navUtils.getNavBarCommandsData(20, true, false, false, false, false, true)
             });
 
-            navbar.show();
+            navbar.open();
 
             function waitForScrollComplete(viewportEl) {
                 return new WinJS.Promise(function (c, e, p) {
@@ -82,7 +80,7 @@ module WinJSTests {
                 });
             }
 
-            Helper.waitForEvent(navbar, "aftershow").
+            Helper.waitForEvent(navbar, "afteropen").
                 then(function () {
                     // Move focus to the last command
                     var firstNavItem = navbarContainer._surfaceEl.children[0].winControl;
@@ -102,13 +100,13 @@ module WinJSTests {
                     LiveUnit.Assert.isTrue(lastNavItem.splitOpened);
 
                     // Hide the navbar
-                    navbar.hide();
-                    return Helper.waitForEvent(navbar, "afterhide");
+                    navbar.close();
+                    return Helper.waitForEvent(navbar, "afterclose");
                 }).
                 then(function () {
                     // Show the navbar
-                    navbar.show();
-                    return Helper.waitForEvent(navbar, "aftershow");
+                    navbar.open();
+                    return Helper.waitForEvent(navbar, "afteropen");
                 }).
                 then(function () {
                     // Verify the focus state was reset
@@ -156,9 +154,9 @@ module WinJSTests {
                 checkAttribute(cmd._splitButtonEl, "aria-expanded", "false");
             }
 
-            navbar.show();
+            navbar.open();
 
-            Helper.waitForEvent(navbar, "aftershow").
+            Helper.waitForEvent(navbar, "afteropen").
                 then(function () {
                     // Click on split button and verify aria-expanded
                     var splitEl = navbarCmds[0].winControl._splitButtonEl;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 #win-overlay {
     .variableDefs(@theme) when not (@theme = highcontrast) {
         .colorDefinitions(@theme);
@@ -110,13 +110,12 @@
             color: @textColorSelected;
         }
 
-        button[aria-checked=true].win-command:after {
+        button[aria-checked=true].win-command:before {
             position: absolute;
             height: 100%;
             width: 100%;
             background-color: @accentColor;
             opacity:@accentColorDefaultOpacity;
-            z-index: -1;
             box-sizing: content-box;
             content: "";
             /* We want this pseudo element to cover the border of its parent. */
@@ -147,19 +146,18 @@
             color: @textColorDisabled;
         }
 
-        &.win-appbar, .win-appbar {
+        &.win-navbar, .win-navbar {
             background-color: @appbarBackgroundColor;
             border-color: @appbarBorderColor;
 
             &.win-menulayout {
-                .win-appbar-menu,
-                .win-appbar-toolbarcontainer,
+                .win-navbar-menu,
                 .win-toolbar {
                     background-color: inherit;
                 }
             }
 
-            button.win-appbar-invokebutton.win-appbar-invokebutton {
+            button.win-navbar-invokebutton.win-navbar-invokebutton {
                 background-color: transparent;
                 outline: none;
                 border-color: transparent;
@@ -170,7 +168,7 @@
                         background-color: transparent;
                     }
 
-                    .win-appbar-ellipsis {
+                    .win-navbar-ellipsis {
                         color: @textColor;
                     }
 
@@ -184,18 +182,18 @@
                         background-color: transparent;
                     }
 
-                    .win-appbar-ellipsis {
+                    .win-navbar-ellipsis {
                         color: @textColorDisabled;
                     }
                 }
             }
-            // When the AppBar is hiding or hidden, the entire invokebutton has a hover background.
-            &.win-appbar-hiding, &.win-appbar-hidden,
-            &.win-appbar-showing, &.win-appbar-shown {
-                button.win-appbar-invokebutton.win-appbar-invokebutton:enabled:hover:active {
+            // When the LegacyAppBar is hiding or hidden, the entire invokebutton has a hover background.
+            &.win-navbar-closing, &.win-navbar-closed,
+            &.win-navbar-opening, &.win-navbar-opened {
+                button.win-navbar-invokebutton.win-navbar-invokebutton:enabled:hover:active {
                     background-color: @commandActiveBackgroundColor;
 
-                    .win-appbar-ellipsis {
+                    .win-navbar-ellipsis {
                         color: @textColorActive;
                     }
                 }
@@ -226,15 +224,14 @@
             color:@textColorActive;
         }
 
-        &.win-menu button.win-command-flyout-activated:after,
-        .win-menu button.win-command-flyout-activated:after {
+        &.win-menu-containsflyoutcommand button.win-command-flyout-activated:before,
+        .win-menu-containsflyoutcommand button.win-command-flyout-activated:before {
             position: absolute;
             height: 100%;
             width: 100%;
             background-color: @accentColor;
             opacity: @listSelectRestOpacity;
             content: "";
-            z-index: -1;
             box-sizing: content-box;
             /* We want this pseudo element to cover the border of its parent. */
             /* Put a 1px border on this element to make it larger and then set its top/left to -1px.*/
@@ -243,8 +240,8 @@
             left: -1px;
         }
 
-        &.win-menu button[aria-checked=true].win-command:after,
-        .win-menu button[aria-checked=true].win-command:after {
+        &.win-menu button[aria-checked=true].win-command:before,
+        .win-menu button[aria-checked=true].win-command:before {
             background-color: transparent;
             border-color: transparent;
         }
@@ -260,30 +257,30 @@
 
         #win-overlay > .variableDefs(@theme);
 
-        /* Appbar control colors */
-        &.win-appbar, .win-appbar {
+        /* LegacyAppBar control colors */
+        &.win-navbar, .win-navbar {
 
-            button.win-appbar-invokebutton:enabled:hover,
-            button.win-appbar-invokebutton:disabled:hover {
+            button.win-navbar-invokebutton:enabled:hover,
+            button.win-navbar-invokebutton:disabled:hover {
                 background-color: transparent;
             }
 
-            // When the AppBar is showing or shown, only the ellipsis has a hover background.*/
-            &.win-appbar-showing, &.win-appbar-shown {
-                button.win-appbar-invokebutton:enabled:hover {
+            // When the LegacyAppBar is showing or shown, only the ellipsis has a hover background.*/
+            &.win-navbar-opening, &.win-navbar-opened {
+                button.win-navbar-invokebutton:enabled:hover {
                     background-color: @commandHoverBackgroundColor;
 
-                    .win-appbar-ellipsis {
+                    .win-navbar-ellipsis {
                         color: @textColorHover;
                     }
                 }
             }
-            // When the AppBar is hiding or hidden, the entire invokebutton has a hover background.
-            &.win-appbar-hiding, &.win-appbar-hidden {
-                button.win-appbar-invokebutton:enabled:hover {
+            // When the LegacyAppBar is hiding or hidden, the entire invokebutton has a hover background.
+            &.win-navbar-closing, &.win-navbar-closed {
+                button.win-navbar-invokebutton:enabled:hover {
                     background-color: @commandHoverBackgroundColor;
 
-                    .win-appbar-ellipsis {
+                    .win-navbar-ellipsis {
                         color: @textColorHover;
                     }
                 }
@@ -308,11 +305,11 @@
             background-color: transparent;
         }
 
-        button:enabled[aria-checked=true].win-command:hover:after {
+        button:enabled[aria-checked=true].win-command:hover:before {
             opacity:@accentColorHoverOpacity;
         }
 
-        button:enabled[aria-checked=true].win-command:hover:active:after {
+        button:enabled[aria-checked=true].win-command:hover:active:before {
             opacity:@accentColorActiveOpacity;
         }
     }

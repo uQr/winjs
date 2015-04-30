@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ts" />
 /// <reference path="../TestLib/Helper.ListView.ts" />
@@ -208,7 +206,6 @@ module WinJSTests {
 
             testRootEl.appendChild(newNode);
             document.body.appendChild(testRootEl);
-            Helper.ListView.removeListviewAnimations();
 
             _defaultMaxTimePerCreateContainers = WinJS.UI._VirtualizeContentsView._maxTimePerCreateContainers;
         }
@@ -220,7 +217,6 @@ module WinJSTests {
 
             WinJS.Utilities.disposeSubTree(testRootEl);
             document.body.removeChild(testRootEl);
-            Helper.ListView.restoreListviewAnimations();
         }
 
         testMeasureAfterReadySignal(complete) {
@@ -863,7 +859,6 @@ module WinJSTests {
 
     function generateRemove(layoutName) {
         MultisizeTests.prototype["testRemove" + layoutName] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
             var element = document.getElementById("multisizeTestPlaceholder"),
                 listview = setupListView(element, layoutName, 10, "b mmm ssssss");
 
@@ -917,7 +912,6 @@ module WinJSTests {
 
     function generateAdd(layoutName) {
         MultisizeTests.prototype["testAdd" + layoutName] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
             var element = document.getElementById("multisizeTestPlaceholder"),
                 listview = setupListView(element, layoutName, 10, "b mmm ssssss");
 
@@ -955,7 +949,6 @@ module WinJSTests {
 
     function generateChange(layoutName) {
         MultisizeTests.prototype["testChange" + layoutName] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
             var element = document.getElementById("multisizeTestPlaceholder"),
                 listview = setupListView(element, layoutName, 1, "b m s");
 
@@ -986,7 +979,6 @@ module WinJSTests {
 
     function generateReplace(layoutName) {
         MultisizeTests.prototype["testReplace" + layoutName] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
             var element = document.getElementById("multisizeTestPlaceholder"),
                 listview = setupListView(element, layoutName, 1, "b m s");
 
@@ -1021,7 +1013,6 @@ module WinJSTests {
 
     function generateFirstVisibleInConstructor(layoutName) {
         MultisizeTests.prototype["testFirstVisibleInConstructor" + layoutName] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
 
             var element = document.getElementById("multisizeTestPlaceholder"),
                 items = initData(10, "b mmm ssssss"),
@@ -1059,7 +1050,6 @@ module WinJSTests {
     function generateBigGroup(layoutName) {
         var testName = "testBigGroup" + layoutName;
         MultisizeTests.prototype[testName] = function (complete) {
-            Helper.ListView.restoreListviewAnimations();
 
             var last = WinJS.Utilities.isPhone ? 1999 : 3999, /* Phone has a smaller screen and slower HW */
                 myData = [];

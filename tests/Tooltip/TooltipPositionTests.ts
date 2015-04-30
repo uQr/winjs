@@ -1,13 +1,11 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 //-----------------------------------------------------------------------------
 //  Position Tests for the "anchor" element of the tooltip (absolute, fixed, relative, relative).
 //  Make sure the tooltip still appears at the correct spot when the "anchor" element is positioned
 //  using this CSS property. This also tests when the html/body/parent element are scrolled.
 //  To verify this, let's just measure the distance from the tooltip to the anchor.
 //-----------------------------------------------------------------------------
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ts"/>
 /// <reference path="TooltipUtils.ts"/>

@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 
 .Colors(@theme) {
     .colorDefinitions(@theme);
@@ -18,13 +18,15 @@
         }
         .win-listview .win-focusedoutline,
         .win-itemcontainer .win-focusedoutline {
-            outline: rgb(255, 255, 255) solid 2px;
+            outline: rgb(255, 255, 255) dashed 2px;
         }
-        .win-listview .win-container.win-selected .win-selectionborder,
-        .win-itemcontainer.win-container.win-selected .win-selectionborder,
         .win-listview.win-selectionstylefilled .win-selected .win-selectionbackground,
         .win-itemcontainer.win-selectionstylefilled.win-selected .win-selectionbackground  {
             opacity: 0.6;
+        }
+        .win-listview.win-selectionstylefilled .win-selected,
+        .win-itemcontainer.win-selectionstylefilled.win-selected {
+            color: rgb(255, 255, 255);
         }
     }
 
@@ -43,13 +45,15 @@
         }
         .win-listview .win-focusedoutline,
         .win-itemcontainer .win-focusedoutline {
-            outline: rgb(0, 0, 0) solid 2px;
+            outline: rgb(0, 0, 0) dashed 2px;
         }
-        .win-listview .win-container.win-selected .win-selectionborder,
-        .win-itemcontainer.win-container.win-selected .win-selectionborder,
         .win-listview.win-selectionstylefilled .win-selected .win-selectionbackground,
         .win-itemcontainer.win-selectionstylefilled.win-selected .win-selectionbackground {
             opacity: 0.4;
+        }
+        .win-listview.win-selectionstylefilled .win-selected,
+        .win-itemcontainer.win-selectionstylefilled.win-selected {
+            color: rgb(0, 0, 0);
         }
     }
 
@@ -58,7 +62,7 @@
     .win-itemcontainer.win-selectionmode.win-container .win-itembox::after,
     .win-listview .win-surface.win-selectionmode .win-itembox::after {
         border-color: @baseHigh;
-        background-color: @chromeMediumMid;
+        background-color: @chromeMid;
     }
     .win-selectioncheckmark {
         color: @baseHigh;
@@ -145,15 +149,11 @@ html.win-hoverable .win-selectionstylefilled .win-itemcontainer.win-container:ho
 .win-listview.win-selectionstylefilled .win-itembox {
     background-color: transparent;
 }
-.win-listview.win-selectionstylefilled .win-selected,
-.win-itemcontainer.win-selectionstylefilled.win-selected {
-    color: rgb(255, 255, 255);
-}
 .win-listview.win-selectionstylefilled .win-container.win-selected .win-selectionborder,
 .win-itemcontainer.win-selectionstylefilled.win-container.win-selected .win-selectionborder {
     border-color: transparent;
 }
-.win-listview .win-vertical .win-listlayout.win-surface.win-selectionmode .win-itembox::after {
+.win-listview.win-selectionstylefilled .win-surface.win-selectionmode .win-itembox::after {
     background-color: transparent;
 }
 .win-listview.win-selectionstylefilled .win-selectioncheckmarkbackground,

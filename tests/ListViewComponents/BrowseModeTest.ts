@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ListView.ts" />
 /// <deploy src="../TestData/" />
@@ -1493,30 +1491,30 @@ module WinJSTests {
                     return Helper.ListView.waitForReady(lv, -1)();
                 }).then(function () {
                     LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.item, lv.currentItem.type);
-                    lv.listHeader = document.createElement("div");
-                    lv.listFooter = document.createElement("div");
+                    lv.header = document.createElement("div");
+                    lv.footer = document.createElement("div");
                     return setFocus({ type: WinJS.UI.ObjectType.groupHeader, index: 0 });
                 }).then(function () {
                     LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.groupHeader, lv.currentItem.type);
                     lv._mode.onKeyDown(createKeyEvent(document.querySelector(".win-groupheader"), Key.leftArrow));
                     return Helper.ListView.waitForReady(lv, -1)();
                 }).then(function () {
-                    LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.listHeader, lv.currentItem.type);
+                    LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.header, lv.currentItem.type);
                     lv._mode.onKeyDown(createKeyEvent(document.querySelector(".win-groupheader"), Key.end));
                     return Helper.ListView.waitForReady(lv, -1)();
                 }).then(function () {
-                    LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.listFooter, lv.currentItem.type);
-                    lv.listHeader = null;
+                    LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.footer, lv.currentItem.type);
+                    lv.header = null;
                     lv._mode.onKeyDown(createKeyEvent(document.querySelector(".win-groupheader"), Key.home));
                     return Helper.ListView.waitForReady(lv, -1)();
                 }).then(function () {
                     LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.groupHeader, lv.currentItem.type);
-                    lv.listHeader = document.createElement("div");
+                    lv.header = document.createElement("div");
                     lv._mode.onKeyDown(createKeyEvent(document.querySelector(".win-groupheader"), Key.leftArrow));
                     return Helper.ListView.waitForReady(lv, -1)();
                 }).then(function () {
-                    LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.listHeader, lv.currentItem.type);
-                    lv.listFooter = null;
+                    LiveUnit.Assert.areEqual(WinJS.UI.ObjectType.header, lv.currentItem.type);
+                    lv.footer = null;
                     lv._mode.onKeyDown(createKeyEvent(document.querySelector(".win-groupheader"), Key.end));
 
                     return Helper.ListView.waitForReady(lv, -1)();

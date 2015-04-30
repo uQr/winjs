@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     '../Core/_Global',
     '../Core/_Base',
@@ -44,8 +44,7 @@ define([
         /// <part name="progress" class="win-hub-progress" locid="WinJS.UI.Hub_part:progress">The progress indicator for the Hub.</part>
         /// <part name="viewport" class="win-hub-viewport" locid="WinJS.UI.Hub_part:viewport">The viewport of the Hub.</part>
         /// <part name="surface" class="win-hub-surface" locid="WinJS.UI.Hub_part:surface">The scrollable region of the Hub.</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         Hub: _Base.Namespace._lazy(function () {
             var Key = _ElementUtilities.Key;
@@ -781,7 +780,7 @@ define([
 
                                                 if (!this._fireEntrance || this._fireEvent(Hub._EventName.contentAnimating, eventDetail)) {
                                                     this._viewportElement.style["-ms-overflow-style"] = "none";
-                                                    onScreenItemsAnimatedPromise = Animations.enterContent(this._viewportElement, [{ left: this._fireEntrance ? "100px" : "40px", top: "0px", rtlflip: true }], { mechanism: "transition" }).then(function () {
+                                                    onScreenItemsAnimatedPromise = Animations.enterContent(this._viewportElement).then(function () {
                                                         this._viewportElement.style["-ms-overflow-style"] = "";
                                                     }.bind(this));
                                                 }
@@ -1143,10 +1142,10 @@ define([
                     }
                 },
                 _keyDownHandler: function hub_keyDownHandler(ev) {
-                    if (this._isInteractive(ev.target)) {
+                    if (this._isInteractive(ev.target) || _ElementUtilities._hasCursorKeysBehaviors(ev.target)) {
                         return;
                     }
-                    
+
                     var leftKey = this._rtl ? Key.rightArrow : Key.leftArrow;
                     var rightKey = this._rtl ? Key.leftArrow : Key.rightArrow;
 

@@ -1,0 +1,110 @@
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+
+#win-commandingsurface {
+    .variableDefs(@theme) when not (@theme = highcontrast) {
+        .colorDefinitions(@theme);
+        
+        @backgroundColor: @chromeMid;
+        @textColorActive: @baseHigh;
+        @commandFocusBorderColor: @baseHigh;
+        
+        @overflowButtonEllipsisHoverColor: @baseHigh;
+        @overflowButtonEllipsisColor: @baseHigh;
+        @overflowButtonBackground: transparent;
+        @overflowButtonActiveBackground: @listPress;
+        
+        @overflowAreaBackgroundColor: @chromeMediumMid;
+        @overflowAreaCommandHoverBackground: @listHover;
+        @overflowAreaCommandActiveBackground: @listPress;
+    }
+
+    .variableDefs(highcontrast) {
+        @backgroundColor:ButtonFace;
+        @textColorActive: ButtonFace;
+        @commandFocusBorderColor: ButtonText;
+
+        @overflowButtonEllipsisColor: ButtonText;
+        @overflowButtonEllipsisHoverColor: HighlightText;
+        @overflowButtonBackground: ButtonFace;
+        @overflowButtonActiveBackground: Highlight;
+
+        @overflowAreaBackgroundColor:ButtonFace;
+        @overflowAreaCommandHoverBackground: Highlight;
+        @overflowAreaCommandActiveBackground: ButtonText;
+    }
+
+    .stylesForTheme(@theme) {
+        &.win-commandingsurface, .win-commandingsurface {
+
+            #win-commandingsurface > .variableDefs(@theme);
+            .win-commandingsurface-actionarea {
+                background-color: @backgroundColor;
+            }
+
+            button.win-commandingsurface-overflowbutton {
+                background-color: @overflowButtonBackground;
+                border-color: transparent;
+
+                &:enabled {
+                    &:-ms-keyboard-active {
+                        // Override intrinsic button element styles
+                        background-color: @overflowButtonBackground;
+                    }
+
+                    .win-commandingsurface-ellipsis {
+                        color: @overflowButtonEllipsisColor;
+                    }
+                }
+
+                &.win-keyboard:focus {
+                    border-color: @commandFocusBorderColor;
+                }
+            }
+
+            .win-commandingsurface-overflowarea {
+                background-color: @overflowAreaBackgroundColor;
+            }
+
+            button.win-commandingsurface-overflowbutton.win-commandingsurface-overflowbutton:hover:active {
+                background-color: @overflowButtonActiveBackground;
+            }
+
+            .win-commandingsurface-overflowarea button:enabled.win-command:hover:active {
+                color: @textColorActive;
+                background-color: @overflowAreaCommandActiveBackground;
+            }
+        }
+    }
+
+    .stylesForThemeHover(@theme) {
+        &.win-commandingsurface, .win-commandingsurface {
+
+            #win-commandingsurface > .variableDefs(@theme);
+
+            button.win-commandingsurface-overflowbutton:hover,
+            .win-commandingsurface-overflowarea button.win-command:hover {
+                background-color: @overflowAreaCommandHoverBackground;
+            }
+
+            button.win-commandingsurface-overflowbutton:hover .win-commandingsurface-ellipsis {
+                color: @overflowButtonEllipsisHoverColor;
+            }
+        }
+    }
+}
+
+.Colors(@theme) {
+    #win-commandingsurface > .stylesForTheme(@theme);
+}
+
+.ColorsHover(@theme) {
+    #win-commandingsurface > .stylesForThemeHover(@theme);
+}
+
+.HighContrast() {
+    #win-commandingsurface > .stylesForTheme(highcontrast);
+}
+
+.HighContrastHover() {
+    #win-commandingsurface > .stylesForThemeHover(highcontrast);
+}

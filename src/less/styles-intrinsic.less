@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 
 @import "base.less";
 
@@ -51,26 +51,18 @@ textarea,
 button,
 select,
 option {
-    font-family: "Segoe UI", "Segoe WP", "sans-serif", "Segoe UI Symbol", "Symbols";
-}
-
-//
-// Reset browser specific oddities
-//
-button::-moz-focus-inner,
-input::-moz-focus-inner {
-  padding: 0;
-  border: 0;
+    font-family: "Segoe UI", sans-serif, "Segoe MDL2 Assets", "Symbols";
 }
 
 //
 // Text input
 //
-input[type=text], input[type=password], input[type=email], input[type=number],
+input:not([type]), input[type=""], input[type=text], input[type=password], input[type=email], input[type=number],
 input[type=tel], input[type=url], input[type=search], textarea, .win-textarea {
     -ms-user-select: element;
     border-style: solid;
     border-width: 2px;
+    border-radius: 0;
     margin: 8px 0px;
     width: 296px;
     min-width: 64px;
@@ -126,6 +118,9 @@ button, input[type=button], input[type=reset], input[type=submit], button[type=s
     padding: 4px 8px;
     border-width: 2px;
     background-clip: border-box;
+    border-radius: 0;
+    touch-action: manipulation;
+    -webkit-appearance: none;
     .win-type-body();
 }
 
@@ -135,6 +130,7 @@ input::-ms-clear, input::-ms-reveal {
     margin-left: 2px;
     margin-top: -8px;
     margin-bottom: -8px;
+    width: 30px;
     height: 32px;
 }
 input {
@@ -191,14 +187,16 @@ input[type=file] {
 // Dropdown
 //
 select {
-    min-width: 296px;
+    min-width: 56px;
+    max-width: 368px;
     min-height: 32px;
     margin: 8px 0;
-    outline: 0;
     border-style: solid;
     border-width: 2px;
     background-clip: border-box;
+    background-image: none;
     box-sizing: border-box;
+    border-radius: 0;
     .win-type-body();
 
     &::-ms-value {
@@ -218,6 +216,7 @@ select {
 
 select[multiple] {
     padding: 0 0 0 12px;
+    vertical-align: bottom;
 }
 
 option {
@@ -230,8 +229,11 @@ option {
 progress {
     width: 180px;
     height: 4px;
-    border-style: none;
     -webkit-appearance: none;
+
+    &:not(:indeterminate) {
+        border-style: none;
+    }
 
     &::-ms-fill {
         border-style: none;
@@ -306,6 +308,8 @@ input[type=range] {
 
     width: 280px;
     height: 22px; // Leave enough room for tick marks
+    padding-top: 17px;
+    padding-bottom: 32px;
 
     .track() {
         height: 2px;
@@ -358,8 +362,9 @@ input[type=range].win-vertical {
 // Link
 //
 a {
-    text-decoration: none;
+    text-decoration: underline;
     cursor: pointer;
+    touch-action: manipulation;
 }
 
 //
@@ -391,7 +396,7 @@ legend {
 // Code tags
 //
 code, pre, samp {
-    font-family: "Consolas";
+    font-family: "Consolas", "Menlo", "Monaco", "Courier New", monospace;
     .win-type-body();
 }
 
@@ -425,7 +430,7 @@ h2.win-type-ellipsis, .win-type-x-large.win-type-ellipsis {
 dt, th {
     // Not using a win-type mixin because this is a unique combination of
     // font size, weight, and line height that is not covered.
-    font-size: 11pt;
+    font-size: 11px;
     font-weight: 700;
     line-height: 1.3636;
 }

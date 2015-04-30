@@ -1,5 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 
 
 module CorsicaTests {
@@ -393,7 +393,7 @@ module CorsicaTests {
         {
             name: "allSortsOfCommasInArrayExpression",
             input: "[,,1, ,, 2, 3,,]",
-            result: [, , 1, , , 2, 3, , , ] // TS eats the last trailing comma https://github.com/Microsoft/TypeScript/issues/614
+            result: [, , 1, , , 2, 3, ,]
         },
     ];
 
@@ -417,7 +417,7 @@ module CorsicaTests {
         }
 
         // NOTE: this is set to iters = 1 for checkin, we should get a perf harness up and
-        //  running and then we can put this there. For now you can set the iters to > 1 
+        //  running and then we can put this there. For now you can set the iters to > 1
         //  (presumably some large number) and it will start reporting how long it took.
         //
         testPerformance() {
@@ -456,7 +456,7 @@ people: [ { name: people[0].name, age: people[0].age }, people[1], \
         }
 
         // NOTE: this is set to iters = 1 for checkin, we should get a perf harness up and
-        //  running and then we can put this there. For now you can set the iters to > 1 
+        //  running and then we can put this there. For now you can set the iters to > 1
         //  (presumably some large number) and it will start reporting how long it took.
         //
         testPerformance2() {

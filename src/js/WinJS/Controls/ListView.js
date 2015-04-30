@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     '../Core/_Global',
     '../Core/_Base',
@@ -8,6 +8,7 @@ define([
     '../Core/_Log',
     '../Core/_Resources',
     '../Core/_WriteProfilerMark',
+    '../Animations',
     '../Animations/_TransitionAnimation',
     '../BindingList',
     '../Promise',
@@ -35,7 +36,7 @@ define([
     './ListView/_VirtualizeContentsView',
     'require-style!less/styles-listview',
     'require-style!less/colors-listview'
-], function listViewImplInit(_Global, _Base, _BaseUtils, _ErrorFromName, _Events, _Log, _Resources, _WriteProfilerMark, _TransitionAnimation, BindingList, Promise, Scheduler, _Signal, _Control, _Dispose, _ElementUtilities, _Hoverable, _ItemsManager, _SafeHtml, _TabContainer, _UI, _VersionManager, _Constants, _ItemEventsHandler, _BrowseMode, _ErrorMessages, _GroupFocusCache, _GroupsContainer, _Helpers, _ItemsContainer, _Layouts, _SelectionManager, _VirtualizeContentsView) {
+], function listViewImplInit(_Global, _Base, _BaseUtils, _ErrorFromName, _Events, _Log, _Resources, _WriteProfilerMark, Animations, _TransitionAnimation, BindingList, Promise, Scheduler, _Signal, _Control, _Dispose, _ElementUtilities, _Hoverable, _ItemsManager, _SafeHtml, _TabContainer, _UI, _VersionManager, _Constants, _ItemEventsHandler, _BrowseMode, _ErrorMessages, _GroupFocusCache, _GroupsContainer, _Helpers, _ItemsContainer, _Layouts, _SelectionManager, _VirtualizeContentsView) {
     "use strict";
 
     var transformNames = _BaseUtils._browserStyleEquivalents["transform"];
@@ -66,8 +67,6 @@ define([
     function getOffsetRight(element) {
         return element.offsetParent ? (element.offsetParent.offsetWidth - element.offsetLeft - element.offsetWidth) : 0;
     }
-
-    var AnimationHelper = _Helpers._ListViewAnimationHelper;
 
     var strings = {
         get notCompatibleWithSemanticZoom() { return "ListView can only be used with SemanticZoom if randomAccess loading behavior is specified."; },
@@ -131,8 +130,7 @@ define([
         /// <part name="selectioncheckmark" class="win-selectioncheckmark" locid="WinJS.UI.ListView_part:selectioncheckmark">A selection checkmark.</part>
         /// <part name="groupHeader" class="win-groupheader" locid="WinJS.UI.ListView_part:groupHeader">The header of a group.</part>
         /// <part name="progressbar" class="win-progress" locid="WinJS.UI.ListView_part:progressbar">The progress indicator of the ListView.</part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         ListView: _Base.Namespace._lazy(function () {
             var AffectedRange = _Base.Class.define(function () {
@@ -519,7 +517,7 @@ define([
                     }
                 },
 
-                /// <field type="String" oamOptionsDatatype="_UI.TapBehavior" locid="WinJS.UI.ListView.tapBehavior" helpKeyword="WinJS.UI.ListView.tapBehavior">
+                /// <field type="String" oamOptionsDatatype="WinJS.UI.TapBehavior" locid="WinJS.UI.ListView.tapBehavior" helpKeyword="WinJS.UI.ListView.tapBehavior">
                 /// Gets or sets how the ListView reacts when the user taps or clicks an item.
                 /// The tap or click can invoke the item, select it and invoke it, or have no
                 /// effect.
@@ -666,23 +664,23 @@ define([
                     }
                 },
 
-                /// <field type="HTMLElement" domElement="true" locid="WinJS.UI.ListView.listHeader" helpKeyword="WinJS.UI.ListView.listHeader">
+                /// <field type="HTMLElement" domElement="true" locid="WinJS.UI.ListView.header" helpKeyword="WinJS.UI.ListView.header">
                 /// Gets or sets the header to display at the start of the ListView.
                 /// </field>
-                listHeader: {
+                header: {
                     get: function () {
-                        return this._listHeader;
+                        return this._header;
                     },
                     set: function (newHeader) {
-                        _ElementUtilities.empty(this._listHeaderContainer);
-                        this._listHeader = newHeader;
+                        _ElementUtilities.empty(this._headerContainer);
+                        this._header = newHeader;
                         if (newHeader) {
-                            this._listHeader.tabIndex = this._tabIndex;
-                            this._listHeaderContainer.appendChild(newHeader);
+                            this._header.tabIndex = this._tabIndex;
+                            this._headerContainer.appendChild(newHeader);
                         }
 
                         var currentFocus = this._selection._getFocused();
-                        if (currentFocus.type === _UI.ObjectType.listHeader) {
+                        if (currentFocus.type === _UI.ObjectType.header) {
                             var targetEntity = currentFocus;
                             if (!newHeader) {
                                 targetEntity = { type: _UI.ObjectType.item, index: 0 };
@@ -695,26 +693,27 @@ define([
                             }
                         }
                         this.recalculateItemPosition();
+                        this._raiseHeaderFooterVisibilityEvent();
                     }
                 },
 
-                /// <field type="HTMLElement" domElement="true" locid="WinJS.UI.ListView.listFooter" helpKeyword="WinJS.UI.ListView.listFooter">
+                /// <field type="HTMLElement" domElement="true" locid="WinJS.UI.ListView.footer" helpKeyword="WinJS.UI.ListView.footer">
                 /// Gets or sets the footer to display at the end of the ListView.
                 /// </field>
-                listFooter: {
+                footer: {
                     get: function () {
-                        return this._listFooter;
+                        return this._footer;
                     },
                     set: function (newFooter) {
-                        _ElementUtilities.empty(this._listFooterContainer);
-                        this._listFooter = newFooter;
+                        _ElementUtilities.empty(this._footerContainer);
+                        this._footer = newFooter;
                         if (newFooter) {
-                            this._listFooter.tabIndex = this._tabIndex;
-                            this._listFooterContainer.appendChild(newFooter);
+                            this._footer.tabIndex = this._tabIndex;
+                            this._footerContainer.appendChild(newFooter);
                         }
 
                         var currentFocus = this._selection._getFocused();
-                        if (currentFocus.type === _UI.ObjectType.listFooter) {
+                        if (currentFocus.type === _UI.ObjectType.footer) {
                             var targetEntity = currentFocus;
                             if (!newFooter) {
                                 targetEntity = { type: _UI.ObjectType.item, index: 0 };
@@ -727,6 +726,7 @@ define([
                             }
                         }
                         this.recalculateItemPosition();
+                        this._raiseHeaderFooterVisibilityEvent();
                     }
                 },
 
@@ -889,8 +889,8 @@ define([
                             });
                         } else {
                             var element;
-                            if (data.type === _UI.ObjectType.listHeader || data.type === _UI.ObjectType.listFooter) {
-                                element = (data.type === _UI.ObjectType.listHeader ? this._listHeader : this._listFooter);
+                            if (data.type === _UI.ObjectType.header || data.type === _UI.ObjectType.footer) {
+                                element = (data.type === _UI.ObjectType.header ? this._header : this._footer);
                                 setItemFocused(element, !!element, { type: data.type, index: data.index });
                             } else if (data.index !== undefined) {
                                 if (data.type === _UI.ObjectType.groupHeader) {
@@ -1193,20 +1193,11 @@ define([
                     } else {
                         if (_ElementUtilities.hasClass(this._canvas, selectionModeClass)) {
                             var that = this;
-                            var animationCompleteHandler = function (e) {
-                                var isAnimationCompleteEvent = (e && e.animationName && e.animationName.indexOf(_Constants._hidingSelectionModeAnimationName) !== -1);
-                                if (isAnimationCompleteEvent || !e) {
-                                    _ElementUtilities._removeEventListener(that._canvas, "animationEnd", animationCompleteHandler, false);
-                                    _ElementUtilities.removeClass(that._canvas, hidingSelectionModeClass);
-                                }
-                            };
-
                             _Global.setTimeout(function () {
                                 _Global.setTimeout(function () {
-                                    animationCompleteHandler();
+                                    _ElementUtilities.removeClass(that._canvas, hidingSelectionModeClass);
                                 }, _Constants._hidingSelectionModeAnimationTimeout);
                             }, 50);
-                            _ElementUtilities._addEventListener(this._canvas, "animationEnd", animationCompleteHandler, false);
                             _ElementUtilities.addClass(this._canvas, hidingSelectionModeClass);
                         }
                         _ElementUtilities.removeClass(this._canvas, selectionModeClass);
@@ -1231,17 +1222,17 @@ define([
                     }
                 },
 
-                _hasListHeaderOrFooter: {
+                _hasHeaderOrFooter: {
                     get: function () {
-                        return !!(this._listHeader || this._listFooter);
+                        return !!(this._header || this._footer);
                     }
                 },
 
                 _getHeaderOrFooterFromElement: function (element) {
-                    if (this._listHeader && this._listHeader.contains(element)) {
-                        return this._listHeader;
-                    } else if (this._listFooter && this._listFooter.contains(element)) {
-                        return this._listFooter;
+                    if (this._header && this._header.contains(element)) {
+                        return this._header;
+                    } else if (this._footer && this._footer.contains(element)) {
+                        return this._footer;
                     }
 
                     return null;
@@ -1436,6 +1427,7 @@ define([
                         this._view.refresh(functorWrapper);
                     } else {
                         this._view.onScroll(functorWrapper);
+                        this._raiseHeaderFooterVisibilityEvent();
                     }
                 },
 
@@ -1519,11 +1511,11 @@ define([
                        '<div aria-hidden="true" style="position:absolute;left:50%;top:50%;width:0px;height:0px;" tabindex="-1"></div>';
 
                     this._viewport = this._element.firstElementChild;
-                    this._listHeaderContainer = this._viewport.firstElementChild;
-                    _ElementUtilities.addClass(this._listHeaderContainer, _Constants._listHeaderContainerClass);
-                    this._canvas = this._listHeaderContainer.nextElementSibling;
-                    this._listFooterContainer = this._canvas.nextElementSibling;
-                    _ElementUtilities.addClass(this._listFooterContainer, _Constants._listFooterContainerClass);
+                    this._headerContainer = this._viewport.firstElementChild;
+                    _ElementUtilities.addClass(this._headerContainer, _Constants._listHeaderContainerClass);
+                    this._canvas = this._headerContainer.nextElementSibling;
+                    this._footerContainer = this._canvas.nextElementSibling;
+                    _ElementUtilities.addClass(this._footerContainer, _Constants._listFooterContainerClass);
                     this._canvasProxy = this._canvas.firstElementChild;
                     // The deleteWrapper div is used to maintain the scroll width (after delete(s)) until the animation is done
                     this._deleteWrapper = this._canvas.nextElementSibling;
@@ -1609,7 +1601,7 @@ define([
                     } else if (entity.type === _UI.ObjectType.groupHeader) {
                         this._focusRequest = this._groups.requestHeader(entity.index);
                     } else {
-                        this._focusRequest = Promise.wrap(entity.type === _UI.ObjectType.listHeader ? this._listHeader : this._listFooter);
+                        this._focusRequest = Promise.wrap(entity.type === _UI.ObjectType.header ? this._header : this._footer);
                     }
                     this._focusRequest.then(setFocusOnItemImpl);
                 },
@@ -2596,16 +2588,16 @@ define([
                                 return that._groups.length();
                             }
                         },
-                        listHeader: {
+                        header: {
                             enumerable: true,
                             get: function () {
-                                return that.listHeader;
+                                return that.header;
                             }
                         },
-                        listFooter: {
+                        footer: {
                             enumerable: true,
                             get: function () {
-                                return that.listFooter;
+                                return that.footer;
                             }
                         }
                     });
@@ -2682,8 +2674,8 @@ define([
                     this._selection._setFocused({ type: _UI.ObjectType.item, index: 0 });
                     this._lastFocusedElementInGroupTrack = { type: _UI.ObjectType.item, index: -1 };
 
-                    this._listHeaderContainer.style.opacity = 0;
-                    this._listFooterContainer.style.opacity = 0;
+                    this._headerContainer.style.opacity = 0;
+                    this._footerContainer.style.opacity = 0;
                     this._horizontalLayout = this._initializeLayout();
                     this._resetLayoutOrientation(hadPreviousLayout);
 
@@ -2774,7 +2766,7 @@ define([
                             winItem = null;
                         if (element) {
                             entity.index = 0;
-                            entity.type = (element === this._listHeader ? _UI.ObjectType.listHeader : _UI.ObjectType.listFooter);
+                            entity.type = (element === this._header ? _UI.ObjectType.header : _UI.ObjectType.footer);
                             this._lastFocusedElementInGroupTrack = entity;
                         } else {
                             element = this._groups.headerFrom(event.target);
@@ -2934,8 +2926,8 @@ define([
                                 that._view.items.each(function (index, item) {
                                     item.tabIndex = newTabIndex;
                                 });
-                                that._listHeader && (that._listHeader.tabIndex = newTabIndex);
-                                that._listFooter && (that._listFooter.tabIndex = newTabIndex);
+                                that._header && (that._header.tabIndex = newTabIndex);
+                                that._footer && (that._footer.tabIndex = newTabIndex);
                                 that._tabIndex = newTabIndex;
                                 that._tabManager.tabIndex = newTabIndex;
                                 that._element.tabIndex = -1;
@@ -3076,8 +3068,8 @@ define([
                         that._element.dispatchEvent(visibilityEvent);
                     };
 
-                    var headerInView = this._listHeader && elementInViewport(this._listHeaderContainer);
-                    var footerInView = this._listFooter && elementInViewport(this._listFooterContainer);
+                    var headerInView = (!!this._header && elementInViewport(this._headerContainer));
+                    var footerInView = (!!this._footer && elementInViewport(this._footerContainer));
 
                     if (this._headerFooterVisibilityStatus.headerVisible !== headerInView) {
                         this._headerFooterVisibilityStatus.headerVisible = headerInView;
@@ -3091,7 +3083,9 @@ define([
 
                 _setViewState: function ListView_setViewState(state) {
                     if (state !== this._loadingState) {
-                        var detail = null;
+                        var detail = {
+                            scrolling: false
+                        };
                         // We can go from any state to itemsLoading but the rest of the states transitions must follow this
                         // order: itemsLoading -> viewPortLoaded -> itemsLoaded -> complete.
                         // Recursively set the previous state until you hit the current state or itemsLoading.
@@ -3191,7 +3185,7 @@ define([
                         this._progressIndicatorDelayTimer = Promise.timeout(_Constants._LISTVIEW_PROGRESS_DELAY).then(function () {
                             if (!that._isZombie()) {
                                 parent.appendChild(progressBar);
-                                AnimationHelper.fadeInElement(progressBar);
+                                Animations.fadeIn(progressBar);
                                 that._progressIndicatorDelayTimer = null;
                             }
                         });
@@ -3210,7 +3204,7 @@ define([
                     if (progressBar.parentNode && !this._fadingProgressBar) {
                         this._fadingProgressBar = true;
                         var that = this;
-                        AnimationHelper.fadeOutElement(progressBar).then(function () {
+                        Animations.fadeOut(progressBar).then(function () {
                             if (progressBar.parentNode) {
                                 progressBar.parentNode.removeChild(progressBar);
                             }
@@ -3266,7 +3260,7 @@ define([
                     if (focused.type === _UI.ObjectType.groupHeader) {
                         focused = { type: _UI.ObjectType.item, index: this._groups.group(focused.index).startIndex };
                     } else if (focused.type !== _UI.ObjectType.item) {
-                        focused = { type: _UI.ObjectType.item, index: (focused.type === _UI.ObjectType.listHeader ? 0 : this._cachedCount) };
+                        focused = { type: _UI.ObjectType.item, index: (focused.type === _UI.ObjectType.header ? 0 : this._cachedCount) };
                     }
 
                     if (typeof focused.index !== "number") {
@@ -3551,7 +3545,7 @@ define([
                         targetItem = group && group.header;
                     } else {
                         this._lastFocusedElementInGroupTrack = newFocus;
-                        targetItem = (newFocus.type === _UI.ObjectType.listFooter ? this._listFooter : this._listHeader);
+                        targetItem = (newFocus.type === _UI.ObjectType.footer ? this._footer : this._header);
                     }
                     this._unsetFocusOnItem(!!targetItem);
                     this._hasKeyboardFocus = true;
@@ -3585,13 +3579,13 @@ define([
                             var group = this._groups.group(newFocus.index);
                             targetItem = group && group.header;
                             break;
-                        case _UI.ObjectType.listHeader:
+                        case _UI.ObjectType.header:
                             this._lastFocusedElementInGroupTrack = newFocus;
-                            targetItem = this._listHeader;
+                            targetItem = this._header;
                             break;
-                        case _UI.ObjectType.listFooter:
+                        case _UI.ObjectType.footer:
                             this._lastFocusedElementInGroupTrack = newFocus;
-                            targetItem = this._listFooter;
+                            targetItem = this._footer;
                             break;
                     }
                     this._unsetFocusOnItem(!!targetItem);
@@ -3600,7 +3594,7 @@ define([
                 },
 
                 _drawFocusRectangle: function (item) {
-                    if (item === this._listHeader || item === this._listFooter) {
+                    if (item === this._header || item === this._footer) {
                         return;
                     }
                     if (_ElementUtilities.hasClass(item, _Constants._headerClass)) {
@@ -3618,7 +3612,7 @@ define([
                 },
 
                 _clearFocusRectangle: function (item) {
-                    if (!item || this._isZombie() || item === this._listHeader || item === this._listFooter) {
+                    if (!item || this._isZombie() || item === this._header || item === this._footer) {
                         return;
                     }
 
@@ -3744,22 +3738,18 @@ define([
                             }
                             var eventDetails = that._fireAnimationEvent(ListViewAnimationType.contentTransition);
                             that._firedAnimationEvent = true;
-                            var overflowStyle = _BaseUtils._browserStyleEquivalents["overflow-style"];
-                            var animatedElement = overflowStyle ? that._viewport : that._canvas;
                             if (!eventDetails.prevented) {
                                 that._fadingViewportOut = true;
-                                if (overflowStyle) {
-                                    animatedElement.style[overflowStyle.scriptName] = "none";
-                                }
-                                AnimationHelper.fadeOutElement(animatedElement).then(function () {
+                                that._viewport.style.overflow = "hidden";
+                                Animations.fadeOut(that._viewport).then(function () {
                                     if (that._isZombie()) { return; }
                                     that._fadingViewportOut = false;
-                                    animatedElement.style.opacity = 1.0;
+                                    that._viewport.style.opacity = 1.0;
                                     complete();
                                 });
                             } else {
                                 that._disableEntranceAnimation = true;
-                                animatedElement.style.opacity = 1.0;
+                                that._viewport.style.opacity = 1.0;
                                 complete();
                             }
                         }
@@ -3772,16 +3762,12 @@ define([
                         animationPromise: Promise.wrap()
                     };
                     var that = this;
-                    var overflowStyle = _BaseUtils._browserStyleEquivalents["overflow-style"];
-                    var animatedElement = overflowStyle ? this._viewport : this._canvas;
                     this._raiseHeaderFooterVisibilityEvent();
                     function resetViewOpacity() {
                         that._canvas.style.opacity = 1;
-                        that._listHeaderContainer.style.opacity = 1;
-                        that._listFooterContainer.style.opacity = 1;
-                        if (overflowStyle) {
-                            animatedElement.style[overflowStyle.scriptName] = "";
-                        }
+                        that._headerContainer.style.opacity = 1;
+                        that._footerContainer.style.opacity = 1;
+                        that._viewport.style.overflow = "";
                         that._raiseHeaderFooterVisibilityEvent();
                     }
 
@@ -3809,30 +3795,17 @@ define([
                             this._waitingEntranceAnimationPromise.cancel();
                         }
                         this._canvas.style.opacity = 0;
-                        if (overflowStyle) {
-                            animatedElement.style[overflowStyle.scriptName] = "none";
-                        }
-                        this._listHeaderContainer.style.opacity = 1;
-                        this._listFooterContainer.style.opacity = 1;
+                        this._viewport.style.overflow = "hidden";
+                        this._headerContainer.style.opacity = 1;
+                        this._footerContainer.style.opacity = 1;
                         this._waitingEntranceAnimationPromise = eventDetails.animationPromise.then(function () {
                             if (!that._isZombie()) {
                                 that._canvas.style.opacity = 1;
-                                var animatedElements = [animatedElement];
-                                if (animatedElement !== that._viewport) {
-                                    if (that._listHeader) {
-                                        animatedElements.push(that._listHeaderContainer);
-                                    }
-                                    if (that._listFooter) {
-                                        animatedElements.push(that._listFooterContainer);
-                                    }
-                                }
 
-                                return AnimationHelper.animateEntrance(animatedElements, firstTime).then(function () {
+                                return Animations.enterContent(that._viewport).then(function () {
                                     if (!that._isZombie()) {
                                         that._waitingEntranceAnimationPromise = null;
-                                        if (overflowStyle) {
-                                            animatedElement.style[overflowStyle.scriptName] = "";
-                                        }
+                                        that._viewport.style.overflow = "";
                                     }
                                 });
                             }
@@ -4008,13 +3981,13 @@ define([
                             case _UI.ObjectType.groupHeader:
                                 container = that._view._getHeaderContainer(entity.index);
                                 break;
-                            case _UI.ObjectType.listHeader:
+                            case _UI.ObjectType.header:
                                 alreadyCorrectedForCanvasMargins = true;
-                                container = that._listHeaderContainer;
+                                container = that._headerContainer;
                                 break;
-                            case _UI.ObjectType.listFooter:
+                            case _UI.ObjectType.footer:
                                 alreadyCorrectedForCanvasMargins = true;
-                                container = that._listFooterContainer;
+                                container = that._footerContainer;
                                 break;
                         }
 
@@ -4106,13 +4079,13 @@ define([
                     } else if (type === _UI.ObjectType.groupHeader) {
                         return (this._headerMargins ? this._headerMargins : (this._headerMargins = calculateMargins(_Constants._headerContainerClass)));
                     } else {
-                        if (!this._listHeaderFooterMargins) {
-                            this._listHeaderFooterMargins = {
+                        if (!this._headerFooterMargins) {
+                            this._headerFooterMargins = {
                                 headerMargins: calculateMargins(_Constants._listHeaderContainerClass),
                                 footerMargins: calculateMargins(_Constants._listFooterContainerClass)
                             };
                         }
-                        return this._listHeaderFooterMargins[(type === _UI.ObjectType.listHeader? "headerMargins" : "footerMargins")];
+                        return this._headerFooterMargins[(type === _UI.ObjectType.header? "headerMargins" : "footerMargins")];
                     }
                 },
 
@@ -4136,7 +4109,7 @@ define([
                 },
 
                 _ensureFirstColumnRange: function ListView_ensureFirstColumnRange(type) {
-                    if (type === _UI.ObjectType.listHeader || type === _UI.ObjectType.listFooter) {
+                    if (type === _UI.ObjectType.header || type === _UI.ObjectType.footer) {
                         // No corrections are necessary for the layout header or footer, since they exist outside of the canvas
                         return Promise.wrap();
                     }
@@ -4152,7 +4125,7 @@ define([
                 },
 
                 _correctRangeInFirstColumn: function ListView_correctRangeInFirstColumn(range, type) {
-                    if (type === _UI.ObjectType.listHeader || type === _UI.ObjectType.listFooter) {
+                    if (type === _UI.ObjectType.header || type === _UI.ObjectType.footer) {
                         // No corrections are necessary for the layout header or footer, since they exist outside of the canvas
                         return range;
                     }
@@ -4170,7 +4143,27 @@ define([
                 _updateContainers: function ListView_updateContainers(groups, count, containersDelta, modifiedElements) {
                     var that = this;
 
-                    var maxContainers = this._view.containers.length + (containersDelta > 0 ? containersDelta : 0);
+                    // If the ListView is still in the middle of asynchronously creating containers (i.e. createContainersWorker isn't done),
+                    // then we need to cap the number of containers we create here. Without the cap, we'll synchronously finish creating all
+                    // of the containers nullifying the responsiveness benefits of the asynchronous create containers worker. However, if
+                    // the worker has already finished, there's no need for the cap.
+                    var containerCountAfterEdits = this._view.containers.length + containersDelta;
+                    var asyncContainerCreationInProgress = containerCountAfterEdits < count;
+                    var maxContainers;
+                    if (asyncContainerCreationInProgress) {
+                        // Just create enough containers to handle the edits in the realized range. We need to create at least
+                        // this many containers so that we can play the edit animations.
+                        var countInsertedInRealizedRange = 0;
+                        for (var i = 0; i < modifiedElements.length; i++) {
+                            if (modifiedElements[i].oldIndex === -1) {
+                                countInsertedInRealizedRange++;
+                            }
+                        }
+                        maxContainers = this._view.containers.length + countInsertedInRealizedRange;
+                    } else {
+                        // Create enough containers for every item in the data source.
+                        maxContainers = count;
+                    }
 
                     var newTree = [];
                     var newKeyToGroupIndex = {};

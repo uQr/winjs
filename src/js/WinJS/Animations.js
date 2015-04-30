@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     'exports',
     './Core/_Global',
@@ -8,7 +8,7 @@ define([
     './Animations/_Constants',
     './Animations/_TransitionAnimation',
     './Promise'
-    ], function animationsInit(exports, _Global, _Base, _BaseUtils, _WriteProfilerMark, _Constants, _TransitionAnimation, Promise) {
+], function animationsInit(exports, _Global, _Base, _BaseUtils, _WriteProfilerMark, _Constants, _TransitionAnimation, Promise) {
     "use strict";
 
     var transformNames = _BaseUtils._browserStyleEquivalents["transform"];
@@ -74,7 +74,7 @@ define([
         return function (i, elem) {
             return _Global.getComputedStyle(elem).direction === "ltr" ? keyframe : keyframeRtl;
         };
-        }
+    }
 
     function makeArray(elements) {
         if (Array.isArray(elements) || elements instanceof _Global.NodeList || elements instanceof _Global.HTMLCollection) {
@@ -639,7 +639,7 @@ define([
     }, { // Static Members
         supportedForProcessing: false,
     });
-    
+
     //
     // Resize animation
     //  The resize animation requires 2 animations to run simultaneously in sync with each other. It's implemented
@@ -654,7 +654,7 @@ define([
         var transitionProperty = _BaseUtils._browserStyleEquivalents["transition"].scriptName;
         element.style[transitionProperty] = duration + "ms " + transformNames.cssName + " " + transition.timing;
         element.style[transformNames.scriptName] = transition.to;
-    
+
         var finish;
         return new Promise(function (c) {
             var onTransitionEnd = function (eventObject) {
@@ -662,7 +662,7 @@ define([
                     finish();
                 }
             };
-            
+
             var didFinish = false;
             finish = function () {
                 if (!didFinish) {
@@ -673,68 +673,69 @@ define([
                 }
                 c();
             };
-    
+
             // Watch dog timeout
             var timeoutId = _Global.setTimeout(function () {
                 timeoutId = _Global.setTimeout(finish, duration);
             }, 50);
-    
+
             element.addEventListener(_BaseUtils._browserEventEquivalents["transitionEnd"], onTransitionEnd);
         }, function () {
             finish(); // On cancelation, complete the promise successfully to match PVL
         });
     }
-    // See _resizeTransition's comment for documentation on *args*.
-    function growTransition(elementClipper, element, args) {
-        var diff = args.anchorTrailingEdge ? args.to.total - args.from.total : args.from.total - args.to.total;
-        var translate = args.dimension === "width" ? "translateX" : "translateY";
-        var size = args.dimension;
-    
-        // Set up
-        elementClipper.style[size] = args.to.total + "px";
-        elementClipper.style[transformNames.scriptName] = translate + "(" + diff + "px)";
-        element.style[size] = args.to.content + "px";
-        element.style[transformNames.scriptName] = translate + "(" + -diff + "px)";
-    
-        // Resolve styles
-        _Global.getComputedStyle(elementClipper).opacity;
-        _Global.getComputedStyle(element).opacity;
-        
-        // Animate
-        var transition = {
-            duration: 367,
-            timing: "cubic-bezier(0.1, 0.9, 0.2, 1)",
-            to: ""
+
+    function getResizeDefaultTransitions() {
+        return {
+            defaultResizeGrowTransition: {
+                duration: 350,
+                timing: "cubic-bezier(0.1, 0.9, 0.2, 1)"
+            },
+
+            defaultResizeShrinkTransition: {
+                duration: 120,
+                timing: "cubic-bezier(0.1, 0.9, 0.2, 1)"
+            }
         };
-        return Promise.join([
-            transformWithTransition(elementClipper,  transition),
-            transformWithTransition(element, transition)
-        ]);
     }
+
     // See _resizeTransition's comment for documentation on *args*.
-    function shrinkTransition(elementClipper, element, args) {
-        var diff = args.anchorTrailingEdge ? args.from.total - args.to.total : args.to.total - args.from.total;
+    function resizeTransition(elementClipper, element, args) {
+        var defaultTransition = getResizeDefaultTransitions()[(args.to > args.from ? "defaultResizeGrowTransition" : "defaultResizeShrinkTransition")];
+        args = _BaseUtils._merge(args, {
+            duration: args.duration === undefined ? defaultTransition.duration : args.duration,
+            timing: args.timing === undefined ? defaultTransition.timing : args.timing
+        });
+
+        var start = args.actualSize - args.from;
+        var end = args.actualSize - args.to;
+        if (!args.anchorTrailingEdge) {
+            start = -start;
+            end = -end;
+        }
         var translate = args.dimension === "width" ? "translateX" : "translateY";
-    
+        var transition = {
+            duration: args.duration,
+            timing: args.timing
+        };
+
         // Set up
-        elementClipper.style[transformNames.scriptName] = "";
-        element.style[transformNames.scriptName] = "";
-    
+        elementClipper.style[transformNames.scriptName] = translate + "(" + start + "px)";
+        element.style[transformNames.scriptName] = translate + "(" + -start + "px)";
+
         // Resolve styles
         _Global.getComputedStyle(elementClipper).opacity;
         _Global.getComputedStyle(element).opacity;
-    
-        // Animate
-        var transition = {
-            duration: 367,
-            timing: "cubic-bezier(0.1, 0.9, 0.2, 1)"
-        };
-        var clipperTransition = _BaseUtils._merge(transition, { to: translate + "(" + diff + "px)" });
-        var elementTransition = _BaseUtils._merge(transition, { to: translate + "(" + -diff + "px)" });
-        return Promise.join([
-            transformWithTransition(elementClipper, clipperTransition),
-            transformWithTransition(element, elementTransition)
-        ]);
+
+        // Merge the transitions, but don't animate yet
+        var clipperTransition = _BaseUtils._merge(transition, { to: translate + "(" + end + "px)" });
+        var elementTransition = _BaseUtils._merge(transition, { to: translate + "(" + -end + "px)" });
+
+        // Return an array so that we can prepare any other animations before beginning everything (used by commanding surface open/close animations)
+        return [
+            { element: elementClipper, transition: clipperTransition },
+            { element: element, transition: elementTransition }
+        ];
     }
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI.Animation", {
@@ -992,7 +993,7 @@ define([
             /// </returns>
             /// </signature>
             writeAnimationProfilerMark("showEdgeUI,StartTM");
-            
+
             var isTransition = options && options.mechanism === "transition";
             var offsetArray = new OffsetArray(offset, "WinJS-showEdgeUI", [{ top: "-70px", left: "0px" }]);
             return _TransitionAnimation[(isTransition ? "executeTransition" : "executeAnimation")](
@@ -1077,7 +1078,7 @@ define([
             /// </returns>
             /// </signature>
             writeAnimationProfilerMark("hideEdgeUI,StartTM");
-            
+
             var isTransition = options && options.mechanism === "transition";
             var offsetArray = new OffsetArray(offset, "WinJS-hideEdgeUI", [{ top: "-70px", left: "0px" }]);
             return _TransitionAnimation[(isTransition ? "executeTransition" : "executeAnimation")](
@@ -1426,7 +1427,7 @@ define([
             writeAnimationProfilerMark("enterContent,StartTM");
 
             var animationPromise;
-            var offsetArray = new OffsetArray(offset, "WinJS-enterContent", [{ top: "0px", left: "40px", rtlflip: true }]);
+            var offsetArray = new OffsetArray(offset, "WinJS-enterContent", [{ top: "28px", left: "0px", rtlflip: false }]);
             if (options && options.mechanism === "transition") {
                 animationPromise = _TransitionAnimation.executeTransition(
                     incoming,
@@ -1749,7 +1750,7 @@ define([
             /// </signature>
             writeAnimationProfilerMark("enterPage,StartTM");
 
-            var offsetArray = new OffsetArray(offset, "WinJS-enterPage", [{ top: "0px", left: "100px", rtlflip: true }]);
+            var offsetArray = new OffsetArray(offset, "WinJS-enterPage", [{ top: "28px", left: "0px", rtlflip: false }]);
             var promise1 = _TransitionAnimation.executeAnimation(
                 element,
                 {
@@ -2456,7 +2457,7 @@ define([
         continuumBackwardOut: function (outgoingPage) {
             /// <signature helpKeyword="WinJS.UI.Animation.continuumBackwardOut">
             /// <summary locid="WinJS.UI.Animation.continuumBackwardOut">
-            /// Execute a continuum animation, scaling down the outgoing page while.
+            /// Execute a continuum animation, scaling down the outgoing page while fading it out.
             /// </summary>
             /// <param name="outgoingPage" locid="WinJS.UI.Animation.continuumBackwardOut_p:outgoingPage">
             /// Single element to be scaled down that is the page root.
@@ -2487,6 +2488,146 @@ define([
             .then(function () { writeAnimationProfilerMark("continuumBackwardOut,StopTM"); });
         },
 
+        drillInIncoming: function (incomingPage) {
+            /// <signature helpKeyword="WinJS.UI.Animation.drillInIncoming">
+            /// <summary locid="WinJS.UI.Animation.drillInIncoming">
+            /// Execute the incoming phase of the drill in animation, scaling up the incoming page while fading it in.
+            /// </summary>
+            /// <param name="incomingPage" locid="WinJS.UI.Animation.drillInIncoming_p:incomingPage">
+            /// Element to be scaled up and faded in.
+            /// </param>
+            /// <returns type="WinJS.Promise" locid="WinJS.UI.Animation.drillInIncoming_returnValue">
+            /// Promise object that completes when the animation is complete.
+            /// </returns>
+            /// </signature>
+            writeAnimationProfilerMark("drillInIncoming,StartTM");
+
+            return _TransitionAnimation.executeTransition(
+                incomingPage,
+                [{
+                    property: transformNames.cssName,
+                    delay: 0,
+                    duration: 500,
+                    timing: "cubic-bezier(0.1,0.9,0.2,1)",
+                    from: "scale(0.84)",
+                    to: "scale(1.0)"
+                },
+                {
+                    property: "opacity",
+                    delay: 0,
+                    duration: 500,
+                    timing: "cubic-bezier(0.1,0.9,0.2,1)",
+                    from: 0,
+                    to: 1,
+                }])
+                .then(function () { writeAnimationProfilerMark("drillInIncoming,StopTM"); });
+        },
+
+        drillInOutgoing: function (outgoingPage) {
+            /// <signature helpKeyword="WinJS.UI.Animation.drillInOutgoing">
+            /// <summary locid="WinJS.UI.Animation.drillInOutgoing">
+            /// Execute the outgoing phase of the drill in animation, scaling up the outgoing page while fading it out.
+            /// </summary>
+            /// <param name="outgoingPage" locid="WinJS.UI.Animation.drillInOutgoing_p:outgoingPage">
+            /// Element to be scaled up and faded out.
+            /// </param>
+            /// <returns type="WinJS.Promise" locid="WinJS.UI.Animation.drillInOutgoing_returnValue">
+            /// Promise object that completes when the animation is complete.
+            /// </returns>
+            /// </signature>
+            writeAnimationProfilerMark("drillInOutgoing,StartTM");
+
+            return _TransitionAnimation.executeTransition(
+                outgoingPage,
+                [{
+                    property: transformNames.cssName,
+                    delay: 0,
+                    duration: 233,
+                    timing: "cubic-bezier(0.1,0.9,0.2,1)",
+                    from: "scale(1.0)",
+                    to: "scale(1.29)"
+                },
+                {
+                    property: "opacity",
+                    delay: 0,
+                    duration: 233,
+                    timing: "cubic-bezier(0.1,0.9,0.2,1)",
+                    from: 1,
+                    to: 0,
+                }])
+                .then(function () { writeAnimationProfilerMark("drillInOutgoing,StopTM"); });
+        },
+
+        drillOutIncoming: function (incomingPage) {
+            /// <signature helpKeyword="WinJS.UI.Animation.drillOutIncoming">
+            /// <summary locid="WinJS.UI.Animation.drillOutIncoming">
+            /// Execute the incoming phase of the drill out animation, scaling down the incoming page while fading it in.
+            /// </summary>
+            /// <param name="incomingPage" locid="WinJS.UI.Animation.drillOutIncoming_p:incomingPage">
+            /// Element to be scaled up and faded in.
+            /// </param>
+            /// <returns type="WinJS.Promise" locid="WinJS.UI.Animation.drillOutIncoming_returnValue">
+            /// Promise object that completes when the animation is complete.
+            /// </returns>
+            /// </signature>
+            writeAnimationProfilerMark("drillOutIncoming,StartTM");
+
+            return _TransitionAnimation.executeTransition(
+                incomingPage,
+                [{
+                    property: transformNames.cssName,
+                    delay: 0,
+                    duration: 500,
+                    timing: "cubic-bezier(0.1,0.9,0.2,1)",
+                    from: "scale(1.29)",
+                    to: "scale(1.0)"
+                },
+                {
+                    property: "opacity",
+                    delay: 0,
+                    duration: 500,
+                    timing: "cubic-bezier(0.1,0.9,0.2,1)",
+                    from: 0,
+                    to: 1,
+                }])
+                .then(function () { writeAnimationProfilerMark("drillOutIncoming,StopTM"); });
+        },
+
+        drillOutOutgoing: function (outgoingPage) {
+            /// <signature helpKeyword="WinJS.UI.Animation.drillOutOutgoing">
+            /// <summary locid="WinJS.UI.Animation.drillOutOutgoing">
+            /// Execute the outgoing phase of the drill out animation, scaling down the outgoing page while fading it out.
+            /// </summary>
+            /// <param name="outgoingPage" locid="WinJS.UI.Animation.drillOutOutgoing_p:outgoingPage">
+            /// Element to be scaled down and faded out.
+            /// </param>
+            /// <returns type="WinJS.Promise" locid="WinJS.UI.Animation.drillOutOutgoing_returnValue">
+            /// Promise object that completes when the animation is complete.
+            /// </returns>
+            /// </signature>
+            writeAnimationProfilerMark("drillOutOutgoing,StartTM");
+
+            return _TransitionAnimation.executeTransition(
+                outgoingPage,
+                [{
+                    property: transformNames.cssName,
+                    delay: 0,
+                    duration: 233,
+                    timing: "cubic-bezier(0.1,0.9,0.2,1)",
+                    from: "scale(1.0)",
+                    to: "scale(0.84)"
+                },
+                {
+                    property: "opacity",
+                    delay: 0,
+                    duration: 233,
+                    timing: "cubic-bezier(0.1,0.9,0.2,1)",
+                    from: 1,
+                    to: 0,
+                }])
+                .then(function () { writeAnimationProfilerMark("drillOutOutgoing,StopTM"); });
+        },
+
         createPageNavigationAnimations: function (currentPreferredAnimation, nextPreferredAnimation, movingBackwards) {
             /// <signature helpKeyword="WinJS.UI.Animation.createPageNavigationAnimations" >
             /// <summary locid="WinJS.UI.Animation.createPageNavigationAnimations">
@@ -2509,36 +2650,148 @@ define([
             function emptyAnimationFunction() {
                 return Promise.wrap();
             }
-            
+
             return {
                 exit: emptyAnimationFunction,
                 entrance: exports.enterPage
             };
         },
-        
+
         // Plays an animation which makes an element look like it is resizing in 1 dimension. Arguments:
         // - elementClipper: The parent of *element*. It shouldn't have any margin, border, or padding and its
         //   size should match element's size. Its purpose is to clip *element* during the animation to give
         //   it the illusion that it is resizing.
         // - element: The element that should look like it's resizing.
-        // - args: An object with the following required properties: 
-        //   - from: An object representing the old width/height of the element.
-        //   - to: An object representing the new width/height of the element.
-        //     from/to are objects of the form { content: number; total: number; }. "content" is the
-        //     width/height of *element*'s content box (e.g. getContentWidth). "total" is the width/height
-        //     of *element*'s margin box (e.g. getTotalWidth).
+        // - args: An object with the following properties (each is required unless noted otherwise):
+        //   - from: A number representing the old total width/height of the element.
+        //   - to: A number representing the new total width/height of the element.
+        //   - actualSize: A number representing the actual total width/height of the element (should be at least
+        //     as big as from and to). The element should be at *actualSize* when this function is called.
+        //     from/to/actualSize represent the width/height of *element*'s margin box (e.g. getTotalWidth).
         //   - dimension: The dimension on which *element* is resizing. Either "width" or "height".
-        //   - anchorTrailingEdge: During the resize animation, one edge will move and the other edge will
-        //     remain where it is. This flag specifies which edge is anchored (i.e. won't move).
+        //   - anchorTrailingEdge (optional): During the resize animation, one edge will move and the other
+        //     edge will remain where it is. This flag specifies which edge is anchored (i.e. won't move).
+        //   - duration (optional): Number representing the duration of the animation in milliseconds.
+        //   - timing (optional): String representing the CSS timing function that controls the progress of the animation.
         //
         _resizeTransition: function Utilities_resizeTransition(elementClipper, element, args) {
-            if (args.to.total > args.from.total) {
-                return growTransition(elementClipper, element, args);
-            } else if (args.to.total < args.from.total) {
-                return shrinkTransition(elementClipper, element, args);
-            } else {
+            if (args.to === args.from) {
                 return Promise.as();
+            } else {
+                var animationsToPlay = resizeTransition(elementClipper, element, args);
+                var animationPromises = [];
+                for (var i = 0, len = animationsToPlay.length; i < len; i++) {
+                    animationPromises.push(transformWithTransition(animationsToPlay[i].element, animationsToPlay[i].transition));
+                }
+                return Promise.join(animationPromises);
             }
+        },
+
+        _commandingSurfaceOpenAnimation: function Utilities_commandingSurfaceOpenAnimation(args) {
+            var actionAreaClipper = args.actionAreaClipper,
+                actionArea = args.actionArea,
+                overflowAreaClipper = args.overflowAreaClipper,
+                overflowArea = args.overflowArea,
+                closedHeight = args.oldHeight,
+                openedHeight = args.newHeight,
+                overflowAreaHeight = args.overflowAreaHeight,
+                menuPositionedAbove = args.menuPositionedAbove;
+            var deltaHeight = openedHeight - closedHeight;
+            var actionAreaAnimations = [];
+            var transitionToUse = getResizeDefaultTransitions().defaultResizeGrowTransition;
+
+            // The commanding surface open animation is a combination of animations. We need to animate the actionArea and overflowArea
+            // elements expanding and appearing. The first animation we prepare is the animation on the actionArea. This animation changes depending
+            // on whether the overflow menu will appear above or below the commanding surface.
+            // When the menu is positioned above, we can do a simple translation to get the animation we want.
+            // When the menu is positioned below, we have to do a resize transition using the actionArea's clipper in order to animate the surface expanding.
+            // In either case, we don't want to play the animation immediately because the overflowArea's animation still needs to be set up,
+            // The animations that need to be played on the actionArea elements will be stored in actionAreaAnimations until after the overflowArea
+            // animations are prepared, so that we can begin every animation at once. We do this to avoid a small 1-2px gap appearing between the overflowArea
+            // and the actionArea that would appear were we to start these animations at separate times
+            if (menuPositionedAbove) {
+                actionArea.style[transformNames.scriptName] = "translateY(" + deltaHeight + "px)";
+                _Global.getComputedStyle(actionArea).opacity;
+                var transition = _BaseUtils._merge(transitionToUse, { to: "translateY(0px)" });
+                actionAreaAnimations.push({ element: actionArea, transition: transition });
+            } else {
+                actionAreaAnimations = resizeTransition(actionAreaClipper, actionArea, {
+                    from: closedHeight,
+                    to: openedHeight,
+                    actualSize: openedHeight,
+                    dimension: "height",
+                    anchorTrailingEdge: false
+                });
+            }
+
+            // Now we set up the overflowArea animations. The overflowArea animation has two parts:
+            // The first animation is played on the overflowAreaClipper. This animation is a translation animation that we play that makes it look like the
+            // overflow menu is moving up along with the actionArea as it expands.
+            // The next animation is played on the overflowArea itself, which we animate up/down by the full size of the overflowArea. 
+            // When combined, it makes it look like the overflowArea is sliding in its content while it slides up with the actionArea.
+            // Since the overflowArea and its clipper are in their final positions when this animation function is called, we apply an opposite translation
+            // to move them both to where they would have been just before the surface opened, then animate them going to translateY(0).
+            overflowAreaClipper.style[transformNames.scriptName] = "translateY(" + (menuPositionedAbove ? deltaHeight : -deltaHeight) + "px)";
+            overflowArea.style[transformNames.scriptName] = "translateY(" + (menuPositionedAbove ? overflowAreaHeight : -overflowAreaHeight) + "px)";
+
+            // Resolve styles on the overflowArea and overflowAreaClipper to prepare them for animation
+            _Global.getComputedStyle(overflowAreaClipper).opacity;
+            _Global.getComputedStyle(overflowArea).opacity;
+
+            var animationPromises = [];
+            for (var i = 0, len = actionAreaAnimations.length; i < len; i++) {
+                animationPromises.push(transformWithTransition(actionAreaAnimations[i].element, actionAreaAnimations[i].transition));
+            }
+            var overflowAreaTransition = _BaseUtils._merge(transitionToUse, { to: "translateY(0px)" });
+            animationPromises.push(transformWithTransition(overflowAreaClipper, overflowAreaTransition));
+            animationPromises.push(transformWithTransition(overflowArea, overflowAreaTransition));
+            return Promise.join(animationPromises);
+        },
+
+        _commandingSurfaceCloseAnimation: function Utilities_commandingSurfaceCloseAnimation(args) {
+            var actionAreaClipper = args.actionAreaClipper,
+                actionArea = args.actionArea,
+                overflowAreaClipper = args.overflowAreaClipper,
+                overflowArea = args.overflowArea,
+                openedHeight = args.oldHeight,
+                closedHeight = args.newHeight,
+                overflowAreaHeight = args.overflowAreaHeight,
+                menuPositionedAbove = args.menuPositionedAbove;
+            var deltaHeight = closedHeight - openedHeight;
+            var actionAreaAnimations = [];
+            var transitionToUse = getResizeDefaultTransitions().defaultResizeShrinkTransition;
+            if (menuPositionedAbove) {
+                actionArea.style[transformNames.scriptName] = "translateY(0px)";
+                _Global.getComputedStyle(actionArea).opacity;
+                var transition = _BaseUtils._merge(transitionToUse, { to: "translateY(" + -deltaHeight + "px)" });
+                actionAreaAnimations.push({ element: actionArea, transition: transition });
+            } else {
+                actionAreaAnimations = resizeTransition(actionAreaClipper, actionArea, {
+                    from: openedHeight,
+                    to: closedHeight,
+                    actualSize: openedHeight,
+                    dimension: "height",
+                    anchorTrailingEdge: false
+                });
+            }
+            // Set up
+            overflowAreaClipper.style[transformNames.scriptName] = "translateY(0px)";
+            overflowArea.style[transformNames.scriptName] = "translateY(0px)";
+
+            // Resolve styles on the overflowArea and overflowAreaClipper to prepare them for animation
+            _Global.getComputedStyle(overflowAreaClipper).opacity;
+            _Global.getComputedStyle(overflowArea).opacity;
+
+            // Now that everything's set up, we can kick off all the animations in unision
+            var animationPromises = [];
+            for (var i = 0, len = actionAreaAnimations.length; i < len; i++) {
+                animationPromises.push(transformWithTransition(actionAreaAnimations[i].element, actionAreaAnimations[i].transition));
+            }
+            var overflowAreaClipperTransition = _BaseUtils._merge(transitionToUse, { to: "translateY(" + (menuPositionedAbove ? -deltaHeight : deltaHeight) + "px)" });
+            var overflowAreaTransition = _BaseUtils._merge(transitionToUse, { to: "translateY(" + (menuPositionedAbove ? overflowAreaHeight : -overflowAreaHeight) + "px)" });
+            animationPromises.push(transformWithTransition(overflowAreaClipper, overflowAreaClipperTransition));
+            animationPromises.push(transformWithTransition(overflowArea, overflowAreaTransition));
+            return Promise.join(animationPromises);
         }
     });
 

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 
 interface Object {
     [key: string]: any;
@@ -13,8 +13,13 @@ interface IStyleEquivalentsMap {
     [key: string]: IStyleEquivalents;
 }
 
+interface IOpenCloseMachine {
+    _state: { name: string; }
+}
+
+
 declare module WinJS {
-    
+
     interface IPosition {
         left: number;
         top: number;
@@ -56,7 +61,7 @@ declare module WinJS {
 
         function _require(dep: string, callback);
         function _require(deps: string[], callback);
-        function _uniqueID(e: HTMLElement):string;
+        function _uniqueID(e: HTMLElement): string;
         function _isDOMElement(e: HTMLElement): boolean;
 
         function _yieldForEvents(handler: Function);
@@ -102,6 +107,14 @@ declare module WinJS {
         var _getLowestTabIndexInList;
         var _MSPointerEvent;
         var _supportsSnapPoints: boolean;
+
+        function _convertToPrecisePixels(value: string): number;
+        function _getPreciseTotalHeight(element: HTMLElement): number;
+        function _getPreciseTotalWidth(element: HTMLElement): number;
+        function _getPreciseContentHeight(element: HTMLElement): number;
+        function _getPreciseContentWidth(element: HTMLElement): number;
+        function _getPreciseMargins(element: HTMLElement): { top: number; right: number; bottom: number; left: number; };
+
     }
 
     module Resources {
@@ -122,11 +135,37 @@ declare module WinJS {
         var _CallExpression;
         var _IdentifierExpression;
         var _GroupFocusCache;
+        
+        module _LightDismissService {
+            interface ILightDismissInfo {
+                reason: string;
+                active: boolean;
+                stopPropagation(): void;
+                preventDefault(): void;
+            }
+            
+            interface ILightDismissable {
+                setZIndex(zIndex: string): void;
+                getZIndexCount(): number;
+                containsElement(element: HTMLElement): boolean;
+                onActivate(): void;
+                onFocus(element: HTMLElement): void;
+                onHide(): void;
+                onShouldLightDismiss(info: ILightDismissInfo): boolean;
+                onLightDismiss(info: ILightDismissInfo): void;
+            }
+            
+            function shown(client: ILightDismissable): void;
+            function hidden(client: ILightDismissable): void;
+            function isShown(client: ILightDismissable): boolean;
+            function isTopmost(client: ILightDismissable): boolean;
+            function _clickEaterTapped(): void;
+        }
 
         class _ParallelWorkQueue {
             constructor(maxRunning: number);
             sort(sortFunc: (a: any, b: any) => number);
-            queue(f:()=>WinJS.Promise<any>, data?:any, first?:boolean);
+            queue(f: () => WinJS.Promise<any>, data?: any, first?: boolean);
         }
 
         class PrivateToggleSwitch extends WinJS.UI.ToggleSwitch {
@@ -154,35 +193,7 @@ declare module WinJS {
             static _DELAY_RESHOW_INFOTIP_NONTOUCH: number;
             static _RESHOW_THRESHOLD: number;
         }
-        
-        interface ContentDialogHideInfo {
-            reason: string;
-        }
-        
-        interface ContentDialogHideEvent extends Event {
-            detail: ContentDialogHideInfo;
-        }
-        
-        class ContentDialog {
-            constructor(element?: HTMLElement, options?: any);
-            element: HTMLElement;
-            hidden: boolean;
-            title: string;
-            primaryCommandText: string;
-            primaryCommandDisabled: boolean;
-            secondaryCommandText: string;
-            secondaryCommandDisabled: boolean;
-            show(): Promise<ContentDialogHideInfo>;
-            hide(reason?: any): void;
-            dispose(): void;
-            addEventListener(type: string, listener: Function, useCapture?: boolean): void;
-            removeEventListener(type: string, listener: Function, useCapture?: boolean): void;
-            onbeforeshow(eventInfo: Event): void;
-            onaftershow(eventInfo: Event): void;
-            onbeforehide(eventInfo: ContentDialogHideEvent): void;
-            onafterhide(eventInfo: ContentDialogHideEvent): void;
-        }
-        
+
         interface IContentDialogDom {
             root: HTMLElement;
             backgroundOverlay: HTMLElement;
@@ -195,7 +206,7 @@ declare module WinJS {
             endBodyTab: HTMLElement;
             content: HTMLElement;
         }
-        
+
         class PrivateContentDialog extends WinJS.UI.ContentDialog {
             static _ClassNames: any;
             _playEntranceAnimation(): Promise<any>;
@@ -206,23 +217,23 @@ declare module WinJS {
             _updateTabIndices();
             _updateTabIndicesImpl();
         }
-        
+
         class PrivateSplitView extends WinJS.UI.SplitView {
             static _ClassNames: {
                 splitView: string;
                 pane: string;
                 content: string;
-                // hidden/shown
-                paneHidden: string;
-                paneShown: string;
+                // closed/opened
+                paneOpened: string;
+                paneClosed: string;
             }
-            
+
             _playShowAnimation(): Promise<any>;
             _playHideAnimation(): Promise<any>;
             _prepareAnimation(paneRect: any, contentRect: any): void;
             _clearAnimation(): void;
             _disposed: boolean;
-            _state: any;
+            _machine: IOpenCloseMachine
         }
 
         interface ISelect {
@@ -260,11 +271,10 @@ declare module WinJS {
         var _scrollableClass: string;
         var _containerClass: string;
         var _headerContainerClass: string;
-        var _listViewSupportsCrossSlideClass: string;
 
         module _ListViewAnimationHelper {
             function fadeInElement(element): Promise<any>;
-            function fadeOutElement(element): Promise < any>;
+            function fadeOutElement(element): Promise<any>;
             function animateEntrance(canvas, firstEntrance): Promise<any>;
         }
 
@@ -412,24 +422,54 @@ declare module WinJS {
             _sizes;
         }
 
-        class PrivateToolBar extends WinJS.UI.ToolBar {
+        class PrivateCommandingSurface extends WinJS.UI._CommandingSurface {
             _disposed: boolean;
             _primaryCommands: ICommand[];
             _secondaryCommands: ICommand[];
-            _overflowButton: HTMLButtonElement;
-            _mainActionArea: HTMLElement;
-            _menu: WinJS.UI.Menu;
-            _separatorWidth: number;
-            _standardCommandWidth: number;
-            _overflowButtonWidth: number;
             _getCommandWidth(command: ICommand): number;
-            _customContentFlyout: WinJS.UI.Flyout;
-            _customContentContainer: HTMLElement;
-            _inlineOverflowArea: HTMLElement;
+            _contentFlyout: WinJS.UI.Flyout;
+            _contentFlyoutInterior: HTMLElement;
+            _dom: {
+                root: HTMLElement;
+                actionArea: HTMLElement;
+                actionAreaContainer: HTMLElement;
+                spacer: HTMLDivElement;
+                overflowButton: HTMLButtonElement;
+                overflowArea: HTMLElement;
+                overflowAreaContainer: HTMLElement;
+            };
+            _machine: IOpenCloseMachine;
         }
 
-        class PrivateCommand extends WinJS.UI.AppBarCommand implements ICommand {
-            priority: number;
+        class PrivateAppBar extends WinJS.UI.AppBar {
+            _disposed: boolean;
+            _dom: {
+                root: HTMLElement;
+                commandingSurfaceEl: HTMLElement;
+            };
+            _commandingSurface: WinJS.UI.PrivateCommandingSurface;
+            _shouldAdjustForShowingKeyboard: () => boolean;
+            _handleShowingKeyboard: () => Promise<any>;
+            _handleHidingKeyboard: () => void;
+            _updateDomImpl_renderedState: {
+                adjustedOffsets: { top: string; bottom: string; }; 
+            }
+            _dismissable: _LightDismissService.ILightDismissable;
+        }
+
+        class PrivateToolBar extends WinJS.UI.ToolBar {
+            _disposed: boolean;
+            _dom: {
+                root: HTMLElement;
+                commandingSurfaceEl: HTMLElement;
+                placeHolder: HTMLElement;
+            };
+            _commandingSurface: WinJS.UI.PrivateCommandingSurface;
+            _dismissable: _LightDismissService.ILightDismissable;
+            _handleShowingKeyboard: () => void;
+        }
+
+        class PrivateCommand extends WinJS.UI.AppBarCommand {
             winControl: ICommand;
             _commandBarIconButton;
             _disposed;
@@ -437,31 +477,33 @@ declare module WinJS {
             _lastElementFocus;
         }
 
-        // Move to WinJS.d.ts after the ToolBar API review
-        export interface ICommand {
+        /**
+        * Remnants of the previous implementation of the AppBar control, contains limited functionality. 
+          Currently only used by NavBar and is planned to be replaced by a new implementation.
+        **/
+        class _LegacyAppBar {
+            constructor(element?: HTMLElement, options?: any);
+            onafterclose(eventInfo: Event): void;
+            onafteropen(eventInfo: Event): void;
+            onbeforeclose(eventInfo: Event): void;
+            onbeforeopen(eventInfo: Event): void;
             addEventListener(type: string, listener: Function, useCapture?: boolean): void;
+            dispatchEvent(type: string, eventProperties: any): boolean;
             dispose(): void;
+            getCommandById(id: string): AppBarCommand;
+            close(): void;
+            hideCommands(commands: any[], immediate?: boolean): void;
             removeEventListener(type: string, listener: Function, useCapture?: boolean): void;
-            disabled: boolean;
+            open(): void;
+            showCommands(commands: any[], immediate?: boolean): void;
+            showOnlyCommands(commands: any[], immediate?: boolean): void;
+            closedDisplayMode: string;
+            commands: AppBarCommand[];
             element: HTMLElement;
-            extraClass: string;
-            firstElementFocus: HTMLElement;
-            flyout: WinJS.UI.Flyout;
-            hidden: boolean;
-            icon: string;
-            id: string;
-            label: string;
-            lastElementFocus: HTMLElement;
-            onclick: Function;
-            section: string;
-            selected: boolean;
-            tooltip: string;
-            type: string;
-            priority: number;
-            winControl: ICommand
+            opened: boolean;
+            placement: string;
         }
-
-        class PrivateAppBar extends AppBar {
+        class PrivateLegacyAppBar extends _LegacyAppBar {
             getCommandById(id: string): PrivateCommand;
             showCommands(commands: any[], immediate?: boolean): void;
             showCommands(commands: any, immediate?: boolean): void;
@@ -475,7 +517,9 @@ declare module WinJS {
             _uniqueId;
             _updateFirstAndFinalDiv;
             _layout;
+            _layoutImpl;
             _visiblePosition;
+            _invokeButton: HTMLButtonElement;
 
             static _currentAppBarId;
             static _appBarsSynchronizationPromise;
@@ -566,6 +610,7 @@ declare module WinJS {
             _navMode;
             _currentScrollTargetLocation;
             _viewportWidth;
+            _headerItemsWidth: number;
 
             static _ClassName;
             static _EventName;
@@ -576,139 +621,38 @@ declare module WinJS {
             static _ClassName;
         }
 
-        /**
-         * A rich input box that provides suggestions as the user types.
-        **/
-        class AutoSuggestBox {
-            //#region Constructors
-
-            /**
-             * Creates a new AutoSuggestBox.
-             * @constructor 
-             * @param element The DOM element hosts the new AutoSuggestBox.
-             * @param options An object that contains one or more property/value pairs to apply to the new control. Each property of the options object corresponds to one of the control's properties or events.
-            **/
-            constructor(element?: HTMLElement, options?: any);
-
-            //#endregion Constructors
-
-            //#region Events
-
-            /**
-             * Raised when the user or the app changes the queryText.
-             * @param eventInfo An object that contains information about the event. The detail property of this object contains the following sub-properties: detail.language, detail.queryText, detail.linguisticDetails.
-            **/
-            onquerychanged(eventInfo: CustomEvent): void;
-
-            /**
-             * Raised awhen the user presses Enter.
-             * @param eventInfo An object that contains information about the event. The detail property of this object contains the following sub-properties: detail.language, detail.queryText, detail.linguisticDetails, detail.keyModifiers.
-            **/
-            onquerysubmitted(eventInfo: CustomEvent): void;
-
-            /**
-             * Raised when the user selects a suggested option for their query.
-             * @param eventInfo An object that contains information about the event. The detail property of this object contains the following sub-properties: detail.tag, detail.keyModifiers, detail.storageFile.
-            **/
-            onresultsuggestionschosen(eventInfo: CustomEvent): void;
-
-            /**
-             * Raised when the system requests suggestions from this app.
-             * @param eventInfo An object that contains information about the event. The detail property of this object contains the following sub-properties: detail.language, detail.linguisticDetails, detail.queryText, detail.searchSuggestionCollection.
-            **/
-            onsuggestionsrequested(eventInfo: CustomEvent): void;
-
-            //#endregion Events
-
-            //#region Methods
-
-            /**
-             * Registers an event handler for the specified event.
-             * @param eventName The name of the event to handle. Note that you drop the "on" when specifying the event name. For example, instead of specifying "onclick", you specify "click".
-             * @param eventHandler The event handler function to associate with the event.
-             * @param useCapture Set to true to register the event handler for the capturing phase; otherwise, set to false to register the event handler for the bubbling phase.
-            **/
-            addEventListener(eventName: string, eventHandler: Function, useCapture?: boolean): void;
-
-            /**
-             * Raises an event of the specified type and with additional properties.
-             * @param type The type (name) of the event.
-             * @param eventProperties The set of additional properties to be attached to the event object when the event is raised.
-             * @returns true if preventDefault was called on the event, otherwise false.
-            **/
-            dispatchEvent(type: string, eventProperties: any): boolean;
-
-            /**
-             * Releases resources held by this AutoSuggestBox. Call this method when the AutoSuggestBox is no longer needed. After calling this method, the AutoSuggestBox becomes unusable.
-            **/
-            dispose(): void;
-
-            /**
-             * Removes an event handler that the addEventListener method registered.
-             * @param eventName The name of the event that the event handler is registered for.
-             * @param eventCallback The event handler function to remove.
-             * @param useCapture Set to true to remove the capturing phase event handler; set to false to remove the bubbling phase event handler.
-            **/
-            removeEventListener(eventName: string, eventCallback: Function, useCapture?: boolean): void;
-
-            //#endregion Methods
-
-            //#region Properties
-
-            /**
-             * Gets or sets whether the first suggestion is chosen when the user presses Enter.
-            **/
-            chooseSuggestionOnEnter: boolean;
-
-            /**
-             * Gets or sets a value that specifies whether the AutoSuggestBox is disabled. If the control is disabled, it won't receive focus.
-            **/
-            disabled: boolean;
-
-            /**
-             * Gets the DOM element that hosts the AutoSuggestBox.
-            **/
-            element: HTMLElement;
-
-            /**
-             * Gets or sets the placeholder text for the AutoSuggestBox. This text is displayed if there is no other text in the input box.
-            **/
-            placeholderText: string;
-
-            /**
-             * Gets or sets the query text for the AutoSuggestBox.
-            **/
-            queryText: string;
-
-            /**
-             * Gets or sets the history context. This context is used a secondary key (the app ID is the primary key) for storing history.
-            **/
-            searchHistoryContext: string;
-
-            /**
-             * Gets or sets a value that specifies whether history is disabled.
-            **/
-            searchHistoryDisabled: boolean;
-
-            //#endregion Properties
-
-            /**
-             * Creates the image argument for SearchSuggestionCollection.appendResultSuggestion.
-             * @param url The url of the image.
-            **/
-            static createResultSuggestionImage(url: string): any;
-
-        }
-
-        
-        class ToolBar {
+        class _CommandingSurface {
+            public static ClosedDisplayMode: {
+                none: string;
+                minimal: string;
+                compact: string;
+                full: string;
+            };
+            public static OverflowDirection: {
+                bottom: string;
+                top: string;
+            };
             public element: HTMLElement;
-            public inlineMenu: boolean;
             public data: WinJS.Binding.List<ICommand>;
-            public extraClass: string;
             constructor(element?: HTMLElement, options?: any);
             public dispose(): void;
             public forceLayout(): void;
+            public closedDisplayMode: string;
+            public createOpenAnimation(): { execute(): Promise<any> };
+            public createCloseAnimation(): { execute(): Promise<any> };
+            public open(): void;
+            public close(): void;
+            public opened: boolean;
+            public getCommandById(id: string): ICommand;
+            public showOnlyCommands(commands: Array<string|ICommand>): void;
+            public onbeforeopen: (ev: CustomEvent) => void;
+            public onafteropen: (ev: CustomEvent) => void;
+            public onbeforeclose: (ev: CustomEvent) => void;
+            public onafterclose: (ev: CustomEvent) => void;
+            public overflowDirection: string;
+            public addEventListener(eventName: string, eventHandler: Function, useCapture?: boolean): void;
+            public removeEventListener(eventName: string, eventCallback: Function, useCapture?: boolean): void;
+            public dispatchEvent(type: string, eventProperties: any): boolean;
         }
 
         class PrivateItemContainer extends WinJS.UI.ItemContainer {
@@ -727,6 +671,13 @@ declare module WinJS {
         var _RIGHT_MSPOINTER_BUTTON;
         var _selectedClass;
         var _keyboardSeenLast;
+        var _lastInputType;
+        var _InputTypes: {
+            mouse: string;
+            keyboard: string;
+            touch: string;
+            pen: string;
+        };
         var _itemFocusOutlineClass;
         var _itemBoxClass;
         var _itemClass;
@@ -749,7 +700,7 @@ declare module WinJS {
 
         var _seenUrlsMaxSize: number;
         var _seenUrlsMRUMaxSize: number;
-        function _seenUrl(url:string);
+        function _seenUrl(url: string);
         function _getSeenUrlsMRU(): string[];
         function _getSeenUrls(): string[];
 
@@ -771,8 +722,8 @@ declare module WinJS {
         var _Overlay;
         var _AppBarCommandsLayout;
 
-        module DirectionalFocus {
-            function _dFocus(direction: string, referenceRect?: IRect): void;
+        module XYFocus {
+            function _xyFocus(direction: string, referenceRect?: IRect): void;
         }
 
         module Pages {
@@ -783,7 +734,6 @@ declare module WinJS {
         module Fragments {
             var _cacheStore;
             function clearCache();
-            var _forceLocal;
             var _getFragmentContents;
             var _writeProfilerMark;
         }

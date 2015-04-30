@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     'exports',
     './_Global',
@@ -13,7 +13,6 @@ define([
         "Windows.ApplicationModel.DesignMode.designModeEnabled",
         "Windows.ApplicationModel.Resources.Core.ResourceContext",
         "Windows.ApplicationModel.Resources.Core.ResourceManager",
-        "Windows.ApplicationModel.Search.Core.SearchSuggestionManager",
         "Windows.ApplicationModel.Search.SearchQueryLinguisticDetails",
         "Windows.Data.Text.SemanticTextQuery",
         "Windows.Foundation.Collections.CollectionChange",

@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ListView.ts" />
 /// <deploy src="../TestData/" />
@@ -88,13 +86,11 @@ module WinJSTests {
             newNode.style.width = "500px";
             newNode.style.height = "500px";
             document.body.appendChild(newNode);
-            Helper.ListView.removeListviewAnimations();
         }
         tearDown() {
             LiveUnit.LoggingCore.logComment("In tearDown");
             var element = document.getElementById("NonDragAndSelectTests");
             document.body.removeChild(element);
-            Helper.ListView.restoreListviewAnimations();
         }
 
     }

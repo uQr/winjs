@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 // Glyph Enumeration
 /// <dictionary>Segoe</dictionary>
 define([
@@ -203,7 +203,8 @@ define([
                     "threebars",
                     "fourbars",
                     "scan",
-                    "preview"];
+                    "preview",
+                    "hamburger"];
 
     // Provide properties to grab resources for each of the icons
     /// <summary locid="WinJS.UI.AppBarIcon">

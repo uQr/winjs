@@ -5,8 +5,9 @@ module SplitViewTests {
     
     export interface ISplitViewOptions {
         panePlacement: string;
-        shownDisplayMode: string;
-        paneHidden: boolean;
+        closedDisplayMode: string;
+        openedDisplayMode: string;
+        paneOpened: boolean;
     }
                 
     export interface IPrivateSplitViewOptions extends ISplitViewOptions {
@@ -19,8 +20,9 @@ module SplitViewTests {
             function createSplitView(providedOptions={}): WinJS.UI.PrivateSplitView {
                 var defaultOptions: IPrivateSplitViewOptions = {
                     panePlacement: "left",
-                    shownDisplayMode: "overlay",
-                    paneHidden: true,
+                    closedDisplayMode: "inline",
+                    openedDisplayMode: "overlay",
+                    paneOpened: false,
                     paneHTML: "<button>Button 1</button><button>Button 2</button>",
                     contentHTML: "Some content"
                 };

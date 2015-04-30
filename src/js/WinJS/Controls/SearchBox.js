@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 define([
     '../Core/_Global',
     '../Core/_WinRT',
@@ -41,18 +41,24 @@ define([
         /// <part name="searchbox-suggestion-selected" class="win-searchbox-suggestion-selected" locid="WinJS.UI.SearchBox_part:Suggestion_Selected">
         /// Styles the currently selected suggestion.
         /// </part>
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+        /// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
         /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
         SearchBox: _Base.Namespace._lazy(function () {
 
             // Enums
             var ClassName = {
                 searchBox: "win-searchbox",
+                searchBoxDisabled: "win-searchbox-disabled",
                 searchBoxInput: "win-searchbox-input",
+                searchBoxInputFocus: "win-searchbox-input-focus",
                 searchBoxButton: "win-searchbox-button",
                 searchBoxFlyout: "win-searchbox-flyout",
+                searchBoxFlyoutHighlightText: "win-searchbox-flyout-highlighttext",
+                searchBoxHitHighlightSpan: "win-searchbox-hithighlight-span",
                 searchBoxSuggestionResult: "win-searchbox-suggestion-result",
+                searchBoxSuggestionResultText: "win-searchbox-suggestion-result-text",
+                searchBoxSuggestionResultDetailedText: "win-searchbox-suggestion-result-detailed-text",
+                searchBoxSuggestionSelected: "win-searchbox-suggestion-selected",
                 searchBoxSuggestionQuery: "win-searchbox-suggestion-query",
                 searchBoxSuggestionSeparator: "win-searchbox-suggestion-separator",
                 searchBoxButtonInputFocus: "win-searchbox-button-input-focus",
@@ -93,14 +99,28 @@ define([
                 this._requestingFocusOnKeyboardInputHandlerBind = this._requestingFocusOnKeyboardInputHandler.bind(this);
 
                 // Elements
-                this._buttonElement = null;
+                this._buttonElement = _Global.document.createElement("div");
 
                 // Variables
                 this._focusOnKeyboardInput = false;
 
+                // Calling the super constructor - since the super constructor processes the options,
+                // any property setter at this point must be functional.
                 AutoSuggestBox.AutoSuggestBox.call(this, element, options);
 
-                this._setupSearchBoxDOM();
+                // Add SearchBox classes to DOM elements
+                this.element.classList.add(ClassName.searchBox);
+                this._flyoutElement.classList.add(ClassName.searchBoxFlyout);
+
+                this._inputElement.classList.add(ClassName.searchBoxInput);
+                this._inputElement.addEventListener("blur", this._searchboxInputBlurHandler.bind(this));
+                this._inputElement.addEventListener("focus", this._searchboxInputFocusHandler.bind(this));
+
+                this._buttonElement.tabIndex = -1;
+                this._buttonElement.classList.add(ClassName.searchBoxButton);
+                this._buttonElement.addEventListener("click", this._buttonClickHandler.bind(this));
+                _ElementUtilities._addEventListener(this._buttonElement, "pointerdown", this._buttonPointerDownHandler.bind(this));
+                this.element.appendChild(this._buttonElement);
             }, {
                 /// <field type='String' locid="WinJS.UI.SearchBox.focusOnKeyboardInput" helpKeyword="WinJS.UI.SearchBox.focusOnKeyboardInput">
                 /// Enable automatically focusing the search box when the user types into the app window (off by default) While this is enabled,
@@ -143,33 +163,19 @@ define([
                     }
                 },
 
-                // Private methods
-                _setupSearchBoxDOM: function SearchBox_setupSearchBoxDOM() {
-                    this.element.classList.add(ClassName.searchBox);
-                    this._flyoutElement.classList.add(ClassName.searchBoxFlyout);
-
-                    this._inputElement.classList.add(ClassName.searchBoxInput);
-                    this._inputElement.addEventListener("blur", this._searchboxInputBlurHandler.bind(this));
-                    this._inputElement.addEventListener("focus", this._searchboxInputFocusHandler.bind(this));
-
-                    this._buttonElement = _Global.document.createElement("div");
-                    this._buttonElement.tabIndex = -1;
-                    this._buttonElement.classList.add(ClassName.searchBoxButton);
-                    this._buttonElement.addEventListener("click", this._buttonClickHandler.bind(this));
-                    _ElementUtilities._addEventListener(this._buttonElement, "pointerdown", this._buttonPointerDownHandler.bind(this));
-                    this.element.appendChild(this._buttonElement);
-                },
-
+                // Private methods 
                 _disableControl: function SearchBox_disableControl() {
                     AutoSuggestBox.AutoSuggestBox.prototype._disableControl.call(this);
                     this._buttonElement.disabled = true;
                     this._buttonElement.classList.add(ClassName.searchBoxButtonDisabled);
+                    this.element.classList.add(ClassName.searchBoxDisabled);
                 },
 
                 _enableControl: function SearchBox_enableControl() {
                     AutoSuggestBox.AutoSuggestBox.prototype._enableControl.call(this);
                     this._buttonElement.disabled = false;
                     this._buttonElement.classList.remove(ClassName.searchBoxButtonDisabled);
+                    this.element.classList.remove(ClassName.searchBoxDisabled);
                 },
 
                 _renderSuggestion: function SearchBox_renderSuggestion(suggestion) {
@@ -181,11 +187,36 @@ define([
                         render.classList.add(ClassName.searchBoxSuggestionSeparator);
                     } else {
                         render.classList.add(ClassName.searchBoxSuggestionResult);
+
+                        var resultText = render.querySelector("." + AutoSuggestBox.ClassNames.asbSuggestionResultText);
+                        resultText.classList.add(ClassName.searchBoxSuggestionResultText);
+
+                        var resultDetailText = render.querySelector("." + AutoSuggestBox.ClassNames.asbSuggestionResultDetailedText);
+                        resultDetailText.classList.add(ClassName.searchBoxSuggestionResultDetailedText);
+
+                        var spans = render.querySelectorAll("." + AutoSuggestBox.ClassNames.asbHitHighlightSpan);
+                        for (var i = 0, len = spans.length; i < len; i++) {
+                            spans[i].classList.add(ClassName.searchBoxHitHighlightSpan);
+                        }
+                        var highlightTexts = render.querySelectorAll("." + AutoSuggestBox.ClassNames.asbBoxFlyoutHighlightText);
+                        for (var i = 0, len = highlightTexts.length; i < len; i++) {
+                            highlightTexts[i].classList.add(ClassName.searchBoxFlyoutHighlightText);
+                        }
                     }
                     return render;
                 },
 
-                _shouldIgnoreInput: function asb_shouldIgnoreInput() {
+                _selectSuggestionAtIndex: function SearchBox_selectSuggestionAtIndex(indexToSelect) {
+                    // Overrides base class
+                    AutoSuggestBox.AutoSuggestBox.prototype._selectSuggestionAtIndex.call(this, indexToSelect);
+
+                    var currentSelected = this.element.querySelector("." + ClassName.searchBoxSuggestionSelected);
+                    currentSelected && currentSelected.classList.remove(ClassName.searchBoxSuggestionSelected);
+                    var newSelected = this.element.querySelector("." + AutoSuggestBox.ClassNames.asbSuggestionSelected);
+                    newSelected && newSelected.classList.add(ClassName.searchBoxSuggestionSelected);
+                },
+
+                _shouldIgnoreInput: function SearchBox_shouldIgnoreInput() {
                     // Overrides base class
                     var shouldIgnore = AutoSuggestBox.AutoSuggestBox.prototype._shouldIgnoreInput();
                     var isButtonDown = _ElementUtilities._matchesSelector(this._buttonElement, ":active");
@@ -213,10 +244,12 @@ define([
                 },
 
                 _searchboxInputBlurHandler: function SearchBox_inputBlurHandler() {
+                    _ElementUtilities.removeClass(this.element, ClassName.searchBoxInputFocus);
                     _ElementUtilities.removeClass(this._buttonElement, ClassName.searchBoxButtonInputFocus);
                 },
 
                 _searchboxInputFocusHandler: function SearchBox_inputFocusHandler() {
+                    _ElementUtilities.addClass(this.element, ClassName.searchBoxInputFocus);
                     _ElementUtilities.addClass(this._buttonElement, ClassName.searchBoxButtonInputFocus);
                 },
 

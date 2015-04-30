@@ -1,7 +1,5 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-// <reference path="ms-appx://$(TargetFramework)/js/base.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/ui.js" />
-// <reference path="ms-appx://$(TargetFramework)/js/en-us/ui.strings.js" />
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// <reference path="ms-appx://$(TargetFramework)/js/WinJS.js" />
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 /// <reference path="../TestLib/Helper.ts" />
 /// <deploy src="../TestData/" />
@@ -618,6 +616,27 @@ module WinJSTests {
 
             LiveUnit.Assert.areEqual(customLoad, Page.prototype.load);
 
+        };
+
+        testHandleRenderErrors = function (complete) {
+            var fragfile = "<not real>";
+
+            WinJS.UI.Pages._remove(fragfile);
+            var errorHandled = false;
+
+            var d = document.createElement("div");
+            WinJS.UI.Pages.render(fragfile, d).then(null, function(err) {
+                    return err.page.readyComplete;
+                }).
+                then(null, function(err) {
+                    errorHandled = true;
+                }).
+                then(function () {
+                    // cleanup
+                    WinJS.UI.Pages._remove(fragfile);
+                    LiveUnit.Assert.isTrue(errorHandled);
+                }).
+                then(complete);
         };
     };
 }

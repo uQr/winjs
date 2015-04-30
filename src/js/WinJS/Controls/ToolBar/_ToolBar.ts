@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Open Technologies, Inc.  All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 /// <reference path="../../Core.d.ts" />
 import Animations = require("../../Animations");
 import _Base = require("../../Core/_Base");
@@ -7,59 +7,65 @@ import BindingList = require("../../BindingList");
 import ControlProcessor = require("../../ControlProcessor");
 import _Constants = require("../ToolBar/_Constants");
 import _Command = require("../AppBar/_Command");
+import _CommandingSurface = require("../CommandingSurface");
+import _ICommandingSurface = require("../CommandingSurface/_CommandingSurface");
 import _Control = require("../../Utilities/_Control");
 import _Dispose = require("../../Utilities/_Dispose");
 import _ElementUtilities = require("../../Utilities/_ElementUtilities");
 import _ErrorFromName = require("../../Core/_ErrorFromName");
+import _Events = require('../../Core/_Events');
 import _Flyout = require("../../Controls/Flyout");
 import _Global = require("../../Core/_Global");
 import _Hoverable = require("../../Utilities/_Hoverable");
 import _KeyboardBehavior = require("../../Utilities/_KeyboardBehavior");
+import _LightDismissService = require('../../_LightDismissService');
 import Menu = require("../../Controls/Menu");
 import _MenuCommand = require("../Menu/_Command");
+import Promise = require('../../Promise');
 import _Resources = require("../../Core/_Resources");
 import Scheduler = require("../../Scheduler");
-import _ToolBarMenuCommand = require("../ToolBar/_MenuCommand");
+import _OpenCloseMachine = require('../../Utilities/_OpenCloseMachine');
+import _Signal = require('../../_Signal');
+import _WinRT = require('../../Core/_WinRT');
 import _WriteProfilerMark = require("../../Core/_WriteProfilerMark");
 
 require(["require-style!less/styles-toolbar"]);
-require(["require-style!less/colors-toolbar"]);
 
 "use strict";
-
-interface ICommandInfo {
-    command: _Command.ICommand;
-    width: number;
-    priority: number;
-}
-
-interface ICommandWithType {
-    element: HTMLElement;
-    type: string;
-}
-
-interface IFocusableElementsInfo {
-    elements: HTMLElement[];
-    focusedIndex: number;
-}
-
-interface IDataChangeInfo {
-    currentElements: HTMLElement[];
-    dataElements: HTMLElement[];
-    deletedElements: HTMLElement[];
-    addedElements: HTMLElement[];
-}
 
 var strings = {
     get ariaLabel() { return _Resources._getWinJSString("ui/toolbarAriaLabel").value; },
     get overflowButtonAriaLabel() { return _Resources._getWinJSString("ui/toolbarOverflowButtonAriaLabel").value; },
-    get badData() { return "Invalid argument: The data property must an instance of a WinJS.Binding.List"; },
-    get mustContainCommands() { return "The toolbar can only contain WinJS.UI.Command or WinJS.UI.AppBarCommand controls"; }
+    get mustContainCommands() { return "The toolbar can only contain WinJS.UI.Command or WinJS.UI.AppBarCommand controls"; },
+    get duplicateConstruction() { return "Invalid argument: Controls may only be instantiated one time for each DOM element"; }
 };
+
+var ClosedDisplayMode = {
+    /// <field locid="WinJS.UI.ToolBar.ClosedDisplayMode.compact" helpKeyword="WinJS.UI.ToolBar.ClosedDisplayMode.compact">
+    /// When the ToolBar is closed, the height of the ToolBar is reduced such that button commands are still visible, but their labels are hidden.
+    /// </field>
+    compact: "compact",
+    /// <field locid="WinJS.UI.ToolBar.ClosedDisplayMode.full" helpKeyword="WinJS.UI.ToolBar.ClosedDisplayMode.full">
+    /// When the ToolBar is closed, the height of the ToolBar is always sized to content.
+    /// </field>
+    full: "full",
+};
+
+var closedDisplayModeClassMap = {};
+closedDisplayModeClassMap[ClosedDisplayMode.compact] = _Constants.ClassNames.compactClass;
+closedDisplayModeClassMap[ClosedDisplayMode.full] = _Constants.ClassNames.fullClass;
+
+// Versions of add/removeClass that are no ops when called with falsy class names.
+function addClass(element: HTMLElement, className: string): void {
+    className && _ElementUtilities.addClass(element, className);
+}
+function removeClass(element: HTMLElement, className: string): void {
+    className && _ElementUtilities.removeClass(element, className);
+}
 
 /// <field>
 /// <summary locid="WinJS.UI.ToolBar">
-/// Represents a toolbar for displaying commands.
+/// Displays ICommands within the flow of the app. Use the ToolBar around other statically positioned app content.
 /// </summary>
 /// </field>
 /// <icon src="ui_winjs.ui.toolbar.12x12.png" width="12" height="12" />
@@ -70,121 +76,68 @@ var strings = {
 /// <part name="toolbar" class="win-toolbar" locid="WinJS.UI.ToolBar_part:toolbar">The entire ToolBar control.</part>
 /// <part name="toolbar-overflowbutton" class="win-toolbar-overflowbutton" locid="WinJS.UI.ToolBar_part:ToolBar-overflowbutton">The toolbar overflow button.</part>
 /// <part name="toolbar-overflowarea" class="win-toolbar-overflowarea" locid="WinJS.UI.ToolBar_part:ToolBar-overflowarea">The container for toolbar commands that overflow.</part>
-/// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/base.js" shared="true" />
-/// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/ui.js" shared="true" />
+/// <resource type="javascript" src="//$(TARGET_DESTINATION)/js/WinJS.js" shared="true" />
 /// <resource type="css" src="//$(TARGET_DESTINATION)/css/ui-dark.css" shared="true" />
 export class ToolBar {
     private _id: string;
     private _disposed: boolean;
-    private _overflowButton: HTMLButtonElement;
-    private _separatorWidth: number;
-    private _standardCommandWidth: number;
-    private _overflowButtonWidth: number;
-    private _menu: Menu.Menu;
-    private _inlineMenu: boolean;
-    private _element: HTMLElement;
-    private _data: BindingList.List<_Command.ICommand>;
-    private _primaryCommands: _Command.ICommand[];
-    private _secondaryCommands: _Command.ICommand[];
-    private _customContentContainer: HTMLElement;
-    private _mainActionArea: HTMLElement;
-    private _customContentFlyout: _Flyout.Flyout;
-    private _chosenCommand: _Command.ICommand;
-    private _measured = false;
-    private _customContentCommandsWidth: { [uniqueID: string]: number };
-    private _initializing = true;
-    private _inlineOverflowArea: HTMLElement;
-    private _hoverable = _Hoverable.isHoverable; /* force dependency on hoverable module */
-    private _winKeyboard: _KeyboardBehavior._WinKeyboard;
-    private _refreshPending: boolean;
-    private _refreshBound: Function;
-    private _resizeHandlerBound: (ev:any) => any;
-    private _dataChangedEvents = ["itemchanged", "iteminserted", "itemmoved", "itemremoved", "reload"];
-    private _extraClass: string;
+    private _commandingSurface: _ICommandingSurface._CommandingSurface;
+    private _isOpenedMode: boolean;
+    private _handleShowingKeyboardBound: (ev: any) => void
+    private _dismissable: _LightDismissService.ILightDismissable;
+    private _cachedClosedHeight: number;
+
+    private _dom: {
+        root: HTMLElement;
+        commandingSurfaceEl: HTMLElement;
+        placeHolder: HTMLElement;
+    }
+
+    /// <field locid="WinJS.UI.ToolBar.ClosedDisplayMode" helpKeyword="WinJS.UI.ToolBar.ClosedDisplayMode">
+    /// Display options for the actionarea when the ToolBar is closed.
+    /// </field>
+    static ClosedDisplayMode = ClosedDisplayMode;
+
+    static supportedForProcessing: boolean = true;
 
     /// <field type="HTMLElement" domElement="true" hidden="true" locid="WinJS.UI.ToolBar.element" helpKeyword="WinJS.UI.ToolBar.element">
     /// Gets the DOM element that hosts the ToolBar.
     /// </field>
     get element() {
-        return this._element;
-    }
-
-    /// <field type="Boolean" locid="WinJS.UI.ToolBar.inlineMenu" helpKeyword="WinJS.UI.ToolBar.inlineMenu">
-    /// Indicates whether the commands that overflow should be displayed in an inline menu or not
-    /// </field>
-    get inlineMenu() {
-        return !!this._inlineMenu;
-    }
-    set inlineMenu(value: boolean) {
-        this._writeProfilerMark("set_inlineMenu,info");
-
-        value = !!value;
-        if (value === this._inlineMenu) {
-            return;
-        }
-
-        this._inlineMenu = value;
-
-        if (!value) {
-            _ElementUtilities.addClass(this.element, _Constants.flyoutMenuCssClass);
-            _ElementUtilities.removeClass(this.element, _Constants.inlineMenuCssClass);
-        } else {
-            _ElementUtilities.addClass(this.element, _Constants.inlineMenuCssClass);
-            _ElementUtilities.removeClass(this.element, _Constants.flyoutMenuCssClass);
-            if (!this._inlineOverflowArea) {
-                this._inlineOverflowArea = _Global.document.createElement("div");
-                _ElementUtilities.addClass(this._inlineOverflowArea, _Constants.overflowAreaCssClass);
-                _ElementUtilities.addClass(this._inlineOverflowArea, _Constants.menuCssClass);
-                this.element.appendChild(this._inlineOverflowArea);
-            }
-        }
-        if (!this._initializing) {
-            this._positionCommands();
-        }
-    }
-
-    /// <field type="String" locid="WinJS.UI.ToolBar.extraClass" helpKeyword="WinJS.UI.ToolBar.extraClass">
-    /// Gets or sets the extra CSS class that is applied to the host DOM element, and the corresponding
-    /// overflow menu created by the ToolBar when its inlineMenu property is false.
-    /// </field>
-    get extraClass() {
-        return this._extraClass;
-    }
-    set extraClass(value: string) {
-        this._writeProfilerMark("set_extraClass,info");
-
-        if (this._extraClass) {
-            _ElementUtilities.removeClass(this._element, this._extraClass);
-            this._menu && _ElementUtilities.removeClass(this._menu.element, this._extraClass);
-        }
-
-        this._extraClass = value;
-        _ElementUtilities.addClass(this._element, this._extraClass);
-        this._menu && _ElementUtilities.addClass(this._menu.element, this.extraClass);
+        return this._dom.root;
     }
 
     /// <field type="WinJS.Binding.List" locid="WinJS.UI.ToolBar.data" helpKeyword="WinJS.UI.ToolBar.data">
     /// Gets or sets the Binding List of WinJS.UI.Command for the ToolBar.
     /// </field>
     get data() {
-        return this._data;
+        return this._commandingSurface.data;
     }
     set data(value: BindingList.List<_Command.ICommand>) {
-        this._writeProfilerMark("set_data,info");
+        this._commandingSurface.data = value;
+    }
 
-        if (value === this.data) {
-            return;
+    /// <field type="String" locid="WinJS.UI.ToolBar.closedDisplayMode" helpKeyword="WinJS.UI.ToolBar.closedDisplayMode">
+    /// Gets or sets the closedDisplayMode for the ToolBar. Values are "compact" and "full".
+    /// </field>
+    get closedDisplayMode() {
+        return this._commandingSurface.closedDisplayMode;
+    }
+    set closedDisplayMode(value: string) {
+        if (ClosedDisplayMode[value]) {
+            this._commandingSurface.closedDisplayMode = value;
+            this._cachedClosedHeight = null;
         }
-        if (!(value instanceof BindingList.List)) {
-            throw new _ErrorFromName("WinJS.UI.ToolBar.BadData", strings.badData);
-        }
+    }
 
-        if (this._data) {
-            this._removeDataListeners();
-        }
-        this._data = value;
-        this._addDataListeners();
-        this._dataUpdated();
+    /// <field type="Boolean" hidden="true" locid="WinJS.UI.ToolBar.opened" helpKeyword="WinJS.UI.ToolBar.opened">
+    /// Gets or sets whether the ToolBar is currently opened.
+    /// </field>
+    get opened(): boolean {
+        return this._commandingSurface.opened;
+    }
+    set opened(value: boolean) {
+        this._commandingSurface.opened = value;
     }
 
     constructor(element?: HTMLElement, options: any = {}) {
@@ -203,78 +156,104 @@ export class ToolBar {
         /// </returns>
         /// </signature>
 
-        // Make sure there's an element
-        this._element = element || _Global.document.createElement("div");
-
-        // Attaching JS control to DOM element
-        this._element["winControl"] = this;
-
-        this._id = this._element.id || _ElementUtilities._uniqueID(this._element);
         this._writeProfilerMark("constructor,StartTM");
 
-        if (!this._element.hasAttribute("tabIndex")) {
-            this._element.tabIndex = -1;
+        // Check to make sure we weren't duplicated
+        if (element && element["winControl"]) {
+            throw new _ErrorFromName("WinJS.UI.ToolBar.DuplicateConstruction", strings.duplicateConstruction);
         }
 
-        // Attach our css class.
-        _ElementUtilities.addClass(this._element, _Constants.controlCssClass);
+        this._initializeDom(element || _Global.document.createElement("div"));
+        var stateMachine = new _OpenCloseMachine.OpenCloseMachine({
+            eventElement: this.element,
+            onOpen: () => {
+                var openAnimation = this._commandingSurface.createOpenAnimation(this._getClosedHeight());
+                this._synchronousOpen();
+                return openAnimation.execute();
+            },
+            onClose: () => {
+                var closeAnimation = this._commandingSurface.createCloseAnimation(this._getClosedHeight());
+                return closeAnimation.execute().then(() => {
+                    this._synchronousClose();
+                });
+            },
+            onUpdateDom: () => {
+                this._updateDomImpl();
+            },
+            onUpdateDomWithIsOpened: (isOpened: boolean) => {
+                this._isOpenedMode = isOpened;
+                this._updateDomImpl();
+            }
+        });
 
+        // Events
+        this._handleShowingKeyboardBound = this._handleShowingKeyboard.bind(this);
+        _ElementUtilities._inputPaneListener.addEventListener(this._dom.root, "showing", this._handleShowingKeyboardBound);
+
+        // Initialize private state.
         this._disposed = false;
-        _ElementUtilities.addClass(this._element, "win-disposable");
+        this._cachedClosedHeight = null;
+        this._commandingSurface = new _CommandingSurface._CommandingSurface(this._dom.commandingSurfaceEl, { openCloseMachine: stateMachine });
+        addClass(<HTMLElement>this._dom.commandingSurfaceEl.querySelector(".win-commandingsurface-actionarea"), _Constants.ClassNames.actionAreaCssClass);
+        addClass(<HTMLElement>this._dom.commandingSurfaceEl.querySelector(".win-commandingsurface-overflowarea"), _Constants.ClassNames.overflowAreaCssClass);
+        addClass(<HTMLElement>this._dom.commandingSurfaceEl.querySelector(".win-commandingsurface-overflowbutton"), _Constants.ClassNames.overflowButtonCssClass);
+        addClass(<HTMLElement>this._dom.commandingSurfaceEl.querySelector(".win-commandingsurface-ellipsis"), _Constants.ClassNames.ellipsisCssClass);
+        this._isOpenedMode = _Constants.defaultOpened;
+        this._dismissable = new _LightDismissService.LightDismissableElement({
+            element: this._dom.root,
+            tabIndex: this._dom.root.hasAttribute("tabIndex") ? this._dom.root.tabIndex : -1,
+            onLightDismiss: () => {
+                this.close();
+            }
+        });
 
-        // Make sure we have an ARIA role
-        var role = this._element.getAttribute("role");
-        if (!role) {
-            this._element.setAttribute("role", "menubar");
-        }
-
-        var label = this._element.getAttribute("aria-label");
-        if (!label) {
-            this._element.setAttribute("aria-label", strings.ariaLabel);
-        }
-
-        this._customContentCommandsWidth = {};
-        this._separatorWidth = 0;
-        this._standardCommandWidth = 0;
-
-        this._refreshBound = this._refresh.bind(this);
-
-        this._setupTree();
-
-        if (!options.data) {
-            // Shallow copy object so we can modify it.
-            options = _BaseUtils._shallowCopy(options);
-            options.data = this._getDataFromDOMElements();
-        }
-
+        // Initialize public properties.
+        this.closedDisplayMode = _Constants.defaultClosedDisplayMode;
+        this.opened = this._isOpenedMode;
         _Control.setOptions(this, options);
 
-        this._resizeHandlerBound = this._resizeHandler.bind(this);
-        _ElementUtilities._resizeNotifier.subscribe(this._element, this._resizeHandlerBound);
+        // Exit the Init state.
+        _ElementUtilities._inDom(this.element).then(() => {
+            return this._commandingSurface.initialized;
+        }).then(() => {
+                stateMachine.exitInit();
+                this._writeProfilerMark("constructor,StopTM");
+            });
+    }
 
-        var initiallyParented = _Global.document.body.contains(this._element);
-        _ElementUtilities._addInsertedNotifier(this._element);
-        if (initiallyParented) {
-            this._measureCommands();
-            this._positionCommands();
-        } else {
-            var nodeInsertedHandler = () => {
-                this._writeProfilerMark("_setupTree_WinJSNodeInserted:initiallyParented:" + initiallyParented + ",info");
-                this._element.removeEventListener("WinJSNodeInserted", nodeInsertedHandler, false);
-                this._measureCommands();
-                this._positionCommands();
-            };
-            this._element.addEventListener("WinJSNodeInserted", nodeInsertedHandler, false);
-        }
+    /// <field type="Function" locid="WinJS.UI.ToolBar.onbeforeopen" helpKeyword="WinJS.UI.ToolBar.onbeforeopen">
+    /// Occurs immediately before the control is opened. Is cancelable.
+    /// </field>
+    onbeforeopen: (ev: CustomEvent) => void;
+    /// <field type="Function" locid="WinJS.UI.ToolBar.onafteropen" helpKeyword="WinJS.UI.ToolBar.onafteropen">
+    /// Occurs immediately after the control is opened.
+    /// </field>
+    onafteropen: (ev: CustomEvent) => void;
+    /// <field type="Function" locid="WinJS.UI.ToolBar.onbeforeclose" helpKeyword="WinJS.UI.ToolBar.onbeforeclose">
+    /// Occurs immediately before the control is closed. Is cancelable.
+    /// </field>
+    onbeforeclose: (ev: CustomEvent) => void;
+    /// <field type="Function" locid="WinJS.UI.ToolBar.onafterclose" helpKeyword="WinJS.UI.ToolBar.onafterclose">
+    /// Occurs immediately after the control is closed.
+    /// </field>
+    onafterclose: (ev: CustomEvent) => void;
 
-        this.element.addEventListener('keydown', this._keyDownHandler.bind(this));
-        this._winKeyboard = new _KeyboardBehavior._WinKeyboard(this.element);
+    open(): void {
+        /// <signature helpKeyword="WinJS.UI.ToolBar.open">
+        /// <summary locid="WinJS.UI.ToolBar.open">
+        /// Opens the ToolBar
+        /// </summary>
+        /// </signature>
+        this._commandingSurface.open();
+    }
 
-        this._initializing = false;
-
-        this._writeProfilerMark("constructor,StopTM");
-
-        return this;
+    close(): void {
+        /// <signature helpKeyword="WinJS.UI.ToolBar.close">
+        /// <summary locid="WinJS.UI.ToolBar.close">
+        /// Closes the ToolBar
+        /// </summary>
+        /// </signature>
+        this._commandingSurface.close();
     }
 
     dispose() {
@@ -287,20 +266,17 @@ export class ToolBar {
             return;
         }
 
-        _ElementUtilities._resizeNotifier.unsubscribe(this._element, this._resizeHandlerBound);
+        this._disposed = true;
+        _LightDismissService.hidden(this._dismissable);
+        // Disposing the _commandingSurface will trigger dispose on its OpenCloseMachine and synchronously complete any animations that might have been running.
+        this._commandingSurface.dispose();
+        // If page navigation is happening, we don't want the ToolBar left behind in the body.
+        // Synchronoulsy close the ToolBar to force it out of the body and back into its parent element.
+        this._synchronousClose();
 
-        if (this._customContentFlyout) {
-            this._customContentFlyout.dispose();
-            this._customContentFlyout.element.parentNode.removeChild(this._customContentFlyout.element);
-        }
-
-        if (this._menu) {
-            this._menu.dispose();
-            this._menu.element.parentNode.removeChild(this._menu.element);
-        }
+        _ElementUtilities._inputPaneListener.removeEventListener(this._dom.root, "showing", this._handleShowingKeyboardBound);
 
         _Dispose.disposeSubTree(this.element);
-        this._disposed = true;
     }
 
     forceLayout() {
@@ -309,649 +285,250 @@ export class ToolBar {
         /// Forces the ToolBar to update its layout. Use this function when the window did not change size, but the container of the ToolBar changed size.
         /// </summary>
         /// </signature>
-        this._measureCommands();
-        this._positionCommands();
+        this._commandingSurface.forceLayout();
+    }
+
+    getCommandById(id: string): _Command.ICommand {
+        /// <signature helpKeyword="WinJS.UI.ToolBar.getCommandById">
+        /// <summary locid="WinJS.UI.ToolBar.getCommandById">
+        /// Retrieves the command with the specified ID from this ToolBar.
+        /// If more than one command is found, this method returns the first command found.
+        /// </summary>
+        /// <param name="id" type="String" locid="WinJS.UI.ToolBar.getCommandById_p:id">Id of the command to return.</param>
+        /// <returns type="object" locid="WinJS.UI.ToolBar.getCommandById_returnValue">
+        /// The command found, or null if no command is found.
+        /// </returns>
+        /// </signature>
+        return this._commandingSurface.getCommandById(id);
+    }
+
+    showOnlyCommands(commands: Array<string|_Command.ICommand>): void {
+        /// <signature helpKeyword="WinJS.UI.ToolBar.showOnlyCommands">
+        /// <summary locid="WinJS.UI.ToolBar.showOnlyCommands">
+        /// Show the specified commands, hiding all of the others in the ToolBar.
+        /// </summary>
+        /// <param name="commands" type="Array" locid="WinJS.UI.ToolBar.showOnlyCommands_p:commands">
+        /// An array of the commands to show. The array elements may be Command objects, or the string identifiers (IDs) of commands.
+        /// </param>
+        /// </signature>
+        return this._commandingSurface.showOnlyCommands(commands);
     }
 
     private _writeProfilerMark(text: string) {
         _WriteProfilerMark("WinJS.UI.ToolBar:" + this._id + ":" + text);
     }
 
-    private _setupTree() {
-        this._writeProfilerMark("_setupTree,info");
+    private _initializeDom(root: HTMLElement): void {
 
-        this._primaryCommands = [];
-        this._secondaryCommands = [];
+        this._writeProfilerMark("_intializeDom,info");
 
-        this._mainActionArea = _Global.document.createElement("div");
-        _ElementUtilities.addClass(this._mainActionArea, _Constants.actionAreaCssClass);
-        _ElementUtilities._reparentChildren(this.element, this._mainActionArea);
-        this.element.appendChild(this._mainActionArea);
+        // Attaching JS control to DOM element
+        root["winControl"] = this;
 
-        this._overflowButton = _Global.document.createElement("button");
-        this._overflowButton.tabIndex = 0;
-        this._overflowButton.innerHTML = "<span class='" + _Constants.ellipsisCssClass + "'></span>";
-        _ElementUtilities.addClass(this._overflowButton, _Constants.overflowButtonCssClass);
-        this._mainActionArea.appendChild(this._overflowButton);
-        this._overflowButton.addEventListener("click", () => {
-            if (this._menu) {
-                var isRTL = _Global.getComputedStyle(this._element).direction === 'rtl';
-                this._menu.show(this._overflowButton, "autovertical", isRTL ? "left" : "right");
-            }
-        });
-        this._overflowButtonWidth = _ElementUtilities.getTotalWidth(this._overflowButton);
-        _ElementUtilities.addClass(this.element, _Constants.flyoutMenuCssClass);
-    }
+        this._id = root.id || _ElementUtilities._uniqueID(root);
 
-    private _getFocusableElementsInfo(): IFocusableElementsInfo {
-        var focusableCommandsInfo: IFocusableElementsInfo = {
-            elements: [],
-            focusedIndex: -1
+        _ElementUtilities.addClass(root, _Constants.ClassNames.controlCssClass);
+        _ElementUtilities.addClass(root, _Constants.ClassNames.disposableCssClass);
+
+        // Make sure we have an ARIA role
+        var role = root.getAttribute("role");
+        if (!role) {
+            root.setAttribute("role", "menubar");
+        }
+
+        var label = root.getAttribute("aria-label");
+        if (!label) {
+            root.setAttribute("aria-label", strings.ariaLabel);
+        }
+
+        // Create element for commandingSurface and reparent any declarative Commands.
+        // The CommandingSurface constructor will parse child elements as AppBarCommands.
+        var commandingSurfaceEl = document.createElement("DIV");
+        _ElementUtilities._reparentChildren(root, commandingSurfaceEl);
+        root.appendChild(commandingSurfaceEl);
+
+        // While the ToolBar is open, it will place itself in the <body> so it can become a light dismissible
+        // overlay. It leaves the placeHolder element behind as stand in at the ToolBar's original DOM location
+        // to avoid reflowing surrounding app content and create the illusion that the ToolBar hasn't moved along
+        // the x or y planes.
+        var placeHolder = _Global.document.createElement("DIV");
+        _ElementUtilities.addClass(placeHolder, _Constants.ClassNames.placeHolderCssClass);
+        // If the ToolBar's original HTML parent node is disposed while the ToolBar is open and repositioned as 
+        // a temporary child of the <body>, make sure that calling dispose on the placeHolder element will trigger 
+        // dispose on the ToolBar as well.
+        _Dispose.markDisposable(placeHolder, this.dispose.bind(this));
+
+        this._dom = {
+            root: root,
+            commandingSurfaceEl: commandingSurfaceEl,
+            placeHolder: placeHolder,
         };
-        var elementsInReach = Array.prototype.slice.call(this._mainActionArea.children);
-        if (this.inlineMenu && _Global.getComputedStyle(this._inlineOverflowArea).visibility !== "hidden") {
-            elementsInReach = elementsInReach.concat(Array.prototype.slice.call(this._inlineOverflowArea.children));
-        }
-
-        elementsInReach.forEach((element: HTMLElement) => {
-            if (this._isElementFocusable(element)) {
-                focusableCommandsInfo.elements.push(element);
-                if (element.contains(<HTMLElement>_Global.document.activeElement)) {
-                    focusableCommandsInfo.focusedIndex = focusableCommandsInfo.elements.length - 1;
-                }
-            }
-        });
-
-        return focusableCommandsInfo;
     }
 
-    private _dataUpdated() {
-        this._writeProfilerMark("_dataUpdated,info");
+    private _handleShowingKeyboard(event: { detail: { originalEvent: _WinRT.Windows.UI.ViewManagement.InputPaneVisibilityEventArgs } }) {
+        // Because the ToolBar takes up layout space and is not an overlay, it doesn't have the same expectation 
+        // to move itself to get out of the way of a showing IHM. Instsead we just close the ToolBar to avoid 
+        // scenarios where the ToolBar is occluded, but the click-eating-div is still present since it may seem 
+        // strange to end users that an occluded ToolBar (out of sight, out of mind) is still eating their first 
+        // click.
 
-        var changeInfo = this._getDataChangeInfo();
-
-        // Take a snapshot of the current state
-        var updateCommandAnimation = Animations._createUpdateListAnimation(changeInfo.addedElements, changeInfo.deletedElements, changeInfo.currentElements);
-
-        // Remove deleted elements
-        changeInfo.deletedElements.forEach((element) => {
-            if (element.parentElement) {
-                element.parentElement.removeChild(element);
-            }
-        });
-
-        // Add elements in the right order
-        changeInfo.dataElements.forEach((element) => {
-            this._mainActionArea.appendChild(element);
-        });
-
-        if (this._overflowButton) {
-            // Ensure that the overflow button is the last element in the main action area
-            this._mainActionArea.appendChild(this._overflowButton);
-        }
-
-        this._primaryCommands = [];
-        this._secondaryCommands = [];
-
-        if (this.data.length > 0) {
-            _ElementUtilities.removeClass(this.element, _Constants.emptyToolBarCssClass);
-            this.data.forEach((command) => {
-                if (command.section === "secondary") {
-                    this._secondaryCommands.push(command);
-                } else {
-                    this._primaryCommands.push(command);
-                }
-            });
-
-            if (!this._initializing) {
-                this._measureCommands();
-                this._positionCommands();
-            }
-        } else {
-            this._setupOverflowArea([]);
-            _ElementUtilities.addClass(this.element, _Constants.emptyToolBarCssClass);
-        }
-
-        // Execute the animation.
-        updateCommandAnimation.execute();
+        // Mitigation:
+        // Because (1) custom content in a ToolBar can only be included as a 'content' type command, because (2)
+        // the ToolBar only supports closedDisplayModes 'compact' and 'full', and because (3) 'content' type
+        // commands in the overflowarea use a separate contentflyout to display their contents:
+        // Interactable custom content contained within the ToolBar actionarea or overflowarea, will remain
+        // visible and interactable even when showing the IHM closes the ToolBar.
+        this.close();
     }
 
-    private _getDataChangeInfo(): IDataChangeInfo {
-        var child: HTMLElement;
-        var i = 0, len = 0;
-        var dataElements: HTMLElement[] = [];
-        var deletedElements: HTMLElement[] = [];
-        var addedElements: HTMLElement[] = [];
-        var currentElements: HTMLElement[] = [];
-
-        for (i = 0, len = this.data.length; i < len; i++) {
-            dataElements.push(this.data.getAt(i).element);
-        }
-
-        for (i = 0, len = this._mainActionArea.children.length; i < len; i++) {
-            child = <HTMLElement> this._mainActionArea.children[i];
-            if (child.style.display !== "none" || (child["winControl"] && child["winControl"].section === "secondary")) {
-                currentElements.push(child);
-                if (dataElements.indexOf(child) === -1 && child !== this._overflowButton) {
-                    deletedElements.push(child);
-                }
-            }
-        }
-
-        dataElements.forEach((element) => {
-            if (deletedElements.indexOf(element) === -1 &&
-                currentElements.indexOf(element) === -1) {
-                addedElements.push(element);
-            }
-        });
-
-        return {
-            dataElements: dataElements,
-            deletedElements: deletedElements,
-            addedElements: addedElements,
-            currentElements: currentElements
-        }
+    private _synchronousOpen(): void {
+        this._isOpenedMode = true;
+        this._updateDomImpl();
     }
 
-    private _refresh() {
-        if (!this._refreshPending) {
-            this._refreshPending = true;
-
-            // Batch calls to _dataUpdated
-            Scheduler.schedule(() => {
-                if (this._refreshPending && !this._disposed) {
-                    this._dataUpdated();
-                    this._refreshPending = false;
-                }
-            }, Scheduler.Priority.high, null, "WinJS.UI.ToolBar._refresh");
-        }
+    private _synchronousClose(): void {
+        this._isOpenedMode = false;
+        this._updateDomImpl();
     }
 
-    private _addDataListeners() {
-        this._dataChangedEvents.forEach((eventName) => {
-            this._data.addEventListener(eventName, this._refreshBound, false);
-        });
-    }
+    // State private to the _updateDomImpl family of method. No other methods should make use of it.
+    //
+    // Nothing has been rendered yet so these are all initialized to undefined. Because
+    // they are undefined, the first time _updateDomImpl is called, they will all be
+    // rendered.
+    private _updateDomImpl_renderedState = {
+        isOpenedMode: <boolean>undefined,
+        closedDisplayMode: <string>undefined,
+        prevInlineWidth: <string>undefined,
+    };
+    private _updateDomImpl(): void {
+        var rendered = this._updateDomImpl_renderedState;
 
-    private _removeDataListeners() {
-        this._dataChangedEvents.forEach((eventName) => {
-            this._data.removeEventListener(eventName, this._refreshBound, false);
-        });
-    }
-
-    private _isElementFocusable(element: HTMLElement): boolean {
-        var focusable = false;
-        if (element) {
-            var command = element["winControl"];
-            if (command) {
-                focusable = command.element.style.display !== "none" &&
-                command.type !== _Constants.typeSeparator &&
-                !command.hidden &&
-                !command.disabled &&
-                (!command.firstElementFocus || command.firstElementFocus.tabIndex >= 0 || command.lastElementFocus.tabIndex >= 0);
+        if (rendered.isOpenedMode !== this._isOpenedMode) {
+            if (this._isOpenedMode) {
+                this._updateDomImpl_renderOpened();
             } else {
-                // e.g. the overflow button
-                focusable = element.style.display !== "none" &&
-                getComputedStyle(element).visibility !== "hidden" &&
-                element.tabIndex >= 0;
+                this._updateDomImpl_renderClosed();
+            }
+            rendered.isOpenedMode = this._isOpenedMode;
+        }
+
+        if (rendered.closedDisplayMode !== this.closedDisplayMode) {
+            removeClass(this._dom.root, closedDisplayModeClassMap[rendered.closedDisplayMode]);
+            addClass(this._dom.root, closedDisplayModeClassMap[this.closedDisplayMode]);
+            rendered.closedDisplayMode = this.closedDisplayMode;
+        }
+
+        this._commandingSurface.updateDomImpl();
+    }
+
+    private _getClosedHeight(): number {
+        if (this._cachedClosedHeight === null) {
+            var wasOpen = this._isOpenedMode;
+            if (this._isOpenedMode) {
+                this._synchronousClose();
+            }
+            this._cachedClosedHeight = this._commandingSurface.getBoundingRects().commandingSurface.height;
+            if (wasOpen) {
+                this._synchronousOpen();
             }
         }
-        return focusable;
+
+        return this._cachedClosedHeight;
     }
 
-    private _isMainActionCommand(element: HTMLElement) {
-        // Returns true if the element is a command in the main action area, false otherwise
-        return element && element["winControl"] && element.parentElement === this._mainActionArea;
-    }
+    private _updateDomImpl_renderOpened(): void {
 
-    private _getLastElementFocus(element: HTMLElement) {
-        if (this._isMainActionCommand(element)) {
-            // Only commands in the main action area support lastElementFocus
-            return element["winControl"].lastElementFocus;
+        // Measure closed state.
+        this._updateDomImpl_renderedState.prevInlineWidth = this._dom.root.style.width;
+        var closedBorderBox = this._dom.root.getBoundingClientRect();
+        var closedContentWidth = _ElementUtilities._getPreciseContentWidth(this._dom.root);
+        var closedContentHeight = _ElementUtilities._getPreciseContentHeight(this._dom.root);
+        var closedStyle = getComputedStyle(this._dom.root);
+        var closedPaddingTop = _ElementUtilities._convertToPrecisePixels(closedStyle.paddingTop);
+        var closedBorderTop = _ElementUtilities._convertToPrecisePixels(closedStyle.borderTopWidth);
+        var closedMargins = _ElementUtilities._getPreciseMargins(this._dom.root);
+        var closedContentBoxTop = closedBorderBox.top + closedBorderTop + closedPaddingTop;
+        var closedContentBoxBottom = closedContentBoxTop + closedContentHeight;
+
+        // Size our placeHolder. Set height and width to match borderbox of the closed ToolBar.
+        // Copy ToolBar margins to the placeholder.
+        var placeHolder = this._dom.placeHolder;
+        var placeHolderStyle = placeHolder.style;
+        placeHolderStyle.width = closedBorderBox.width + "px";
+        placeHolderStyle.height = closedBorderBox.height + "px";
+        placeHolderStyle.marginTop = closedMargins.top + "px";
+        placeHolderStyle.marginRight = closedMargins.right + "px";
+        placeHolderStyle.marginBottom = closedMargins.bottom + "px";
+        placeHolderStyle.marginLeft = closedMargins.left + "px";
+
+        // Move ToolBar element to the body in preparation of becoming a light dismissible. Leave an equal sized placeHolder element 
+        // at our original DOM location to avoid reflowing surrounding app content.
+        _ElementUtilities._maintainFocus(() => {
+            this._dom.root.parentElement.insertBefore(placeHolder, this._dom.root);
+            _Global.document.body.appendChild(this._dom.root);
+        });
+
+        // Position the ToolBar to completely cover the same region as the placeholder element.
+        this._dom.root.style.width = closedContentWidth + "px";
+        this._dom.root.style.left = closedBorderBox.left - closedMargins.left + "px";
+
+        // Determine which direction to expand the CommandingSurface elements when opened. The overflow area will be rendered at the corresponding edge of 
+        // the ToolBar's content box, so we choose the direction that offers the most space between that edge and the corresponding edge of the viewport. 
+        // This is to reduce the chance that the overflow area might clip through the edge of the viewport.
+        var topOfViewport = 0;
+        var bottomOfViewport = _Global.innerHeight;
+        var distanceFromTop = closedContentBoxTop - topOfViewport;
+        var distanceFromBottom = bottomOfViewport - closedContentBoxBottom;
+
+        if (distanceFromTop > distanceFromBottom) {
+            // CommandingSurface is going to expand updwards.
+            this._commandingSurface.overflowDirection = _Constants.OverflowDirection.top;
+            // Position the bottom edge of the ToolBar marginbox over the bottom edge of the placeholder marginbox.
+            this._dom.root.style.bottom = (bottomOfViewport - closedBorderBox.bottom) - closedMargins.bottom + "px";
         } else {
-            return element;
+            // CommandingSurface is going to expand downwards.
+            this._commandingSurface.overflowDirection = _Constants.OverflowDirection.bottom;
+            // Position the top edge of the ToolBar marginbox over the top edge of the placeholder marginbox.
+            this._dom.root.style.top = (topOfViewport + closedBorderBox.top) - closedMargins.top + "px";
         }
+
+        // Render opened state
+        _ElementUtilities.addClass(this._dom.root, _Constants.ClassNames.openedClass);
+        _ElementUtilities.removeClass(this._dom.root, _Constants.ClassNames.closedClass);
+        this._commandingSurface.synchronousOpen();
+        _LightDismissService.shown(this._dismissable); // Call at the start of the open animation
     }
 
-    private _getFirstElementFocus(element: HTMLElement) {
-        if (this._isMainActionCommand(element)) {
-            // Only commands in the main action area support firstElementFocus
-            return element["winControl"].firstElementFocus;
-        } else {
-            return element;
-        }
-    }
+    private _updateDomImpl_renderClosed(): void {
 
-    private _keyDownHandler(ev: any) {
-        if (!ev.altKey) {
-            if (_ElementUtilities._matchesSelector(ev.target, ".win-interactive, .win-interactive *")) {
-                return;
-            }
-            var Key = _ElementUtilities.Key;
-            var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
-            var focusableElementsInfo = this._getFocusableElementsInfo();
-            var targetCommand: HTMLElement;
-
-            if (focusableElementsInfo.elements.length) {
-                switch (ev.keyCode) {
-                    case (rtl ? Key.rightArrow : Key.leftArrow):
-                    case Key.upArrow:
-                        var index = Math.max(0, focusableElementsInfo.focusedIndex - 1);
-                        targetCommand = this._getLastElementFocus(focusableElementsInfo.elements[index % focusableElementsInfo.elements.length]);
-                        break;
-
-                    case (rtl ? Key.leftArrow : Key.rightArrow):
-                    case Key.downArrow:
-                        var index = Math.min(focusableElementsInfo.focusedIndex + 1, focusableElementsInfo.elements.length - 1);
-                        targetCommand = this._getFirstElementFocus(focusableElementsInfo.elements[index]);
-                        break;
-
-                    case Key.home:
-                        var index = 0;
-                        targetCommand = this._getFirstElementFocus(focusableElementsInfo.elements[index]);
-                        break;
-
-                    case Key.end:
-                        var index = focusableElementsInfo.elements.length - 1;
-                        if (!this.inlineMenu && this._isElementFocusable(this._overflowButton)) {
-                            // In detached mode, the end key goes to the last command, not the overflow button,
-                            // which is the last element when it is visible.
-                            index = Math.max(0, index - 1);
-                        }
-                        targetCommand = this._getLastElementFocus(focusableElementsInfo.elements[index]);
-                        break;
-                }
-            }
-
-            if (targetCommand && targetCommand !== _Global.document.activeElement) {
-                targetCommand.focus();
-                ev.preventDefault();
-            }
-        }
-    }
-
-    private _getDataFromDOMElements(): BindingList.List<_Command.ICommand> {
-        this._writeProfilerMark("_getDataFromDOMElements,info");
-
-        ControlProcessor.processAll(this._mainActionArea, /*skip root*/ true);
-
-        var commands: _Command.ICommand[] = [];
-        var childrenLength = this._mainActionArea.children.length;
-        var child: Element;
-        for (var i = 0; i < childrenLength; i++) {
-            child = this._mainActionArea.children[i];
-            if (child["winControl"] && child["winControl"] instanceof _Command.AppBarCommand) {
-                commands.push(child["winControl"]);
-            } else if (!this._overflowButton) {
-                throw new _ErrorFromName("WinJS.UI.ToolBar.MustContainCommands", strings.mustContainCommands);
-            }
-        }
-        return new BindingList.List(commands);
-    }
-
-    private _resizeHandler() {
-        if (this.element.offsetWidth > 0) {
-            this._measureCommands(/* skipIfMeasured: */ true);
-            this._positionCommands();
-        }
-    }
-
-    private _commandUniqueId(command: _Command.ICommand): string {
-        return _ElementUtilities._uniqueID(command.element);
-    }
-
-    private _getCommandsInfo(): ICommandInfo[] {
-        var width = 0;
-        var commands: ICommandInfo[] = [];
-        var priority = 0;
-        var currentAssignedPriority = 0;
-
-        for (var i = this._primaryCommands.length - 1; i >= 0; i--) {
-            var command = this._primaryCommands[i];
-            if (command.priority === undefined) {
-                priority = currentAssignedPriority--;
-            } else {
-                priority = command.priority;
-            }
-            width = (command.element.style.display === "none" ? 0 : this._getCommandWidth(command));
-
-            commands.unshift({
-                command: command,
-                width: width,
-                priority: priority
+        // Restore our placement in the DOM
+        if (this._dom.placeHolder.parentElement) {
+            _ElementUtilities._maintainFocus(() => {
+                var placeHolder = this._dom.placeHolder;
+                placeHolder.parentElement.insertBefore(this._dom.root, placeHolder);
+                placeHolder.parentElement.removeChild(placeHolder);
             });
         }
 
-        return commands;
+        // Render Closed
+        this._dom.root.style.top = "";
+        this._dom.root.style.right = "";
+        this._dom.root.style.bottom = "";
+        this._dom.root.style.left = "";
+        this._dom.root.style.width = this._updateDomImpl_renderedState.prevInlineWidth;
+        _ElementUtilities.addClass(this._dom.root, _Constants.ClassNames.closedClass);
+        _ElementUtilities.removeClass(this._dom.root, _Constants.ClassNames.openedClass);
+        this._commandingSurface.synchronousClose();
+        _LightDismissService.hidden(this._dismissable); // Call after the close animation
     }
-
-    private _getPrimaryCommandsLocation(mainActionWidth: number) {
-        this._writeProfilerMark("_getCommandsLocation,info");
-
-        var mainActionCommands: _Command.ICommand[] = [];
-        var overflowCommands: _Command.ICommand[] = [];
-        var spaceLeft = mainActionWidth;
-        var overflowButtonSpace = 0;
-        var hasSecondaryCommands = this._secondaryCommands.length > 0;
-
-        var commandsInfo = this._getCommandsInfo();
-        var sortedCommandsInfo = commandsInfo.slice(0).sort((commandInfo1: ICommandInfo, commandInfo2: ICommandInfo) => {
-            return commandInfo1.priority - commandInfo2.priority;
-        });
-
-        var maxPriority = Number.MAX_VALUE;
-        var availableWidth = mainActionWidth;
-
-        for (var i = 0, len = sortedCommandsInfo.length; i < len; i++) {
-            availableWidth -= sortedCommandsInfo[i].width;
-
-            // The overflow button needs space if there are secondary commands, inlineMenu is on,
-            // or we are not evaluating the last command.
-            overflowButtonSpace = (this.inlineMenu || hasSecondaryCommands || (i < len - 1) ? this._overflowButtonWidth : 0)
-
-            if (availableWidth - overflowButtonSpace < 0) {
-                maxPriority = sortedCommandsInfo[i].priority - 1;
-                break;
-            }
-        }
-
-        commandsInfo.forEach((commandInfo) => {
-            if (commandInfo.priority <= maxPriority) {
-                mainActionCommands.push(commandInfo.command);
-            } else {
-                overflowCommands.push(commandInfo.command);
-            }
-        });
-
-        return {
-            mainArea: mainActionCommands,
-            overflowArea: overflowCommands
-        }
-    }
-
-    private _getCommandWidth(command: _Command.ICommand): number {
-        if (command.type === _Constants.typeContent) {
-            return this._customContentCommandsWidth[this._commandUniqueId(command)];
-        } else if (command.type === _Constants.typeSeparator) {
-            return this._separatorWidth;
-        } else {
-            return this._standardCommandWidth;
-        }
-    }
-
-    private _measureCommands(skipIfMeasured: boolean = false) {
-        this._writeProfilerMark("_measureCommands,info");
-
-        if (this._disposed || !_Global.document.body.contains(this._element) || this.element.offsetWidth === 0) {
-            return;
-        }
-
-        if (!skipIfMeasured) {
-            this._customContentCommandsWidth = {};
-            this._separatorWidth = 0;
-            this._standardCommandWidth = 0;
-        }
-        this._primaryCommands.forEach((command) => {
-            if (!command.element.parentElement) {
-                this._mainActionArea.appendChild(command.element);
-            }
-
-            // Ensure that the element we are measuring does not have display: none (e.g. it was just added, and it
-            // will be animated in)
-            var originalDisplayStyle = command.element.style.display;
-            command.element.style.display = "";
-
-            if (command.type === _Constants.typeContent && !this._customContentCommandsWidth[this._commandUniqueId(command)] ) {
-                this._customContentCommandsWidth[this._commandUniqueId(command)] = _ElementUtilities.getTotalWidth(command.element);
-            } else if (command.type === _Constants.typeSeparator) {
-                if (!this._separatorWidth) {
-                    this._separatorWidth = _ElementUtilities.getTotalWidth(command.element);
-                }
-            } else {
-                // Button, toggle, flyout command types have the same width
-                if (!this._standardCommandWidth) {
-                    this._standardCommandWidth = _ElementUtilities.getTotalWidth(command.element);
-                }
-            }
-
-            // Restore the original display style
-            command.element.style.display = originalDisplayStyle;
-        });
-
-        if (this._overflowButton && !this._overflowButtonWidth) {
-            this._overflowButtonWidth = _ElementUtilities.getTotalWidth(this._overflowButton);
-        }
-
-        this._measured = true;
-    }
-
-    private _positionCommands() {
-        this._writeProfilerMark("_positionCommands,StartTM");
-
-        if (this._disposed || !this._measured) {
-            this._writeProfilerMark("_positionCommands,StopTM");
-            return;
-        }
-
-        if (this._overflowButton) {
-            // Ensure that the overflow button is the last element in the main action area
-            this._mainActionArea.appendChild(this._overflowButton);
-        }
-
-        this._primaryCommands.forEach((command) => {
-            command.element.style.display = (command.hidden ? "none" : "");
-        })
-
-        var mainActionWidth = _ElementUtilities.getContentWidth(this.element);
-
-        var commandsLocation = this._getPrimaryCommandsLocation(mainActionWidth);
-
-        this._hideSeparatorsIfNeeded(commandsLocation.mainArea);
-
-        // Primary commands that will be mirrored in the overflow area should be hidden so
-        // that they are not visible in the main action area.
-        commandsLocation.overflowArea.forEach((command) => {
-            command.element.style.display = "none";
-        });
-
-        // The secondary commands in the the main action area should be hidden since they are always
-        // mirrored as new elements in the overflow area.
-        this._secondaryCommands.forEach((command) => {
-            command.element.style.display = "none";
-        });
-
-        this._setupOverflowArea(commandsLocation.overflowArea);
-
-        this._writeProfilerMark("_positionCommands,StopTM");
-    }
-
-    private _getMenuCommand(command: _Command.ICommand): _MenuCommand.MenuCommand {
-        var menuCommand = new _ToolBarMenuCommand._MenuCommand(this.inlineMenu, null, {
-            label: command.label,
-            type: (command.type === _Constants.typeContent ? _Constants.typeFlyout : command.type) || _Constants.typeButton,
-            disabled: command.disabled,
-            flyout: command.flyout,
-            beforeOnClick: () => {
-                // Save the command that was selected
-                this._chosenCommand = <_Command.ICommand>(menuCommand["_originalToolBarCommand"]);
-
-                // If this WinJS.UI.MenuCommand has type: toggle, we should also toggle the value of the original WinJS.UI.Command
-                if (this._chosenCommand.type === _Constants.typeToggle) {
-                    this._chosenCommand.selected = !this._chosenCommand.selected;
-                }
-            }
-        });
-
-        if (command.selected) {
-            menuCommand.selected = true;
-        }
-
-        if (command.extraClass) {
-            menuCommand.extraClass = command.extraClass;
-        }
-
-        if (command.type === _Constants.typeContent) {
-            if (!menuCommand.label) {
-                menuCommand.label = _Constants.contentMenuCommandDefaultLabel;
-            }
-            menuCommand.flyout = this._customContentFlyout;
-        } else {
-            menuCommand.onclick = command.onclick;
-        }
-        menuCommand["_originalToolBarCommand"] = command;
-        return menuCommand;
-    }
-
-    private _setupOverflowArea(additionalCommands: any[]) {
-        if (this.inlineMenu) {
-            // Inline menu mode always has the overflow button hidden
-            this._overflowButton.style.display = "";
-
-            this._setupOverflowAreaInline(additionalCommands);
-        } else {
-            var showOverflowButton = (additionalCommands.length > 0 || this._secondaryCommands.length > 0);
-            this._overflowButton.style.display = showOverflowButton ? "" : "none"
-
-            this._setupOverflowAreaDetached(additionalCommands);
-        }
-    }
-
-    private _setupOverflowAreaInline(additionalCommands: any[]) {
-        this._writeProfilerMark("_setupOverflowAreaInline,info");
-
-        var hasToggleCommands = false,
-            hasFlyoutCommands = false;
-
-        _ElementUtilities.empty(this._inlineOverflowArea);
-
-        this._hideSeparatorsIfNeeded(additionalCommands);
-
-        // Add primary commands that should overflow
-        additionalCommands.forEach((command) => {
-            if (command.type === _Constants.typeToggle) {
-                hasToggleCommands = true;
-            }
-            if (command.type === _Constants.typeFlyout) {
-                hasFlyoutCommands = true;
-            }
-
-            this._inlineOverflowArea.appendChild(this._getMenuCommand(command).element);
-        });
-
-        // Add separator between primary and secondary command if applicable
-        var secondaryCommandsLength = this._secondaryCommands.length;
-        if (additionalCommands.length > 0 && secondaryCommandsLength > 0) {
-            var separator = new _ToolBarMenuCommand._MenuCommand(this.inlineMenu, null, {
-                type: _Constants.typeSeparator
-            });
-            this._inlineOverflowArea.appendChild(separator.element);
-        }
-
-        this._hideSeparatorsIfNeeded(this._secondaryCommands);
-
-        // Add secondary commands
-        this._secondaryCommands.forEach((command) => {
-            if (!command.hidden) {
-                if (command.type === _Constants.typeToggle) {
-                    hasToggleCommands = true;
-                }
-                if (command.type === _Constants.typeFlyout) {
-                    hasFlyoutCommands = true;
-                }
-                this._inlineOverflowArea.appendChild(this._getMenuCommand(command).element);
-            }
-        });
-
-        _ElementUtilities[hasToggleCommands ? "addClass" : "removeClass"](this._inlineOverflowArea, _Constants.menuContainsToggleCommandClass);
-        _ElementUtilities[hasFlyoutCommands ? "addClass" : "removeClass"](this._inlineOverflowArea, _Constants.menuContainsFlyoutCommandClass);
-    }
-
-    private _setupOverflowAreaDetached(additionalCommands: any[]) {
-        this._writeProfilerMark("_setupOverflowAreaDetached,info");
-
-        var isCustomContent = (command: _Command.ICommand) => { return command.type === _Constants.typeContent };
-        var customContent = additionalCommands.filter(isCustomContent);
-        if (customContent.length === 0) {
-            customContent = this._secondaryCommands.filter(isCustomContent);
-        }
-
-        if (customContent.length > 0 && !this._customContentFlyout) {
-            var mainFlyout = _Global.document.createElement("div");
-            this._customContentContainer = _Global.document.createElement("div");
-            _ElementUtilities.addClass(this._customContentContainer, _Constants.overflowContentFlyoutCssClass);
-            mainFlyout.appendChild(this._customContentContainer);
-            this._customContentFlyout = new _Flyout.Flyout(mainFlyout);
-            _Global.document.body.appendChild(this._customContentFlyout.element);
-            this._customContentFlyout.onbeforeshow = () => {
-                _ElementUtilities.empty(this._customContentContainer);
-                _ElementUtilities._reparentChildren(this._chosenCommand.element, this._customContentContainer);
-            };
-            this._customContentFlyout.onafterhide = () => {
-                _ElementUtilities._reparentChildren(this._customContentContainer, this._chosenCommand.element);
-            };
-        }
-
-        if (!this._menu) {
-            this._menu = new Menu.Menu();
-            _ElementUtilities.addClass(this._menu.element, _Constants.overflowAreaCssClass);
-            this.extraClass && _ElementUtilities.addClass(this._menu.element, this.extraClass);
-            _Global.document.body.appendChild(this._menu.element);
-        }
-
-        var menuCommands: _MenuCommand.MenuCommand[] = [];
-
-        // Add primary commands that should overflow to the menu commands
-        additionalCommands.forEach((command) => {
-            menuCommands.push(this._getMenuCommand(command));
-        });
-
-        // Add separator between primary and secondary command if applicable
-        if (additionalCommands.length > 0 && this._secondaryCommands.length > 0) {
-            menuCommands.push(new _MenuCommand.MenuCommand(null, {
-                type: _Constants.typeSeparator
-            }));
-        }
-
-        // Add secondary commands to the menu commands
-        this._secondaryCommands.forEach((command) => {
-            if (!command.hidden) {
-                menuCommands.push(this._getMenuCommand(command));
-            }
-        });
-
-        this._hideSeparatorsIfNeeded(menuCommands);
-
-        // Set the menu commands
-        this._menu.commands = menuCommands;
-    }
-
-    private _hideSeparatorsIfNeeded(commands: ICommandWithType[]): void {
-        var prevType = _Constants.typeSeparator;
-        var command: ICommandWithType;
-
-        // Hide all leading or consecutive separators
-        var commandsLength = commands.length;
-        commands.forEach((command) => {
-            if (command.type === _Constants.typeSeparator &&
-                prevType === _Constants.typeSeparator) {
-                command.element.style.display = "none";
-            }
-            prevType = command.type;
-        });
-
-        // Hide trailing separators
-        for (var i = commandsLength - 1; i >= 0; i--) {
-            command = commands[i];
-            if (command.type === _Constants.typeSeparator) {
-                command.element.style.display = "none";
-            } else {
-                break;
-            }
-        }
-    }
-
-    static supportedForProcessing: boolean = true;
 }
+
+_Base.Class.mix(ToolBar, _Events.createEventProperties(
+    _Constants.EventNames.beforeOpen,
+    _Constants.EventNames.afterOpen,
+    _Constants.EventNames.beforeClose,
+    _Constants.EventNames.afterClose));
 
 // addEventListener, removeEventListener, dispatchEvent
 _Base.Class.mix(ToolBar, _Control.DOMEventMixin);
