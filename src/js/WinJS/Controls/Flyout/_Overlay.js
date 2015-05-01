@@ -1021,7 +1021,6 @@ define([
             },
             {
                 // Statics
-                _debug: false,
 
                 _isFlyoutVisible: function () {
                     var flyouts = _Global.document.querySelectorAll("." + _Constants.flyoutClass);
