@@ -842,7 +842,7 @@ define([
 
 
                     // See if we can fit in various places, fitting in the main view,
-                    // ignoring viewport changes, like for the IHM.                  
+                    // ignoring viewport changes, like for the IHM.
                     function fitTop(anchor, flyout) {
                         that._nextTop = anchor.top - flyout.height;
                         that._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
