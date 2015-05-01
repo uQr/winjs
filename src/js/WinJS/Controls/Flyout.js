@@ -111,7 +111,7 @@ define([
 
                 // Used by tests.
                 clients: {
-                    get: function _LightDismissableLayer_clients_get () {
+                    get: function _LightDismissableLayer_clients_get() {
                         return this._clients;
                     }
                 },
@@ -322,7 +322,7 @@ define([
                 },
                 // Used by tests.
                 dismissableLayer: {
-                    get: function _CascadeManager_dismissableLayer_get () {
+                    get: function _CascadeManager_dismissableLayer_get() {
                         return this._dismissableLayer;
                     }
                 },
@@ -401,7 +401,7 @@ define([
 
                     // Attach our css class
                     _ElementUtilities.addClass(this._element, _Constants.flyoutClass);
-                    
+
                     var that = this;
                     // Each flyout has an ILightDismissable that is managed through the
                     // CascasdeManager rather than by the _LightDismissService directly.
@@ -614,7 +614,7 @@ define([
                 },
 
                 _beforeEndHide: function Flyout_beforeEndHide() {
-                   Flyout._cascadeManager.flyoutHidden(this);
+                    Flyout._cascadeManager.flyoutHidden(this);
                 },
 
                 _baseFlyoutShow: function Flyout_baseFlyoutShow(anchor, placement, alignment, coordinates) {
@@ -842,23 +842,13 @@ define([
 
 
                     // See if we can fit in various places, fitting in the main view,
-                    // ignoring viewport changes, like for the IHM.
-                    //function fitTop(anchor, flyout) {
-                    //    that._nextTop = anchor.top - flyout.height;
-                    //    var preferredTop = anchor.top - flyout.height;
-                    //    var preferredBottom = anchor.top;
-                    //    var boundar
-                    //    that._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
-                    //    return (that._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
-                    //            that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
-                    //}
+                    // ignoring viewport changes, like for the IHM.                  
                     function fitTop(anchor, flyout) {
                         that._nextTop = anchor.top - flyout.height;
                         that._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
                         return (that._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
                                 that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
                     }
- this._nextLeft = (anchor.left + adjust) - flyout.width;
 
                     function fitBottom(anchor, flyout) {
                         that._nextTop = anchor.bottom;
@@ -867,14 +857,14 @@ define([
                                 that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
                     }
 
-                    function fitLeft(anchor, flyout, _adjust) {
+                    function fitLeft(anchor, flyout, adjust) {
                         adjust = adjust || 0;
-			this._nextLeft = (anchor.left + adjust) - flyout.width;
+                        this._nextLeft = (anchor.left + adjust) - flyout.width;
                         that._nextAnimOffset = { top: "0px", left: "50px", keyframe: "WinJS-showFlyoutLeft" };
                         return (that._nextLeft >= 0 && that._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
                     }
 
-                    function fitRight(anchor, flyout, _adjust) {
+                    function fitRight(anchor, flyout, adjust) {
                         adjust = adjust || 0;
                         this._nextLeft = (anchor.right - adjust);
                         that._nextAnimOffset = { top: "0px", left: "-50px", keyframe: "WinJS-showFlyoutRight" };
@@ -1018,34 +1008,42 @@ define([
                             break;
                         case "_cascade":
                             // Determine direction
-                                OVERLAY = 4,
-                                preferredDirection = rtl ? "Left" : "Right",
-                                fallbackDirection = rtl ? "Right" : "Left",
-                                preferredAdjust = (flyout["margin" + preferredDirection] + OVERLAY),
-                                fallbackAdjust = (flyout["margin" + fallbackDirection] + OVERLAY);
 
+                            //var rtl = false; // TODO determine this dynamically.
+                            //var OVERLAY = 4;
+                            //var preferredDirection = rtl ? "Left" : "Right";
+                            //var fallbackDirection = rtl ? "Right" : "Left";
+                            //var preferredAdjust = (flyout["margin" + preferredDirection] + OVERLAY);
+                            //var fallbackAdjust = (flyout["margin" + fallbackDirection] + OVERLAY)
 
-                            //// Shrink our measuremment of Anchor
-                            //anchor.right -= 4;
-                            //anchor.left += 4;
-
-                            //if (!this["_fit" + preferredDirection](anchor, flyout) && !this["_fit" + fallbackDirection](anchor, flyout)) {
+                            //if (!this["_fit" + preferredDirection](anchor, flyout, preferredAdjust) &&
+                            //    !this["_fit" + fallbackDirection](anchor, flyout, fallbackAdjust)) {
                             //    // Doesn't fit on either side just align to the preferred edge.
                             //    this._nextLeft = rtl ? 0 : -1;
-                            //} else {
-                            //    this._nextLeft += rtl ? 4 : -4;
                             //}
 
-                            if (!this["_fit" + preferredDirection](anchor, flyout, preferredAdjust) &&
-                                !this["_fit" + fallbackDirection](anchor, flyout, fallbackAdjust)) {
-                                // Doesn't fit on either side just align to the preferred edge.
-                                this._nextLeft = rtl ? 0 : -1;
-                            } 
+                            var rtl = false; // TODO determine this dynamically.
+                            var OVERLAY = 4;
+
+                            // fit right?
+                            var start = anchor.right - (flyout.marginLeft - OVERLAY);
+                            var end = start + flyout.width;
+                            if (start >= 0 && end <= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
+                                this._nextLeft = start;
+                                break;
+                            }
+
+                            // fit left?
+                            start = anchor.left + (OVERLAY + flyout.marginRight) - flyout.width;
+                            if (start >= 0 && end <= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
+                                this._nextLeft = start;
+                                break;
+                            }
+
+                            this._nextLeft = rtl ? 0 : -1;
                             break;
 
-                   
-                  
-			case "cartesian":
+                        case "cartesian":
                             this._nextTop = this._currentCoordinates.y - flyout.marginTop;
                             this._nextLeft = this._currentCoordinates.x - flyout.marginLeft;
 
