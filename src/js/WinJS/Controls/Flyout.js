@@ -1026,7 +1026,7 @@ define([
                             var OVERLAY = 4;
 
                             // fit right?
-                            var start = anchor.right - (flyout.marginLeft - OVERLAY);
+                            var start = anchor.right - flyout.marginLeft - OVERLAY;
                             var end = start + flyout.width;
                             if (start >= 0 && end <= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
                                 this._nextLeft = start;
@@ -1034,7 +1034,8 @@ define([
                             }
 
                             // fit left?
-                            start = anchor.left + (OVERLAY + flyout.marginRight) - flyout.width;
+                            end = anchor.left + (OVERLAY + flyout.marginRight);
+                            start = end - flyout.width;
                             if (start >= 0 && end <= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
                                 this._nextLeft = start;
                                 break;
