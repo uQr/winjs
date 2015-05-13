@@ -1001,97 +1001,34 @@ define([
                             }
                             break;
                         case "_cascade":
-                            // Determine direction
 
-                            //var rtl = false; // TODO determine this dynamically.
-                            //var OVERLAY = 4;
-                            //var preferredDirection = rtl ? "Left" : "Right";
-                            //var fallbackDirection = rtl ? "Right" : "Left";
-                            //var preferredAdjust = (flyout["margin" + preferredDirection] + OVERLAY);
-                            //var fallbackAdjust = (flyout["margin" + fallbackDirection] + OVERLAY)
 
-                            //if (!this["_fit" + preferredDirection](anchor, flyout, preferredAdjust) &&
-                            //    !this["_fit" + fallbackDirection](anchor, flyout, fallbackAdjust)) {
-                            //    // Doesn't fit on either side just align to the preferred edge.
-                            //    this._nextLeft = rtl ? 0 : -1;
-                            //}
+                            // Align vertically                           
+                            if (!fitBottom(anchor.top - flyout.marginTop, flyout) && !fitTop(anchor.bottom + flyout.marginBottom, flyout)) {
+                                centerVertically(anchor, flyout);
+                            }
 
-                            //var rtl = false; // TODO determine this dynamically.
+                            // Determine horizontal direction
                             var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
-                            var OVERLAY = 4;
-                            var end;
-                            var start;
+                            var visiblePixelsToOverlay = 4;
 
-                            var beginRight = anchor.right - flyout.marginLeft - OVERLAY;
-                            var beginLeft = anchor.left + flyout.marginRight + OVERLAY;
+                            var beginRight = anchor.right - flyout.marginLeft - visiblePixelsToOverlay;
+                            var beginLeft = anchor.left + flyout.marginRight + visiblePixelsToOverlay;
 
-                            if (!rtl) {
-
-                                if (!fitRight(beginRight, flyout) && !fitLeft(beginLeft, flyout)) {
-                                    // Doesn't fit on either side, pin to the right edge of the visible document.
-                                    that._nextLeft = -1;
-                                    that._nextAnimOffset = AnimationOffsets.right;
-                                }
-
-                            //    // fit right?
-                            //    start = anchor.right - flyout.marginLeft - OVERLAY;
-                            //    end = start + flyout.width;
-
-                            //    var didFitRight = fitRight(start, flyout);
-
-                            //    if (start >= 0 && end <= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
-                            //        this._nextLeft = start;
-                            //        break;
-                            //    }
-
-                            //    // fit left?
-                            //    end = anchor.left + (OVERLAY + flyout.marginRight);
-                            //    start = end - flyout.width;
-
-                            //    var didFitLeft = fitLeft(end, flyout);
-
-                            //    if (start >= 0 && end <= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
-                            //        this._nextLeft = start;
-                            //        break;
-                            //    }
-
-                            //    // Doesn't fit, pin to the right edge.
-                            //    this._nextAnimOffset = AnimationOffsets.right;
-                            //    this._nextLeft = -1;
-                            } else {
-
-                            //    // fit left?
-                            //    end = anchor.left + (OVERLAY + flyout.marginRight);
-                            //    start = end - flyout.width;
-                            //    if (start >= 0 && end <= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
-                            //        this._nextLeft = start;
-                            //        break;
-                            //    }
-
-                            //    // fit right?
-                            //    start = anchor.right - flyout.marginLeft - OVERLAY;
-                            //    end = start + flyout.width;
-                            //    if (start >= 0 && end <= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
-                            //        this._nextLeft = start;
-                            //        break;
-                            //    }
-
-                            //    // Doesn't fit, pin to the left edge.
-                            //    this._nextAnimOffset = AnimationOffsets.left;
-                                //    this._nextLeft = 0;
-
-
+                            if (rtl) {
                                 if (!fitLeft(beginLeft, flyout) && !fitRight(beginRight, flyout)) {
                                     // Doesn't fit on either side, pin to the left edge.
                                     that._nextLeft = 0;
                                     that._nextAnimOffset = AnimationOffsets.left;
                                 }
-
+                            } else {
+                                if (!fitRight(beginRight, flyout) && !fitLeft(beginLeft, flyout)) {
+                                    // Doesn't fit on either side, pin to the right edge of the visible document.
+                                    that._nextLeft = -1;
+                                    that._nextAnimOffset = AnimationOffsets.right;
+                                }
                             }
 
-                            // Align vertically
-                            //
-                            //
                             break;
 
                         case "cartesian":
