@@ -125,7 +125,7 @@ module CorsicaTests {
 
         verifyDismissableLayer(expectedDismissables: WinJS.UI.PrivateFlyout[]): void {
             var dismissableLayer = cascadeManager.dismissableLayer;
-            var dismissableFlyouts = dismissableLayer.clients.map(function(client) {
+            var dismissableFlyouts = dismissableLayer.clients.map(function (client) {
                 return client.element.winControl;
             });
             if (expectedDismissables.length === 0) {
@@ -478,29 +478,29 @@ module CorsicaTests {
                 chain1[0].hide();
             });
         }
-        
+
         testFocusMovesWithinCascadeSynchronously = function (complete) {
             // Verifies Overlay.show and Overlay.hide move focus synchronously
             // when focus is being moved between Overlays within the cascade.
-            
+
             var testShow = (overlay) => {
                 var promise = OverlayHelpers.show(overlay);
                 LiveUnit.Assert.areEqual(overlay.element, document.activeElement,
                     "Overlay should have received focus synchronously during show");
                 return promise;
             };
-            
+
             var chain = this.generateFlyoutChain();
-            
+
             testShow(chain[0]).then(() => {
                 return testShow(chain[1]);
             }).then(() => {
-                OverlayHelpers.hide(chain[1]);
-                LiveUnit.Assert.areEqual(chain[0].element, document.activeElement,
-                    "Hidden Overlay should have synchronously moved focus to its parent Overlay during hide");
-                OverlayHelpers.hide(chain[0]);
-                complete();
-            });
+                    OverlayHelpers.hide(chain[1]);
+                    LiveUnit.Assert.areEqual(chain[0].element, document.activeElement,
+                        "Hidden Overlay should have synchronously moved focus to its parent Overlay during hide");
+                    OverlayHelpers.hide(chain[0]);
+                    complete();
+                });
         }
     }
 
@@ -654,10 +654,59 @@ module CorsicaTests {
                     complete();
                 });
 
-                buttonCmd._invoke(); // Trigger collapse of entire cascade.
+                buttonCmd._invoke(); // We expect this to trigger collapse of entire cascade.
             });
         }
 
+        testHorizontalLayoutOfCascadedSubMenus = function (complete) {
+            var flyoutChain = this.generateFlyoutChain(2);
+
+            var headMenu = flyoutChain[0];
+            var subMenu = flyoutChain[1];
+            
+            // TODO test LTR and RTL languages.
+            this.showFlyout(headMenu)
+                .then(() => {
+
+                    // Set up test for fit right.
+
+                    // Perform test
+                    return MenuCommand._activateFlyoutCommand(subMenu.anchor._winControl).then(() => {
+                        // verify layout of submenu fits right
+
+                        return this.hideFlyout(subMenu);
+                    });
+                })
+                .then(() => {
+
+                    // Set up test for fit left.
+
+                    // Perform test
+                    return MenuCommand._activateFlyoutCommand(subMenu.anchor._winControl).then(() => {
+                        // verify layout of submenu fits left
+
+                        return this.hideFlyout(subMenu);
+                    });
+                })
+                .then(() => {
+
+                    // Set up test for pinning to right edge of visible document.
+
+                    // Perform test
+                    return MenuCommand._activateFlyoutCommand(subMenu.anchor._winControl).then(() => {
+                        // verify layout of submenu pins to right edge of visible document.
+
+                        return this.hideFlyout(subMenu);
+                    });
+                }).done(complete);
+        }
+
+         testVerticalAlignmentOfCascadedSubMenus = function (complete) {
+            // align top
+            // align bottom
+            // center vertically
+            // pin to top and bottom window if too tall.
+        }
     }
 }
 
