@@ -554,7 +554,8 @@ declare module WinJS {
             _labelSpan;
             _flyoutSpan;
             _invoke;
-            static _activateFlyoutCommand;
+            static _activateFlyoutCommand: (command: WinJS.UI.PrivateMenuCommand) => Promise<any>;
+            static _deactivateFlyoutCommand: (command: WinJS.UI.PrivateMenuCommand) => Promise<any>;
         }
 
         class PrivateMenu extends Menu {

@@ -3,6 +3,7 @@
 // <reference path="ms-appx://$(TargetFramework)/css/ui-dark.css" />
 // <reference path="../TestLib/Helper.ts"/>
 // <reference path="OverlayHelpers.ts" />
+/// <deploy src="../TestData/" />
 
 module CorsicaTests {
     "use strict";
@@ -659,53 +660,157 @@ module CorsicaTests {
         }
 
         testHorizontalLayoutOfCascadedSubMenus = function (complete) {
-            var flyoutChain = this.generateFlyoutChain(2);
 
-            var headMenu = flyoutChain[0];
-            var subMenu = flyoutChain[1];
-            
-            // TODO test LTR and RTL languages.
-            this.showFlyout(headMenu)
-                .then(() => {
+            var iframe = document.createElement("iframe");
+            iframe.src = "$(TESTDATA)/WinJSSandbox.html";
+            iframe.onload = function () {
 
-                    // Set up test for fit right.
+                // This test requires the WinJS loaded inside of the iframe to ensure that private
+                // WinJS internal helper functions identify the edge of the iframe's visual
+                // viewport as the edge of the visible document, so that Cascading Menu's will
+                // correctly avoid clipping through the edge of their contentwindow when showing.
+                var iframeWinJS = <typeof WinJS>iframe.contentWindow["WinJS"];
+                var iframeMenu = <typeof WinJS.UI.PrivateMenu> iframeWinJS.UI.Menu;
+                var iframeMenuCommand = <typeof WinJS.UI.PrivateMenuCommand> iframeWinJS.UI.MenuCommand;
 
-                    // Perform test
-                    return MenuCommand._activateFlyoutCommand(subMenu.anchor._winControl).then(() => {
-                        // verify layout of submenu fits right
+                var iframeDocument = iframe.contentDocument;
 
-                        return this.hideFlyout(subMenu);
+                var defaultAnchor = iframeDocument.createElement("DIV");
+                var parentMenu = new iframeMenu();
+                var subMenu = new iframeMenu();
+
+                var flyoutCommand = new iframeMenuCommand(null, { type: 'flyout', flyout: subMenu, label: 'show submenu' });
+                var subMenuCommands = [
+                    // 9 MenuCommands will ensure that the subMenu is quite a bit taller than the parentmenu.
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd1' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd2' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd3' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd4' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd5' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd6' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd7' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd8' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd9' }),
+                ];
+
+                function asyncShow(menu: WinJS.UI.PrivateMenu, anchor, placement?, alignment?): WinJS.Promise<any> {
+                    return new WinJS.Promise(function (c, e, p): void {
+                        function afterShow(): void {
+                            menu.removeEventListener("aftershow", afterShow, false);
+                            c();
+                        };
+                        menu.addEventListener("aftershow", afterShow, false);
+                        menu.show(anchor, placement, alignment);
                     });
-                })
-                .then(() => {
+                }
 
-                    // Set up test for fit left.
+                parentMenu.anchor = defaultAnchor;
+                parentMenu.commands = [flyoutCommand];
 
-                    // Perform test
-                    return MenuCommand._activateFlyoutCommand(subMenu.anchor._winControl).then(() => {
-                        // verify layout of submenu fits left
+                subMenu.anchor = flyoutCommand.element;
+                subMenu.commands = subMenuCommands;
 
-                        return this.hideFlyout(subMenu);
+                iframeDocument.body.appendChild(defaultAnchor);
+                iframeDocument.body.appendChild(parentMenu.element);
+                iframeDocument.body.appendChild(subMenu.element);
+
+                var menuWidth = 150;
+                var iframeWidth = menuWidth * 4;
+                var verticalOverlap = 4;
+                iframe.style.width = iframeWidth + "px";
+                parentMenu.element.style.width = menuWidth + "px";
+                subMenu.element.style.width = menuWidth + "px";
+
+                // PRECONDITION: Sanity check that Iframe width is the value we intended.
+                LiveUnit.Assert.areEqual(iframeWidth, iframe.offsetWidth,
+                    "TEST ERROR: Test expects iframe width of " + iframeWidth + "px");
+
+                // PRECONDITION: Sanity check visualViewportWidth matches iframe width
+                var visualViewportWidth = iframeWinJS.UI._Overlay._keyboardInfo._visualViewportWidth;
+                LiveUnit.Assert.areEqual(iframe.offsetWidth, visualViewportWidth,
+                    "TEST ERROR:  Iframe's WinJS should have visualViewportWidth matching the iframe width");
+
+                // TODO test LTR and RTL languages.
+                asyncShow(parentMenu, parentMenu.anchor)
+                    .then(() => {
+
+                        // PRECONDITION: Sanity check that parent menu width matches the value we intended;
+                        LiveUnit.Assert.areEqual(menuWidth, parentMenu.element.offsetWidth,
+                            "TEST ERROR: Test expects parent menu width to be exactly " + menuWidth + "px");
+
+                        return new WinJS.Promise((c) => {
+                            // Set up test for fit right.
+                            parentMenu.element.style.left = (iframeWidth/2 - menuWidth/2) + "px";
+                            parentMenu.element.style.right = "";
+
+                            var parentMenuRect = parentMenu.element.getBoundingClientRect();
+
+                            // PRECONDITION: Sanity check that parent menu has enough room to fit a subMenu on either side.
+                            LiveUnit.Assert.isTrue(parentMenuRect.left > menuWidth,
+                                "TEST ERROR: Test requires more room between left edge of parent menu and the left edge of the visual viewport");
+                            LiveUnit.Assert.isTrue(visualViewportWidth - parentMenuRect.right > menuWidth,
+                                "TEST ERROR: Test requires more room between right edge of parent menu and the right edge of the visual viewport");
+
+                            // Perform test
+                            iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl).then(() => {
+                                // verify layout of submenu fits right
+                                
+                                // PRECONDITION: Sanity check that subMenu width matches the value we intended;
+                                LiveUnit.Assert.areEqual(menuWidth, subMenu.element.offsetWidth,
+                                    "TEST ERROR: Test expects subMenu width to be exactly " + menuWidth + "px");
+
+                                var subMenuRect = subMenu.element.getBoundingClientRect();
+
+                                LiveUnit.Assert.areEqual(parentMenuRect.right - verticalOverlap, subMenuRect.left,
+                                    "left edge of subMenu should overlap right edge of parent menu");
+                                LiveUnit.Assert.isTrue(subMenuRect.left >= 0,
+                                    "left edge of subMenu should not overrun left edge of visual viewport");
+                                LiveUnit.Assert.isTrue(subMenuRect.right <= visualViewportWidth,
+                                    "right edge of subMenu should not overrun right edge of visual viewport");
+
+                                // Hide subMenu
+                                iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl).done(c);
+                            });
+                        });
+                    })
+                    .then(() => {
+                        return new WinJS.Promise((c) => {
+                            // Set up test for fit left.
+
+                            // Perform test
+                            iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl).then(() => {
+                                // verify layout of submenu fits left
+
+                                iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl).done(c);
+                            });
+                        });
+                    })
+                    .then(() => {
+                        return new WinJS.Promise((c) => {
+                            // Set up test for pinning to right edge of visible document.
+
+                            // Perform test
+                            iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl).then(() => {
+                                // verify layout of submenu pins to right edge of visible document.
+
+                                iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl).done(c);
+                            });
+                        });
+                    }).done(() => {
+                        // TODO Clean up Iframe
+                        complete();
                     });
-                })
-                .then(() => {
 
-                    // Set up test for pinning to right edge of visible document.
-
-                    // Perform test
-                    return MenuCommand._activateFlyoutCommand(subMenu.anchor._winControl).then(() => {
-                        // verify layout of submenu pins to right edge of visible document.
-
-                        return this.hideFlyout(subMenu);
-                    });
-                }).done(complete);
+            };
+            document.body.appendChild(iframe);
         }
 
-         testVerticalAlignmentOfCascadedSubMenus = function (complete) {
+        testVerticalAlignmentOfCascadedSubMenus = function (complete) {
             // align top
             // align bottom
             // center vertically
             // pin to top and bottom window if too tall.
+            complete();
         }
     }
 }

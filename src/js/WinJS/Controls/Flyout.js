@@ -747,12 +747,12 @@ define([
                         this._checkMenuCommands();
                     }
 
-                    // Remove old height restrictions and scrolling
+                    // Remove old height restrictions and scrolling.
                     this._clearAdjustedStyles();
 
                     this._setAlignment(this._currentAlignment);
 
-                    // Set up the new position, and prep the offset for showPopup
+                    // Set up the new position, and prep the offset for showPopup.
                     this._getTopLeft();
 
                     // Adjust position
@@ -1002,8 +1002,7 @@ define([
                             break;
                         case "_cascade":
 
-
-                            // Align vertically                           
+                            // Align vertically
                             if (!fitBottom(anchor.top - flyout.marginTop, flyout) && !fitTop(anchor.bottom + flyout.marginBottom, flyout)) {
                                 centerVertically(anchor, flyout);
                             }
