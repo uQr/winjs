@@ -151,6 +151,7 @@ define([
                             that._layoutImpl.setFocusOnShow();
                         }
                     },
+                    onShouldLightDismiss: that._shouldLightDismiss.bind(that),
                 });
 
                 // Make sure we have an ARIA role
@@ -579,6 +580,14 @@ define([
                 _disposeChildren: function _LegacyAppBar_disposeChildren() {
                     // Be purposeful about what we dispose.
                     this._layoutImpl.disposeChildren();
+                },
+
+                _shouldLightDismiss: function _LegacyAppBar_shouldLightDismiss(lightDismissInfo){
+                    if(this._sticky){ 
+                        return _LightDismissService._DismissalPolicies.sticky(lightDismissInfo);
+                    } else {
+                        return _LightDismissService._DismissalPolicies.light(lightDismissInfo);
+                    }
                 },
 
                 _handleKeyDown: function _LegacyAppBar_handleKeyDown(event) {
