@@ -704,6 +704,17 @@ module CorsicaTests {
                     });
                 }
 
+                function asyncHide(menu: WinJS.UI.PrivateMenu, anchor, placement?, alignment?): WinJS.Promise<any> {
+                    return new WinJS.Promise(function (c, e, p): void {
+                        function afterShow(): void {
+                            menu.removeEventListener("aftershow", afterShow, false);
+                            c();
+                        };
+                        menu.addEventListener("aftershow", afterShow, false);
+                        menu.show(anchor, placement, alignment);
+                    });
+                }
+
                 parentMenu.anchor = defaultAnchor;
                 parentMenu.commands = [flyoutCommand];
 
@@ -714,50 +725,66 @@ module CorsicaTests {
                 iframeDocument.body.appendChild(parentMenu.element);
                 iframeDocument.body.appendChild(subMenu.element);
 
-                var menuWidth = 150;
-                var iframeWidth = menuWidth * 4;
+                var parentMenuVisibleWidth: number; // content, padding, border;
+                var parentMenuMargins: {};
+                var subMenuVisibleWidth: number; // content, padding, border, 
+                var subMenuMargins: {};
+                var iframeWidth: number;
                 var verticalOverlap = 4;
-                iframe.style.width = iframeWidth + "px";
-                parentMenu.element.style.width = menuWidth + "px";
-                subMenu.element.style.width = menuWidth + "px";
+                var additionalSpaceForSubMenu;
 
-                // PRECONDITION: Sanity check that Iframe width is the value we intended.
-                LiveUnit.Assert.areEqual(iframeWidth, iframe.offsetWidth,
-                    "TEST ERROR: Test expects iframe width of " + iframeWidth + "px");
+                asyncShow(parentMenu, defaultAnchor).then(() => {return asyncShow(subMenu, defaultAnchor) })
+                    .then(() => {
+                        parentMenuVisibleWidth = parentMenu.element.getBoundingClientRect().width;
+                        subMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
+                        subMenuVisibleWidth = subMenu.element.getBoundingClientRect().width;
+                        subMenuMargins = WinJS.Utilities._getPreciseMargins(subMenu.element);
 
-                // PRECONDITION: Sanity check visualViewportWidth matches iframe width
-                var visualViewportWidth = iframeWinJS.UI._Overlay._keyboardInfo._visualViewportWidth;
-                LiveUnit.Assert.areEqual(iframe.offsetWidth, visualViewportWidth,
-                    "TEST ERROR:  Iframe's WinJS should have visualViewportWidth matching the iframe width");
 
-                // TODO test LTR and RTL languages.
-                asyncShow(parentMenu, parentMenu.anchor)
+                    
+                        (function () {
+                            iframeWidth = parentMenuVisibleWidth * 4;
+                            iframe.style.width = iframeWidth + "px";
+
+                            // PRECONDITION: Sanity check that Iframe width is the value we intended.
+                            LiveUnit.Assert.areEqual(iframeWidth, iframe.offsetWidth,
+                                "TEST ERROR: Test expects iframe width of " + iframeWidth + "px");
+
+                            // PRECONDITION: Sanity check visualViewportWidth matches iframeWidth
+                            var iframeVisualViewportWidth = iframeWinJS.UI._Overlay._keyboardInfo._visualViewportWidth;
+                            LiveUnit.Assert.areEqual(iframe.offsetWidth, iframeVisualViewportWidth,
+                                "TEST ERROR:  Iframe's WinJS should report that the visual viewport width matches the iframe width");
+
+                            // TODO test LTR and RTL languages.
+                        }());
+                    })
+                //asyncShow(parentMenu, defaultAnchor).then(() =>{return asyncShow(subMenu,defaultAnchor)})
                     .then(() => {
 
-                        // PRECONDITION: Sanity check that parent menu width matches the value we intended;
-                        LiveUnit.Assert.areEqual(menuWidth, parentMenu.element.offsetWidth,
-                            "TEST ERROR: Test expects parent menu width to be exactly " + menuWidth + "px");
+                        //// PRECONDITION: Sanity check that parent menu width matches the value we intended;
+                        //LiveUnit.Assert.areEqual(parentMenuWidth, parentMenu.element.offsetWidth,
+                        //    "TEST ERROR: Test expects parent menu width to be exactly " + parentMenuWidth + "px");
 
                         return new WinJS.Promise((c) => {
                             // Set up test for fit right.
-                            parentMenu.element.style.left = (iframeWidth/2 - menuWidth/2) + "px";
+                            parentMenu.element.style.left = (iframeWidth / 2 - parentMenuVisibleWidth / 2) + "px";
                             parentMenu.element.style.right = "";
 
                             var parentMenuRect = parentMenu.element.getBoundingClientRect();
 
                             // PRECONDITION: Sanity check that parent menu has enough room to fit a subMenu on either side.
-                            LiveUnit.Assert.isTrue(parentMenuRect.left > menuWidth,
+                            LiveUnit.Assert.isTrue(parentMenuRect.left > parentMenuVisibleWidth,
                                 "TEST ERROR: Test requires more room between left edge of parent menu and the left edge of the visual viewport");
-                            LiveUnit.Assert.isTrue(visualViewportWidth - parentMenuRect.right > menuWidth,
+                            LiveUnit.Assert.isTrue(iframeWidth - parentMenuRect.right > parentMenuVisibleWidth,
                                 "TEST ERROR: Test requires more room between right edge of parent menu and the right edge of the visual viewport");
 
                             // Perform test
                             iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl).then(() => {
                                 // verify layout of submenu fits right
-                                
+
                                 // PRECONDITION: Sanity check that subMenu width matches the value we intended;
-                                LiveUnit.Assert.areEqual(menuWidth, subMenu.element.offsetWidth,
-                                    "TEST ERROR: Test expects subMenu width to be exactly " + menuWidth + "px");
+                                LiveUnit.Assert.areEqual(parentMenuVisibleWidth, subMenu.element.offsetWidth,
+                                    "TEST ERROR: Test expects subMenu width to be exactly " + parentMenuVisibleWidth + "px");
 
                                 var subMenuRect = subMenu.element.getBoundingClientRect();
 
@@ -765,7 +792,7 @@ module CorsicaTests {
                                     "left edge of subMenu should overlap right edge of parent menu");
                                 LiveUnit.Assert.isTrue(subMenuRect.left >= 0,
                                     "left edge of subMenu should not overrun left edge of visual viewport");
-                                LiveUnit.Assert.isTrue(subMenuRect.right <= visualViewportWidth,
+                                LiveUnit.Assert.isTrue(subMenuRect.right <= iframeWidth,
                                     "right edge of subMenu should not overrun right edge of visual viewport");
 
                                 // Hide subMenu
