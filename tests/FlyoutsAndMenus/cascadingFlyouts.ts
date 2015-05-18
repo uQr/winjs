@@ -37,7 +37,7 @@ module CorsicaTests {
         // Abstract Helper methods that need to be implemented by each derivative class.
         //
 
-        showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
+        showFlyoutInCascade(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             this.abstractMethodFail();
             return WinJS.Promise.wrapError(null); // Appease the compiler.
         }
@@ -55,7 +55,7 @@ module CorsicaTests {
         // Concrete Helper methods
         //
 
-        hideFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
+        hideFlyoutInCascade(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             // Hides the specified flyout and returns a promise that completes when
             // it and all of its subFlyouts in the cascade are hidden.
 
@@ -98,7 +98,7 @@ module CorsicaTests {
             flyoutChain = (index < 0) ? flyoutChain : flyoutChain.slice(0, index + 1);
 
             return Helper.Promise.forEach(flyoutChain, (flyout) => {
-                return this.showFlyout(flyout).then(() => {
+                return this.showFlyoutInCascade(flyout).then(() => {
                     verifyFlyoutContainsFocusAfterShowing(flyout);
                 });
             });
@@ -250,7 +250,7 @@ module CorsicaTests {
                 flyout = flyoutChain[index];
                 expectedFocusTarget = flyoutChain[index - 1].element,
                 expectedCascadeAfterHiding = flyoutChain.slice(0, index);
-                return this.hideFlyout(flyout);
+                return this.hideFlyoutInCascade(flyout);
 
             }).then(() => {
                     this.verifyCascade(expectedCascadeAfterHiding);
@@ -261,7 +261,7 @@ module CorsicaTests {
                     flyout = flyoutChain[index];
                     expectedFocusTarget = flyoutChain[index - 1].element;
                     expectedCascadeAfterHiding = flyoutChain.slice(0, index);
-                    return this.hideFlyout(flyout);
+                    return this.hideFlyoutInCascade(flyout);
 
                 }).then(() => {
                     this.verifyCascade(expectedCascadeAfterHiding);
@@ -272,7 +272,7 @@ module CorsicaTests {
                     flyout = flyoutChain[index];
                     expectedFocusTarget = _defaultAnchor;
                     expectedCascadeAfterHiding = flyoutChain.slice(0, index);
-                    return this.hideFlyout(flyout);
+                    return this.hideFlyoutInCascade(flyout);
 
                 }).then(() => {
                     this.verifyCascade(expectedCascadeAfterHiding);
@@ -297,7 +297,7 @@ module CorsicaTests {
                 var otherFlyout = this.generateFlyoutChain(1)[0];
                 this.chainFlyouts(flyoutChain[requiredSize - 2], otherFlyout);
 
-                this.showFlyout(otherFlyout).then(() => {
+                this.showFlyoutInCascade(otherFlyout).then(() => {
                     var expectedCascade = flyoutChain.slice(0, requiredSize - 1).concat(otherFlyout);
                     this.verifyCascade(expectedCascade);
                     complete();
@@ -319,10 +319,10 @@ module CorsicaTests {
             var otherFlyout = this.generateFlyoutChain(1)[0];
 
             this.showFlyoutChain(flyoutChain).then(() => {
-                return this.showFlyout(otherFlyout);
+                return this.showFlyoutInCascade(otherFlyout);
             }).then(() => {
                     this.verifyCascade([otherFlyout]);
-                    return this.hideFlyout(otherFlyout);
+                    return this.hideFlyoutInCascade(otherFlyout);
                 }).done(() => {
                     LiveUnit.Assert.isTrue(_defaultAnchor.contains(<HTMLElement>document.activeElement), "Hiding all flyouts in the cascade should return focus to the element that originally had it.");
                     complete();
@@ -415,7 +415,7 @@ module CorsicaTests {
                 LiveUnit.Assert.fail(msg);
             }
 
-            this.showFlyout(flyout).then(() => {
+            this.showFlyoutInCascade(flyout).then(() => {
 
                 this.verifyCascade([flyout]);
 
@@ -508,8 +508,8 @@ module CorsicaTests {
     // Test Class for Cascading Flyout unit tests.
     export class CascadingFlyoutTests extends _BaseCascadingTests {
 
-        // Implementation of Abstract showFlyout Method.
-        showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
+        // Implementation of Abstract showFlyoutInCascade Method.
+        showFlyoutInCascade(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             return OverlayHelpers.show(flyout);
         }
 
@@ -550,8 +550,8 @@ module CorsicaTests {
         private firstCommandId = "flyoutCmd1";
         private secondCommandId = "flyoutCmd2";
 
-        // Implementation of Abstract showFlyout Method.
-        showFlyout(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
+        // Implementation of Abstract showFlyoutInCascade Method.
+        showFlyoutInCascade(flyout: WinJS.UI.PrivateFlyout): WinJS.Promise<any> {
             // If my anchor isn't in the cascade, just call overlayhelpers.show
             // else call menucommand._activateFlyoutCommand(flyout)
 
@@ -681,16 +681,10 @@ module CorsicaTests {
 
                 var flyoutCommand = new iframeMenuCommand(null, { type: 'flyout', flyout: subMenu, label: 'show submenu' });
                 var subMenuCommands = [
-                    // 9 MenuCommands will ensure that the subMenu is quite a bit taller than the parentmenu.
                     new iframeMenuCommand(null, { type: 'button', label: 'cmd1' }),
                     new iframeMenuCommand(null, { type: 'button', label: 'cmd2' }),
                     new iframeMenuCommand(null, { type: 'button', label: 'cmd3' }),
                     new iframeMenuCommand(null, { type: 'button', label: 'cmd4' }),
-                    new iframeMenuCommand(null, { type: 'button', label: 'cmd5' }),
-                    new iframeMenuCommand(null, { type: 'button', label: 'cmd6' }),
-                    new iframeMenuCommand(null, { type: 'button', label: 'cmd7' }),
-                    new iframeMenuCommand(null, { type: 'button', label: 'cmd8' }),
-                    new iframeMenuCommand(null, { type: 'button', label: 'cmd9' }),
                 ];
 
                 parentMenu.anchor = defaultAnchor;
@@ -742,23 +736,38 @@ module CorsicaTests {
                     });
                 }
 
-                function verifySubMenuInBounds(subMenu) {
+                function takeBaseHorizontalMeasurements(): WinJS.Promise<any> {
+                    return new WinJS.Promise((c) => {
+                        asyncShow(parentMenu, defaultAnchor)
+                            .then(() => {
+                                parentMenuBorderBoxWidth = parentMenu.element.getBoundingClientRect().width;
+                                parentMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
 
-                    var subMenuRect = subMenu.element.getBoundingClientRect();
+                                return asyncHide(parentMenu);
+                            })
+                            .then(() => { 
+                                return asyncShow(subMenu, defaultAnchor)
+                            })
+                            .then(() => {
+                                subMenuBorderBoxWidth = subMenu.element.getBoundingClientRect().width;
+                                subMenuMargins = WinJS.Utilities._getPreciseMargins(subMenu.element);
+                                requiredSpaceForLeftCascade = subMenuMargins.left + subMenuBorderBoxWidth - expectedOverlap;
+                                requiredSpaceForRightCascade = subMenuBorderBoxWidth - expectedOverlap + subMenuMargins.right;
 
-                    LiveUnit.Assert.isTrue(subMenuRect.left + subMenuMargins.left >= 0,
-                        "left edge of subMenu marginbox should not overrun left edge of visual viewport");
-                    LiveUnit.Assert.isTrue(subMenuRect.right + subMenuMargins.right <= iframeWidth,
-                        "right edge of subMenu marginbox should not overrun right edge of visual viewport");
-
+                                return asyncHide(subMenu);
+                            })
+                            .done(c);
+                    });
                 }
 
-                function configureParentMenuInIframe(visibleSpaceLHS, visibleSpaceRHS): WinJS.Promise<any> {
+                function configureHorizontalPosition_OfParentMenu_InIframe(visibleSpaceLHS, visibleSpaceRHS): WinJS.Promise<any> {
+
+                    // Sizes the iframe to the specified dimensions, then positions the parentMenu at the correct location to perform the test.
 
                     return new WinJS.Promise((c) => {
 
-                        function iframeResize() {
-                            iframe.contentWindow.removeEventListener("resize", iframeResize, false);
+                        function contentWindowResized() {
+                            iframe.contentWindow.removeEventListener("resize", contentWindowResized, false);
 
                             // PRECONDITION: Sanity check that Iframe width is the value we intended.
                             LiveUnit.Assert.areEqual(iframeWidth, iframe.offsetWidth,
@@ -783,144 +792,138 @@ module CorsicaTests {
                                 .done(c);
                         }
 
+                        // Sizing the iframe will trigger an async "resize" event in the iframe contentWindow. Wait until the "resize" event 
+                        // fires to avoid light dismissing the menu's.
                         iframeWidth = visibleSpaceLHS + parentMenuBorderBoxWidth + visibleSpaceRHS;
-                        iframe.contentWindow.addEventListener("resize", iframeResize, false);
+                        iframe.contentWindow.addEventListener("resize", contentWindowResized, false);
                         iframe.style.width = iframeWidth + "px";
+
                     });
                 }
 
-                function takeBaseMeasurements(): WinJS.Promise<any> {
+                function verifySubMenuInBounds(subMenu) {
+
+                    var subMenuRect = subMenu.element.getBoundingClientRect();
+
+                    LiveUnit.Assert.isTrue(subMenuRect.left + subMenuMargins.left >= 0,
+                        "left edge of subMenu marginbox should not overrun left edge of visual viewport");
+                    LiveUnit.Assert.isTrue(subMenuRect.right + subMenuMargins.right <= iframeWidth,
+                        "right edge of subMenu marginbox should not overrun right edge of visual viewport");
+
+                }
+
+                function verifyCascadePreferredPlacement(): WinJS.Promise<any> {
+                    // Verifies that subMenus will cascade to the right of their parent menu, as long as there is enough room.
                     return new WinJS.Promise((c) => {
-                        asyncShow(parentMenu, defaultAnchor)
+                        var parentMenuRect: ClientRect;
+                        var subMenuRect: ClientRect;
+                        configureHorizontalPosition_OfParentMenu_InIframe(requiredSpaceForLeftCascade, requiredSpaceForRightCascade)
                             .then(() => {
-                                parentMenuBorderBoxWidth = parentMenu.element.getBoundingClientRect().width;
-                                parentMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
 
-                                return asyncHide(parentMenu);
-                            })
-                            .then(() => { 
-                                return asyncShow(subMenu, defaultAnchor)
+                                // PRECONDITION: Sanity check that parent menu has enough room to fit a subMenu on either side.
+                                parentMenuRect = parentMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.isTrue(parentMenuRect.left >= requiredSpaceForLeftCascade,
+                                    "TEST ERROR: Test requires more room between left edge of parent menu and the left edge of the visual viewport");
+                                LiveUnit.Assert.isTrue(iframeWidth - parentMenuRect.right >= requiredSpaceForRightCascade,
+                                    "TEST ERROR: Test requires more room between right edge of parent menu and the right edge of the visual viewport");
+
+                                // Perform test
+                                return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
                             })
                             .then(() => {
-                                subMenuBorderBoxWidth = subMenu.element.getBoundingClientRect().width;
-                                subMenuMargins = WinJS.Utilities._getPreciseMargins(subMenu.element);
-                                requiredSpaceForLeftCascade = subMenuMargins.left + subMenuBorderBoxWidth - expectedOverlap;
-                                requiredSpaceForRightCascade = subMenuBorderBoxWidth - expectedOverlap + subMenuMargins.right;
 
-                                return asyncHide(subMenu);
-                            })
+                                // Verify subMenu cascades to the right when there is enough space on either side.
+                                subMenuRect = subMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.areEqual(parentMenuRect.right - subMenuRect.left, expectedOverlap,
+                                    "left edge of subMenu should overlap right edge of parent menu by " + expectedOverlap + "px");
+
+                                verifySubMenuInBounds(subMenu);
+
+                                    // Hide subMenu
+                                    return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
+                                })
                             .done(c);
                     });
                 }
 
-                takeBaseMeasurements()
-                    .then(() => { 
-                        // TEST 1
-                        return new WinJS.Promise((c) => {
-                            // Set up test for fit right.
-                            var parentMenuRect: ClientRect;
-                            var subMenuRect: ClientRect;
-                            configureParentMenuInIframe(requiredSpaceForLeftCascade, requiredSpaceForRightCascade)
-                                .then(() => {
+                function verifyCascadeFallBackPlacement(): WinJS.Promise<any> {
+                    // Verifies that subMenus will cascade to the left of their parent menu, 
+                    // if there is only enough room to fit a subMenu to the left.
+                    return new WinJS.Promise((c) => {
+                        var parentMenuRect: ClientRect;
+                        var subMenuRect: ClientRect;
 
-                                    // PRECONDITION: Sanity check that parent menu has enough room to fit a subMenu on either side.
-                                    parentMenuRect = parentMenu.element.getBoundingClientRect();
-                                    LiveUnit.Assert.isTrue(parentMenuRect.left >= requiredSpaceForLeftCascade,
-                                        "TEST ERROR: Test requires more room between left edge of parent menu and the left edge of the visual viewport");
-                                    LiveUnit.Assert.isTrue(iframeWidth - parentMenuRect.right >= requiredSpaceForRightCascade,
-                                        "TEST ERROR: Test requires more room between right edge of parent menu and the right edge of the visual viewport");
+                        configureHorizontalPosition_OfParentMenu_InIframe(requiredSpaceForLeftCascade, requiredSpaceForRightCascade - 1)
+                            .then(() => {
 
-                                    // Perform test
-                                    return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
-                                })
-                                .then(() => {
+                                // PRECONDITION: Sanity check that there is only enough room to fit a subMenu on the left side of the parentMenu.
+                                parentMenuRect = parentMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.isTrue(parentMenuRect.left >= requiredSpaceForLeftCascade,
+                                    "TEST ERROR: Test requires that there NOT be enough space on the right hand side to fit a subMenu");
+                                LiveUnit.Assert.isTrue(iframeWidth - parentMenuRect.right < requiredSpaceForRightCascade,
+                                    "TEST ERROR: Test requires that there be enough space on the left hand side to fit a subMenu");
 
-                                    // Verify subMenu cascades to the right when there is enough space on either side.
-                                    subMenuRect = subMenu.element.getBoundingClientRect();
-                                    LiveUnit.Assert.areEqual(parentMenuRect.right - subMenuRect.left, expectedOverlap,
-                                        "left edge of subMenu should overlap right edge of parent menu by " + expectedOverlap + "px");
+                                // Perform test
+                                return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
+                            })
+                            .then(() => {
 
-                                    verifySubMenuInBounds(subMenu);
+                                // Verify subMenu cascades to the left when there is only enough room to the left.
+                                subMenuRect = subMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.areEqual(subMenuRect.right - parentMenuRect.left, expectedOverlap,
+                                    "right edge of subMenu should overlap left edge of parent menu by " + expectedOverlap + "px");
 
-                                    // Hide subMenu
-                                    return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
-                                })
-                                .done(c);
-                        });
-                    })
-                    .then(() => {
-                        // TEST 2
-                        return new WinJS.Promise((c) => {
-                            // Set up test for fit left.
-
-                            var parentMenuRect: ClientRect;
-                            var subMenuRect: ClientRect;
-
-                            configureParentMenuInIframe(requiredSpaceForLeftCascade, requiredSpaceForRightCascade -1)
-                                .then(() => {
-
-                                    // PRECONDITION: Sanity check that there is only enough room to fit a subMenu on the left side of the parentMenu.
-                                    parentMenuRect = parentMenu.element.getBoundingClientRect();
-                                    LiveUnit.Assert.isTrue(parentMenuRect.left >= requiredSpaceForLeftCascade,
-                                        "TEST ERROR: TODO");
-                                    LiveUnit.Assert.isTrue(iframeWidth - parentMenuRect.right < requiredSpaceForRightCascade,
-                                        "TEST ERROR: TODO");
-
-                                    // Perform test
-                                    return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
-                                })
-                                .then(() => {
-
-                                    // Verify subMenu cascades to the left when there is only enough room to the left.
-                                    subMenuRect = subMenu.element.getBoundingClientRect();
-                                    LiveUnit.Assert.areEqual(subMenuRect.right - parentMenuRect.left, expectedOverlap,
-                                        "right edge of subMenu should overlap left edge of parent menu by " + expectedOverlap + "px");
-
-                                    verifySubMenuInBounds(subMenu);
+                                verifySubMenuInBounds(subMenu);
 
                                     // Hide subMenu
                                     return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
                                 })
-                                .done(c);
-                        });
-                    })
-                    .then(() => {
-                        // TEST 3
-                        return new WinJS.Promise((c) => {
-                            // Set up test for pinning to right edge of visible document.
+                            .done(c);
+                    });
+                }
 
-                            var parentMenuRect: ClientRect;
-                            var subMenuRect: ClientRect;
+                function verifyCascadeLastResortPlacement(): WinJS.Promise<any> {
+                    // Verifies that subMenus will be pinned to the right edge of the viewport, 
+                    // when there is not enough room to cascade on either side of the parent menu.
+                    return new WinJS.Promise((c) => {
+                        var parentMenuRect: ClientRect;
+                        var subMenuRect: ClientRect;
 
-                            configureParentMenuInIframe(requiredSpaceForLeftCascade - 1, requiredSpaceForRightCascade - 1)
-                                .then(() => {
+                        configureHorizontalPosition_OfParentMenu_InIframe(requiredSpaceForLeftCascade - 1, requiredSpaceForRightCascade - 1)
+                            .then(() => {
 
-                                    // PRECONDITION: Sanity check that there is not enough room to fit a subMenu on either side of the parentMenu.
-                                    parentMenuRect = parentMenu.element.getBoundingClientRect();
-                                    LiveUnit.Assert.isTrue(parentMenuRect.left < requiredSpaceForLeftCascade,
-                                        "TEST ERROR: TODO");
-                                    LiveUnit.Assert.isTrue(iframeWidth - parentMenuRect.right < requiredSpaceForRightCascade,
-                                        "TEST ERROR: TODO");
+                                // PRECONDITION: Sanity check that there is not enough room to fit a subMenu on either side of the parentMenu.
+                                parentMenuRect = parentMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.isTrue(parentMenuRect.left < requiredSpaceForLeftCascade,
+                                    "TEST ERROR: Test requires that there NOT be enough space on the right hand side to fit a subMenu");
+                                LiveUnit.Assert.isTrue(iframeWidth - parentMenuRect.right < requiredSpaceForRightCascade,
+                                    "TEST ERROR: Test requires that there NOT be enough space on the left hand side to fit a subMenu");
 
-                                    // Perform test
-                                    return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
-                                })
-                                .then(() => {
+                                // Perform test
+                                return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
+                            })
+                            .then(() => {
 
-                                    // Verify subMenu cascades to the left when there is only enough room to the left.
-                                    subMenuRect = subMenu.element.getBoundingClientRect();
-                                    LiveUnit.Assert.areEqual(iframeWidth, subMenuRect.right + subMenuMargins.right,
-                                        "right edge of subMenu marginbox should pin to the right edge of the iframe if there " +
-                                        "isn't enough space to cascade on either side of the parentMenu");
+                                // Verify subMenu cascades to the left when there is only enough room to the left.
+                                subMenuRect = subMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.areEqual(iframeWidth, subMenuRect.right + subMenuMargins.right,
+                                    "right edge of subMenu marginbox should pin to the right edge of the iframe if there " +
+                                    "isn't enough space to cascade on either side of the parentMenu");
 
-                                    verifySubMenuInBounds(subMenu);
+                                verifySubMenuInBounds(subMenu);
 
                                     // Hide subMenu
                                     return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
                                 })
-                                .done(c);
-                        });
-                    }).done(() => {
+                            .done(c);
+                    });
+                }
+
+                takeBaseHorizontalMeasurements()
+                    .then(verifyCascadePreferredPlacement)
+                    .then(verifyCascadeFallBackPlacement)
+                    .then(verifyCascadeLastResortPlacement)
+                    .done(() => {
                         // Clean up
                         parentMenu.dispose();
                         subMenu.dispose();
@@ -931,12 +934,294 @@ module CorsicaTests {
             document.body.appendChild(iframe);
         }
 
-    testVerticalAlignmentOfCascadedSubMenus = function (complete) {
+        testVerticalAlignmentOfCascadedSubMenus = function (complete) {
             // align top
             // align bottom
             // center vertically
             // pin to top and bottom window if too tall.
-            complete();
+
+            var iframe = document.createElement("iframe");
+            iframe.src = "$(TESTDATA)/WinJSSandbox.html";
+            iframe.onload = function () {
+
+                // This test requires the WinJS loaded inside of the iframe to ensure that private
+                // WinJS internal helper functions identify the edge of the iframe's visual
+                // viewport as the edge of the visible document, so that Cascading Menu's will
+                // correctly avoid clipping through the edge of their contentwindow when showing.
+                var iframeWinJS = <typeof WinJS>iframe.contentWindow["WinJS"];
+                var iframeMenu = <typeof WinJS.UI.PrivateMenu> iframeWinJS.UI.Menu;
+                var iframeMenuCommand = <typeof WinJS.UI.PrivateMenuCommand> iframeWinJS.UI.MenuCommand;
+
+                var iframeDocument = iframe.contentDocument;
+
+                var defaultAnchor = iframeDocument.createElement("DIV");
+                var parentMenu = new iframeMenu();
+                var subMenu = new iframeMenu();
+
+                var flyoutCommand = new iframeMenuCommand(null, { type: 'flyout', flyout: subMenu, label: 'show submenu' });
+                var subMenuCommands = [
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd1' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd2' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd3' }),
+                    new iframeMenuCommand(null, { type: 'button', label: 'cmd4' }),
+                ];
+
+                parentMenu.anchor = defaultAnchor;
+                parentMenu.commands = [flyoutCommand];
+
+                subMenu.anchor = flyoutCommand.element;
+                subMenu.commands = subMenuCommands;
+
+                iframeDocument.body.appendChild(defaultAnchor);
+                iframeDocument.body.appendChild(parentMenu.element);
+                iframeDocument.body.appendChild(subMenu.element);
+
+                var parentMenuBorderBoxHeight: number; // content, padding, border;
+                var parentMenuMargins: { left: number; right: number; top: number; bottom: number; };
+                var flyoutCommandBorderBoxHeight: number;
+                var subMenuBorderBoxHeight: number; // content, padding, border, 
+                var subMenuMargins: { left: number; right: number; top: number; bottom: number; };
+                var iframeHeight: number;
+                var additionalSpaceForTopAlignment: number;
+                var additionalSpaceForBottomAlignment: number;
+
+                function asyncShow(menu: WinJS.UI.PrivateMenu, anchor, placement?, alignment?): WinJS.Promise<any> {
+                    return new WinJS.Promise(function (c, e, p): void {
+                        if (!menu.hidden) {
+                            c();
+                        } else {
+                            function afterShow(): void {
+                                menu.removeEventListener("aftershow", afterShow, false);
+                                c();
+                            };
+                            menu.addEventListener("aftershow", afterShow, false);
+                            menu.show(anchor, placement, alignment);
+                        }
+                    });
+                }
+
+                function asyncHide(menu: WinJS.UI.PrivateMenu): WinJS.Promise<any> {
+                    return new WinJS.Promise(function (c, e, p): void {
+                        if (menu.hidden) {
+                            c();
+                        } else {
+                            function afterHide(): void {
+                                menu.removeEventListener("afterhide", afterHide, false);
+                                c();
+                            };
+                            menu.addEventListener("afterhide", afterHide, false);
+                            menu.hide();
+                        }
+                    });
+                }
+                function takeBaseVerticalMeasurements(): WinJS.Promise<any> {
+                    return new WinJS.Promise((c) => {
+                        asyncShow(parentMenu, defaultAnchor)
+                            .then(() => {
+                                parentMenuBorderBoxHeight = parentMenu.element.getBoundingClientRect().height;
+                                parentMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
+
+                                flyoutCommandBorderBoxHeight = flyoutCommand.element.getBoundingClientRect().height;
+
+                                return asyncHide(parentMenu);
+                            })
+                            .then(() => { 
+                                return asyncShow(subMenu, defaultAnchor)
+                            })
+                            .then(() => {
+                                subMenuBorderBoxHeight = subMenu.element.getBoundingClientRect().height;
+                                subMenuMargins = WinJS.Utilities._getPreciseMargins(subMenu.element);
+                                // The amound of space we need between the top of the flyoutCommand and the bottom of visibleDocument in order to fit a top aligned subMenu.
+                                additionalSpaceForTopAlignment = subMenuBorderBoxHeight + subMenuMargins.bottom - flyoutCommandBorderBoxHeight;
+                                // The amount of space we need between the top of the visibleDocument and the bottom of the flyoutCommand in order fit a bottom aligned subMenu.
+                                additionalSpaceForBottomAlignment = subMenuMargins.top + subMenuBorderBoxHeight - flyoutCommandBorderBoxHeight;
+
+                                return asyncHide(subMenu);
+                            })
+                            .done(c);
+                    });
+                }
+
+                function configureVerticalPositionOfFlyoutComandInIframe(visibleSpaceAboveFlyoutCommand, visibleSpaceBelowFlyoutCommand): WinJS.Promise<any> {
+
+                    // Sizes the height iframe to be the sum of the two arguments plus the height of flyoutCommandBorderBox, 
+                    // then positions the parentMenu so that the height of vertical position of flyoutCommand 
+
+                    return new WinJS.Promise((c) => {
+
+                        function contentWindowResized() {
+                            iframe.contentWindow.removeEventListener("resize", contentWindowResized, false);
+
+                            // PRECONDITION: Sanity check that Iframe height is the value we intended.
+                            LiveUnit.Assert.areEqual(iframeHeight, iframe.offsetHeight,
+                                "TEST ERROR: Test expects iframe height of " + iframeHeight + "px");
+
+                            // PRECONDITION: Sanity check visualViewportHeight matches iframeHeight
+                            var iframeVisualViewportHeight = iframeWinJS.UI._Overlay._keyboardInfo._visualViewportHeight;
+                            LiveUnit.Assert.areEqual(iframe.offsetHeight, iframeVisualViewportHeight,
+                                "TEST ERROR:  Iframe's WinJS should report that the visual viewport height matches the iframe height");
+
+                            asyncShow(parentMenu, defaultAnchor)
+                                .then(() => {
+
+                                    // Find the distance between top of flyoutCommand and top of parentMenu's marginbox.
+                                    var parentMenuMarginBoxTop = (parentMenu.element.getBoundingClientRect().top - parentMenuMargins.top);
+                                    var distanceBetween = flyoutCommand.element.getBoundingClientRect().top - parentMenuMarginBoxTop;
+
+                                    // Position the top of the parentMenu's marginBox so that the flyoutCommand is in the exact vertical location that was specified
+                                    parentMenu.element.style.top = (visibleSpaceAboveFlyoutCommand - distanceBetween) + "px";
+
+                                    // PRECONDITION: Sanity check that positioning the parentMenu has placed the flyoutCommandBorderBox at the exact 
+                                    // vertical coordinates that were specified.
+                                    var flyoutCommandRect = flyoutCommand.element.getBoundingClientRect();
+                                    LiveUnit.Assert.areEqual(visibleSpaceAboveFlyoutCommand, flyoutCommandRect.top,
+                                        "TEST ERROR: Test expects " + visibleSpaceAboveFlyoutCommand + " free space above the flyout command");
+                                    LiveUnit.Assert.areEqual(visibleSpaceBelowFlyoutCommand, iframeVisualViewportHeight - flyoutCommandRect.right,
+                                        "TEST ERROR: Test expects " + visibleSpaceBelowFlyoutCommand + " free space below the flyout command");
+                                })
+                                .done(c);
+                        }
+
+                        // Sizing the iframe will trigger an async "resize" event in the iframe contentWindow. Wait until the "resize" event 
+                        // fires to avoid light dismissing the menu's.
+                        iframeHeight = visibleSpaceAboveFlyoutCommand + flyoutCommandBorderBoxHeight + visibleSpaceBelowFlyoutCommand;
+                        iframe.contentWindow.addEventListener("resize", contentWindowResized, false);
+                        iframe.style.height = iframeHeight + "px";
+
+                    });
+                }
+
+                function verifySubMenuInBounds(subMenu) {
+
+                    var subMenuRect = subMenu.element.getBoundingClientRect();
+
+                    LiveUnit.Assert.isTrue(subMenuRect.left + subMenuMargins.left >= 0,
+                        "left edge of subMenu marginbox should not overrun left edge of visual viewport");
+                    LiveUnit.Assert.isTrue(subMenuRect.right + subMenuMargins.right <= iframeHeight,
+                        "right edge of subMenu marginbox should not overrun right edge of visual viewport");
+
+                }
+
+                function verifyCascadePreferredAlignment(): WinJS.Promise<any> {
+                    // Verifies that subMenus will cascade to the right of their parent menu, as long as there is enough room.
+                    return new WinJS.Promise((c) => {
+                        var parentMenuRect: ClientRect;
+                        var subMenuRect: ClientRect;
+                        configureVerticalPositionOfFlyoutComandInIframe(additionalSpaceForTopAlignment, additionalSpaceForBottomAlignment)
+                            .then(() => {
+
+                                // PRECONDITION: Sanity check that parent menu has enough room to fit a subMenu on either side.
+                                parentMenuRect = parentMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.isTrue(parentMenuRect.left >= additionalSpaceForTopAlignment,
+                                    "TEST ERROR: Test requires more room between left edge of parent menu and the left edge of the visual viewport");
+                                LiveUnit.Assert.isTrue(iframeHeight - parentMenuRect.right >= additionalSpaceForBottomAlignment,
+                                    "TEST ERROR: Test requires more room between right edge of parent menu and the right edge of the visual viewport");
+
+                                // Perform test
+                                return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
+                            })
+                            .then(() => {
+
+                                // Verify subMenu cascades to the right when there is enough space on either side.
+                                subMenuRect = subMenu.element.getBoundingClientRect();
+                                //LiveUnit.Assert.areEqual(parentMenuRect.right - subMenuRect.left, expectedOverlap,
+                                //    "left edge of subMenu should overlap right edge of parent menu by " + expectedOverlap + "px");
+
+                                verifySubMenuInBounds(subMenu);
+
+                                    // Hide subMenu
+                                    return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
+                                })
+                            .done(c);
+                    });
+                }
+
+                function verifyCascadeFallBackAlignment(): WinJS.Promise<any> {
+                    // Verifies that subMenus will cascade to the left of their parent menu, 
+                    // if there is only enough room to fit a subMenu to the left.
+                    return new WinJS.Promise((c) => {
+                        var parentMenuRect: ClientRect;
+                        var subMenuRect: ClientRect;
+
+                        configureVerticalPositionOfFlyoutComandInIframe(additionalSpaceForTopAlignment, additionalSpaceForBottomAlignment - 1)
+                            .then(() => {
+
+                                // PRECONDITION: Sanity check that there is only enough room to fit a subMenu on the left side of the parentMenu.
+                                parentMenuRect = parentMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.isTrue(parentMenuRect.left >= additionalSpaceForTopAlignment,
+                                    "TEST ERROR: Test requires that there NOT be enough space on the right hand side to fit a subMenu");
+                                LiveUnit.Assert.isTrue(iframeHeight - parentMenuRect.right < additionalSpaceForBottomAlignment,
+                                    "TEST ERROR: Test requires that there be enough space on the left hand side to fit a subMenu");
+
+                                // Perform test
+                                return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
+                            })
+                            .then(() => {
+
+                                // Verify subMenu cascades to the left when there is only enough room to the left.
+                                subMenuRect = subMenu.element.getBoundingClientRect();
+                                //LiveUnit.Assert.areEqual(subMenuRect.right - parentMenuRect.left, expectedOverlap,
+                                    //"right edge of subMenu should overlap left edge of parent menu by " + expectedOverlap + "px");
+
+                                verifySubMenuInBounds(subMenu);
+
+                                    // Hide subMenu
+                                    return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
+                                })
+                            .done(c);
+                    });
+                }
+
+                function verifyCascadeLastResortAlignment(): WinJS.Promise<any> {
+                    // Verifies that subMenus will be pinned to the right edge of the viewport, 
+                    // when there is not enough room to cascade on either side of the parent menu.
+                    return new WinJS.Promise((c) => {
+                        var parentMenuRect: ClientRect;
+                        var subMenuRect: ClientRect;
+
+                        configureVerticalPositionOfFlyoutComandInIframe(additionalSpaceForTopAlignment - 1, additionalSpaceForBottomAlignment - 1)
+                            .then(() => {
+
+                                // PRECONDITION: Sanity check that there is not enough room to fit a subMenu on either side of the parentMenu.
+                                parentMenuRect = parentMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.isTrue(parentMenuRect.left < additionalSpaceForTopAlignment,
+                                    "TEST ERROR: Test requires that there NOT be enough space on the right hand side to fit a subMenu");
+                                LiveUnit.Assert.isTrue(iframeHeight - parentMenuRect.right < additionalSpaceForBottomAlignment,
+                                    "TEST ERROR: Test requires that there NOT be enough space on the left hand side to fit a subMenu");
+
+                                // Perform test
+                                return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
+                            })
+                            .then(() => {
+
+                                // Verify subMenu cascades to the left when there is only enough room to the left.
+                                subMenuRect = subMenu.element.getBoundingClientRect();
+                                LiveUnit.Assert.areEqual(iframeHeight, subMenuRect.right + subMenuMargins.right,
+                                    "right edge of subMenu marginbox should pin to the right edge of the iframe if there " +
+                                    "isn't enough space to cascade on either side of the parentMenu");
+
+                                verifySubMenuInBounds(subMenu);
+
+                                    // Hide subMenu
+                                    return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
+                                })
+                            .done(c);
+                    });
+                }
+
+                takeBaseVerticalMeasurements()
+                    .then(verifyCascadePreferredAlignment)
+                    //.then(verifyCascadeFallBackAlignment)
+                    //.then(verifyCascadeLastResortAlignment)
+                    .done(() => {
+                        // Clean up
+                        parentMenu.dispose();
+                        subMenu.dispose();
+                        complete();
+                    });
+
+            };
+            document.body.appendChild(iframe);
         }
     }
 }
