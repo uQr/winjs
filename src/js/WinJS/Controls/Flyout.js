@@ -1009,7 +1009,7 @@ define([
 
                             // Determine horizontal direction
                             var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
-                            var pixelsToOverlapAnchor = 4;
+                            var pixelsToOverlapAnchor = 3;
 
                             var beginRight = anchor.right - flyout.marginLeft - pixelsToOverlapAnchor;
                             var beginLeft = anchor.left + flyout.marginRight + pixelsToOverlapAnchor;
