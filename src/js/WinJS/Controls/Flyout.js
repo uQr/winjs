@@ -571,32 +571,6 @@ define([
                     this._baseFlyoutShow(anchor, placement, alignment, null);
                 },
 
-                /// <signature helpKeyword="WinJS.UI.Flyout.showAt">
-                /// <summary locid="WinJS.UI.Flyout.showAt">
-                /// Shows the Flyout, if hidden, at the specified (x,y) coordinates.
-                /// </summary>
-                /// <param name="coordinates" type="Object" domElement="false" locid="WinJS.UI.Flyout.showAt_p:coordinates">
-                /// The point at which to draw the Flyout, relative to the visual viewport.
-                /// Acceptible values are PointerEvent Objects, MouseEvent Objects and generic objects that define properties 'x' and 'y'.
-                /// </param>
-                /// <param name="placement" type="Object" domElement="false" locid="WinJS.UI.Flyout.show_p:placement">
-                /// The placement of the Flyout to the anchor: 'auto' (default), 'top', 'bottom', 'left', or 'right'.  This parameter overrides the placement property for this show only.
-                /// </param>
-                /// <param name="alignment" type="Object" domElement="false" locid="WinJS.UI.Flyout.show:alignment">
-                /// For 'top' or 'bottom' placement, the alignment of the Flyout to the anchor's edge: 'center' (default), 'left', or 'right'.
-                /// This parameter overrides the alignment property for this show only.
-                /// </param>
-                /// <compatibleWith platform="Windows" minVersion="8.0"/>
-                /// </signature>
-                showAt: function Flyout_showAt(coordinates) {
-                    this._writeProfilerMark("show,StartTM"); // The corresponding "stop" profiler mark is handled in _Overlay._baseEndShow().
-                    this._showAt(coordinates);
-                },
-
-                _showAt: function Flyout_show(coordinates) {
-                    this._baseFlyoutShow(null, "cartesian", "none", coordinates);
-                },
-
                 hide: function () {
                     /// <signature helpKeyword="WinJS.UI.Flyout.hide">
                     /// <summary locid="WinJS.UI.Flyout.hide">

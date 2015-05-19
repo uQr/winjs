@@ -543,7 +543,6 @@ declare module WinJS {
 
         class PrivateFlyout extends Flyout {
             _disposed;
-            _previousFocus;
 
             static _cascadeManager;
         }

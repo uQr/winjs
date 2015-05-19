@@ -711,11 +711,12 @@ module CorsicaTests {
                         if (!menu.hidden) {
                             c();
                         } else {
-                            function afterShow(): void {
-                                menu.removeEventListener("aftershow", afterShow, false);
-                                c();
-                            };
-                            menu.addEventListener("aftershow", afterShow, false);
+                            //function afterShow(): void {
+                            //    menu.removeEventListener("aftershow", afterShow, false);
+                            //    c();
+                            //};
+                            //menu.addEventListener("aftershow", afterShow, false);
+                            listenOnce(menu, "aftershow", c);
                             menu.show(anchor, placement, alignment);
                         }
                     });
@@ -726,11 +727,7 @@ module CorsicaTests {
                         if (menu.hidden) {
                             c();
                         } else {
-                            function afterHide(): void {
-                                menu.removeEventListener("afterhide", afterHide, false);
-                                c();
-                            };
-                            menu.addEventListener("afterhide", afterHide, false);
+                            listenOnce(menu, "afterhide", c);
                             menu.hide();
                         }
                     });
@@ -746,7 +743,6 @@ module CorsicaTests {
                                 return asyncHide(parentMenu);
                             })
                             .then(() => { 
-                                //return asyncShow(subMenu, defaultAnchor)
                                 return iframeMenuCommand._activateFlyoutCommand(flyoutCommand);
                             })
                             .then(() => {
@@ -755,7 +751,6 @@ module CorsicaTests {
                                 requiredSpaceForLeftCascade = subMenuMargins.left + subMenuBorderBoxWidth - expectedOverlap;
                                 requiredSpaceForRightCascade = subMenuBorderBoxWidth - expectedOverlap + subMenuMargins.right;
 
-                                //return asyncHide(subMenu);
                                 return iframeMenuCommand._deactivateFlyoutCommand(flyoutCommand);
                             })
                             .done(c);
@@ -992,11 +987,12 @@ module CorsicaTests {
                         if (!menu.hidden) {
                             c();
                         } else {
-                            function afterShow(): void {
-                                menu.removeEventListener("aftershow", afterShow, false);
-                                c();
-                            };
-                            menu.addEventListener("aftershow", afterShow, false);
+                            //function afterShow(): void {
+                            //    menu.removeEventListener("aftershow", afterShow, false);
+                            //    c();
+                            //};
+                            //menu.addEventListener("aftershow", afterShow, false);
+                            listenOnce(menu, "aftershow", c);
                             menu.show(anchor, placement, alignment);
                         }
                     });
@@ -1007,11 +1003,12 @@ module CorsicaTests {
                         if (menu.hidden) {
                             c();
                         } else {
-                            function afterHide(): void {
-                                menu.removeEventListener("afterhide", afterHide, false);
-                                c();
-                            };
-                            menu.addEventListener("afterhide", afterHide, false);
+                            //function afterHide(): void {
+                            //    menu.removeEventListener("afterhide", afterHide, false);
+                            //    c();
+                            //};
+                            //menu.addEventListener("afterhide", afterHide, false);
+                            listenOnce(menu, "afterhide", c);
                             menu.hide();
                         }
                     });
@@ -1028,7 +1025,6 @@ module CorsicaTests {
                                 return asyncHide(parentMenu);
                             })
                             .then(() => { 
-                                //return asyncShow(subMenu, defaultAnchor)
                                 return iframeMenuCommand._activateFlyoutCommand(flyoutCommand);
                             })
                             .then(() => {
@@ -1039,7 +1035,6 @@ module CorsicaTests {
                                 // The amount of space we need between the top of the visibleDocument and the bottom of the flyoutCommand in order fit a bottom aligned subMenu.
                                 additionalSpaceForBottomAlignment = subMenuMargins.top + subMenuBorderBoxHeight - flyoutCommandBorderBoxHeight;
 
-                                //return asyncHide(subMenu);
                                 return iframeMenuCommand._deactivateFlyoutCommand(flyoutCommand);
                             })
                             .done(c);
