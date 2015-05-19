@@ -746,7 +746,8 @@ module CorsicaTests {
                                 return asyncHide(parentMenu);
                             })
                             .then(() => { 
-                                return asyncShow(subMenu, defaultAnchor)
+                                //return asyncShow(subMenu, defaultAnchor)
+                                return iframeMenuCommand._activateFlyoutCommand(flyoutCommand);
                             })
                             .then(() => {
                                 subMenuBorderBoxWidth = subMenu.element.getBoundingClientRect().width;
@@ -754,7 +755,8 @@ module CorsicaTests {
                                 requiredSpaceForLeftCascade = subMenuMargins.left + subMenuBorderBoxWidth - expectedOverlap;
                                 requiredSpaceForRightCascade = subMenuBorderBoxWidth - expectedOverlap + subMenuMargins.right;
 
-                                return asyncHide(subMenu);
+                                //return asyncHide(subMenu);
+                                return iframeMenuCommand._deactivateFlyoutCommand(flyoutCommand);
                             })
                             .done(c);
                     });
@@ -1026,7 +1028,8 @@ module CorsicaTests {
                                 return asyncHide(parentMenu);
                             })
                             .then(() => { 
-                                return asyncShow(subMenu, defaultAnchor)
+                                //return asyncShow(subMenu, defaultAnchor)
+                                return iframeMenuCommand._activateFlyoutCommand(flyoutCommand);
                             })
                             .then(() => {
                                 subMenuBorderBoxHeight = subMenu.element.getBoundingClientRect().height;
@@ -1036,7 +1039,8 @@ module CorsicaTests {
                                 // The amount of space we need between the top of the visibleDocument and the bottom of the flyoutCommand in order fit a bottom aligned subMenu.
                                 additionalSpaceForBottomAlignment = subMenuMargins.top + subMenuBorderBoxHeight - flyoutCommandBorderBoxHeight;
 
-                                return asyncHide(subMenu);
+                                //return asyncHide(subMenu);
+                                return iframeMenuCommand._deactivateFlyoutCommand(flyoutCommand);
                             })
                             .done(c);
                     });
