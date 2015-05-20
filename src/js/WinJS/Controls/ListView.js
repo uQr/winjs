@@ -1187,7 +1187,7 @@ define([
                 _configureSelectionMode: function () {
                     var selectionModeClass = _Constants._selectionModeClass,
                         hidingSelectionModeClass = _Constants._hidingSelectionMode;
-                    if (this.tapBehavior === _UI.TapBehavior.toggleSelect && this.selectionMode === _UI.SelectionMode.multi) {
+                    if (this._isInSelectionMode()) {
                         _ElementUtilities.addClass(this._canvas, selectionModeClass);
                         _ElementUtilities.removeClass(this._canvas, hidingSelectionModeClass);
                     } else {
@@ -1529,6 +1529,7 @@ define([
 
                     this._progressBar = _Global.document.createElement("progress");
                     _ElementUtilities.addClass(this._progressBar, _Constants._progressClass);
+                    _ElementUtilities.addClass(this._progressBar, "win-progress-ring");
                     this._progressBar.style.position = "absolute";
                     this._progressBar.max = 100;
                 },
@@ -3646,6 +3647,10 @@ define([
 
                 _multiSelection: function ListView_multiSelection() {
                     return this._selectionMode === _UI.SelectionMode.multi;
+                },
+
+                _isInSelectionMode: function ListView_isInSelectionMode() {
+                    return (this.tapBehavior === _UI.TapBehavior.toggleSelect && this.selectionMode === _UI.SelectionMode.multi);
                 },
 
                 _selectOnTap: function ListView_selectOnTap() {
