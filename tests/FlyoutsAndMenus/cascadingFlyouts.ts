@@ -816,8 +816,8 @@ module CorsicaTests {
                             visibleSpaceToTheLeft,
                             visibleSpaceToTheRight)
                             .then(() => {
-                        //configureHorizontalPositionOfParentMenuInIframe(minimumSpaceForLeftSubMenu + 1, minimumSpaceForRightSubMenu + 1)
-                        //    .then(() => {
+                                //configureHorizontalPositionOfParentMenuInIframe(minimumSpaceForLeftSubMenu + 1, minimumSpaceForRightSubMenu + 1)
+                                //    .then(() => {
 
                                 // PRECONDITION: Sanity check that the position of the parentMenu has been configured correctly.
                                 parentMenuRect = parentMenu.element.getBoundingClientRect();
@@ -1176,7 +1176,7 @@ module CorsicaTests {
                                 // Verify subMenu prefers top aligment
                                 subMenuRect = subMenu.element.getBoundingClientRect();
                                 Helper.Assert.areFloatsEqual(flyoutCommandRect.top, subMenuRect.top,
-                                    "Cascading subMenu should prefer to align with top edge of flyoutCommand ");
+                                    "Cascading subMenu should prefer to align with top edge of flyoutCommand", 1);
 
                                 verifySubMenuWithinVerticalBounds(subMenu);
 
@@ -1216,7 +1216,7 @@ module CorsicaTests {
                                 LiveUnit.Assert.isTrue(flyoutCommandRect.top >= additionalSpaceRequiredAbove,
                                     "TEST ERROR: Test requires enough room to fit a bottom aligned subMenu");
 
-                                // Perform test
+                                // Show the subMenu
                                 return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
                             })
                             .then(() => {
@@ -1224,7 +1224,7 @@ module CorsicaTests {
                                 // Verify subMenu falls back to bottom alignment when there isn't enough room to top align.
                                 subMenuRect = subMenu.element.getBoundingClientRect();
                                 Helper.Assert.areFloatsEqual(flyoutCommandRect.bottom, subMenuRect.bottom,
-                                    "Cascading subMenu should fallback to align with bottom edge of flyoutCommand ");
+                                    "Cascading subMenu should fallback to align with bottom edge of flyoutCommand.", 1);
 
                                 verifySubMenuWithinVerticalBounds(subMenu);
 
@@ -1257,28 +1257,27 @@ module CorsicaTests {
                                     "TEST ERROR: Test expects " + visibleSpaceBelow + " free space below the flyout command", 1);
 
                                 // PRECONDITION: Sanity check our configuration doesn't have enough room to top align the subMenu 
-                                // not enough room to bottom align.
+                                // nor enough room to bottom align.
                                 flyoutCommandRect = flyoutCommand.element.getBoundingClientRect();
                                 LiveUnit.Assert.isTrue(iframeHeight - flyoutCommandRect.bottom < additionalSpaceRequiredBelow,
                                     "TEST ERROR: Test requires that there NOT be enough room for a top aligned subMenu ");
-                                LiveUnit.Assert.isTrue(flyoutCommandRect.top >= additionalSpaceRequiredAbove,
-                                    "TEST ERROR: Test requires enough room to fit a bottom aligned subMenu");
+                                LiveUnit.Assert.isTrue(flyoutCommandRect.top < additionalSpaceRequiredAbove,
+                                    "TEST ERROR: Test requires that there NOT be enough room to bottom align a subMenu");
 
-                                // Perform test
+                                // Show the subMenu
                                 return iframeMenuCommand._activateFlyoutCommand(subMenu.anchor.winControl);
                             })
                             .then(() => {
 
-                                // Verify subMenu falls back to bottom alignment when there isn't enough room to top align.
                                 subMenuRect = subMenu.element.getBoundingClientRect();
-                                Helper.Assert.areFloatsEqual(flyoutCommandRect.bottom, subMenuRect.bottom,
-                                    "Cascading subMenu should fallback to align with bottom edge of flyoutCommand ");
+                                Helper.Assert.areFloatsEqual(flyoutCommandRect.top + flyoutCommandRect.height / 2, subMenuRect.top + subMenuRect.height / 2,
+                                    "Center aligned subMenu should have the same vertical midpoint as the ancestor flyoutCommand", 1);
 
                                 verifySubMenuWithinVerticalBounds(subMenu);
 
-                                    // Hide subMenu
-                                    return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
-                                })
+                                // Hide subMenu
+                                return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl);
+                            })
                             .done(c);
                     });
                 }
@@ -1286,7 +1285,7 @@ module CorsicaTests {
                 cacheVerticalMeasurements()
                     .then(verifyCascadePreferredAlignment)
                     .then(verifyCascadeFallBackAlignment)
-                //.then(verifyCascadeLastResortAlignment)
+                    .then(verifyCascadeLastResortAlignment)
                     .done(() => {
                         // Clean up
                         parentMenu.dispose();

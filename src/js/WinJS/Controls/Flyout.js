@@ -598,71 +598,55 @@ define([
                     Flyout._cascadeManager.flyoutHidden(this);
                 },
 
-                _baseFlyoutShow: function Flyout_baseFlyoutShow(anchor, placement, alignment, coordinates) {
+                _baseFlyoutShow: function Flyout_baseFlyoutShow(anchor, placement, alignment) {
                     // Don't do anything if disabled
                     if (this.disabled) {
                         return;
                     }
 
-                    // Store the function call with the parameters used to "show" the flyout so that we can repeat
-                    // the operation later if something forces us to cancel and resume later.
-                    var that = this;
-                    this._currentShowFn = function () { that._baseFlyoutShow(anchor, placement, alignment, coordinates); };
-
-                    if (coordinates) {
-                        // If we are showing via arbitrary coordinates, then we don't require an anchor to show
-                        // ourselves. If an anchor hasn't been assigned just use the body.
-                        anchor = anchor || this._anchor || document.body;
-
-                        placement = "cartesian";
-                        alignment = "none";
-
-                        // Normalize coordinates since they could be a mouse/pointer event object or an (x,y) pair.
-                        var temp = coordinates;
-                        coordinates = {
-                            x: temp.clientX - window.pageXOffset || temp.x,
-                            y: temp.clientY - window.pageYOffset || temp.y
-                        };
-                    } else {
-                        // Else we are showing relative to our anchor element. Anchor element is required.
-
-                        // Pick up defaults
-                        if (!anchor) {
-                            anchor = this._anchor;
-                        }
-                        if (!placement) {
-                            placement = this._placement;
-                        }
-                        if (!alignment) {
-                            alignment = this._alignment;
-                        }
-
-                        // Dereference the anchor if necessary
-                        if (typeof anchor === "string") {
-                            anchor = _Global.document.getElementById(anchor);
-                        } else if (anchor && anchor.element) {
-                            anchor = anchor.element;
-                        }
-
-                        if (!anchor) {
-                            // We expect an anchor
-                            throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
-                        }
+                    // Pick up defaults
+                    if (!anchor) {
+                        anchor = this._anchor;
+                    }
+                    if (!placement) {
+                        placement = this._placement;
+                    }
+                    if (!alignment) {
+                        alignment = this._alignment;
                     }
 
-                    // Remember current values in case we need to stop and resume.
-                    this._currentAnchor = anchor;
-                    this._currentPlacement = placement;
-                    this._currentAlignment = alignment;
-                    this._currentCoordinates = coordinates;
+                    // Dereference the anchor if necessary
+                    if (typeof anchor === "string") {
+                        anchor = _Global.document.getElementById(anchor);
+                    } else if (anchor && anchor.element) {
+                        anchor = anchor.element;
+                    }
 
-                    // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of 
-                    // updating the cascade, then don't mess up our current state.
+                    // We expect an anchor
+                    if (!anchor) {
+                        // If we have _nextLeft, etc., then we were continuing an old animation, so that's OK
+                        if (!this._reuseCurrent) {
+                            throw new _ErrorFromName("WinJS.UI.Flyout.NoAnchor", strings.noAnchor);
+                        }
+                        // Last call was incomplete, so reuse the previous _current values.
+                        this._reuseCurrent = null;
+                    } else {
+                        // Remember the anchor so that if we lose focus we can go back
+                        this._currentAnchor = anchor;
+                        // Remember current values
+                        this._currentPlacement = placement;
+                        this._currentAlignment = alignment;
+                    }
+
+                    // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of a updating the cascade,
+                    // then don't mess up our current state.
                     if (this._element.winAnimating) {
+                        this._reuseCurrent = true;
                         // Queue us up to wait for the current animation to finish.
                         // _checkDoNext() is always scheduled after the current animation completes.
                         this._doNext = "show";
                     } else if (Flyout._cascadeManager.reentrancyLock) {
+                        this._reuseCurrent = true;
                         // Queue us up to wait for the current animation to finish.
                         // Schedule a call to _checkDoNext() for when the cascadeManager unlocks.
                         this._doNext = "show";
