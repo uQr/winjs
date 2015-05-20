@@ -664,6 +664,13 @@ module CorsicaTests {
         }
 
         testHorizontalLayoutOfCascadedSubMenus = function (complete) {
+            // Verifies the following Horizontal placement logic for cascading menus.
+            // 1. PREFERRED: When there is enough room to fit a subMenu on either side of the parentMenu, 
+            // the subMenu prefers to go on the right hand side.
+            // 2. FALLBACK: When there is only enough room to fit a subMenu on the right side of the parentMenu,
+            // the subMenu is placed to the left of the parent menu.
+            // 3. LASTRESORT: When there is not enough room to fit a subMenu on either side of the parentMenu,
+            // the subMenu is pinned to the right edge of the window.
 
             var iframe = document.createElement("iframe");
             iframe.src = "$(TESTDATA)/WinJSSandbox.html";
@@ -773,13 +780,6 @@ module CorsicaTests {
                             asyncShow(parentMenu, defaultAnchor)
                                 .then(() => {
                                     parentMenu.element.style.left = (visibleSpaceLeftOfParentMenu - parentMenuMargins.left) + "px";
-
-                                    //// PRECONDITION: Sanity check that the position of the parentMenu has been configured correctly.
-                                    //var parentMenuRect = parentMenu.element.getBoundingClientRect();
-                                    //Helper.Assert.areFloatsEqual(visibleSpaceLeftOfParentMenu, parentMenuRect.left,
-                                    //    "TEST ERROR: Test expects " + visibleSpaceLeftOfParentMenu + " free space to the left of the parentMenu", 1);
-                                    //Helper.Assert.areFloatsEqual(visibleSpaceRightOfParentMenu, iframeVisualViewportWidth - parentMenuRect.right,
-                                    //    "TEST ERROR: Test expects " + visibleSpaceRightOfParentMenu + " free space to the right of the parentMenu", 1);
                                 })
                                 .done(c);
                         }
@@ -789,7 +789,6 @@ module CorsicaTests {
                         iframeWidth = visibleSpaceLeftOfParentMenu + cachedParentMenuBorderBoxWidth + visibleSpaceRightOfParentMenu;
                         listenOnce(iframe.contentWindow, "resize", configureAfterContentWindowResize);
                         iframe.style.width = iframeWidth + "px";
-
                     });
                 }
 
@@ -802,7 +801,6 @@ module CorsicaTests {
                         "left edge of subMenu marginbox should not overrun left edge of iframe visual viewport");
                     LiveUnit.Assert.isTrue(subMenuRect.right + subMenuMargins.right < iframeWidth + tolerance,
                         "right edge of subMenu marginbox should not overrun right edge of iframe visual viewport");
-
                 }
 
                 function verifyCascadePreferredPlacement(): WinJS.Promise<any> {
@@ -816,8 +814,6 @@ module CorsicaTests {
                             visibleSpaceToTheLeft,
                             visibleSpaceToTheRight)
                             .then(() => {
-                                //configureHorizontalPositionOfParentMenuInIframe(minimumSpaceForLeftSubMenu + 1, minimumSpaceForRightSubMenu + 1)
-                                //    .then(() => {
 
                                 // PRECONDITION: Sanity check that the position of the parentMenu has been configured correctly.
                                 parentMenuRect = parentMenu.element.getBoundingClientRect();
@@ -845,8 +841,8 @@ module CorsicaTests {
 
                                 verifySubMenuWithinHorizontalBounds(subMenu);
 
-                                    // Hide subMenu
-                                    return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
+                                // Hide subMenu
+                                return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
                                 })
                             .done(c);
                     });
@@ -963,10 +959,13 @@ module CorsicaTests {
         }
 
         testVerticalAlignmentOfCascadedSubMenus = function (complete) {
-            // align top
-            // align bottom
-            // center vertically
-            // pin to top and bottom window if too tall.
+            // Verifies the following vertical alignment logic for cascading menus.
+            // 1. PREFERRED: When there is enough room to align a subMenu to either the top or the bottom of its anchor element, 
+            // the subMenu prefers to be top aligned.
+            // 2. FALLBACK: When there is enough room to bottom align a subMenu but not enough room to top align it, 
+            // then the subMenu will be aligned to the bottom of its anchor element.
+            // 3. LASTRESORT: When there is not enough room to top align or bottom align the subMenu to its anchor,
+            // then the subMenu will be center aligned to it's anchor's vertical midpoint.
 
             var iframe = document.createElement("iframe");
             iframe.src = "$(TESTDATA)/WinJSSandbox.html";
@@ -1035,9 +1034,9 @@ module CorsicaTests {
                 }
                 function cacheVerticalMeasurements(): WinJS.Promise<any> {
 
-                    // Caches the unmodified height of (1) the parentMenu, (2) the parentMenu's flyoutCommand and (3) subMenu, so that we can refer to 
-                    // them while setting up the rest of the test since they menu's are prone to light dismiss, and can't be measured while
-                    // hidden. 
+                    // Caches the unmodified height of (1) the parentMenu, (2) the parentMenu's flyoutCommand and (3) the subMenu, 
+                    // so that we can refer to them while configuring and laying out the rest of the test since the menu's are prone
+                    // to light dismiss, and don't maintain their size in the DOM when they are hidden.
 
                     return new WinJS.Promise((c) => {
 
@@ -1046,17 +1045,11 @@ module CorsicaTests {
                                 .then(() => {
                                     cachedParentMenuBorderBoxHeight = parentMenu.element.getBoundingClientRect().height;
                                     parentMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
-
                                     cachedFlyoutCommandBorderBoxHeight = flyoutCommand.element.getBoundingClientRect().height;
 
                                     return iframeMenuCommand._activateFlyoutCommand(flyoutCommand);
                                 })
                                 .then(() => {
-
-                                    //// PRECONDITION: subMenu should not have a vertical scrollBar during initial measurement.
-                                    //var hasVerticalScrollbar = subMenu.element.scrollHeight > subMenu.element.clientHeight;
-                                    //LiveUnit.Assert.isFalse(hasVerticalScrollbar,
-                                    //    "TEST ERROR: Test requires that subMenu have full untruncated height during initial measurement.");
 
                                     cachedSubMenuBorderBoxHeight = subMenu.element.getBoundingClientRect().height;
 
@@ -1081,7 +1074,7 @@ module CorsicaTests {
                         // measure to avoid them having to truncate their height.
                         //
                         // Sizing the iframe will trigger an async "resize" event in the iframe contentWindow. Hold off on trying to measure 
-                        // until the "resize" event fires, to avoid light dismissing the menu's before we've finished.
+                        // until the "resize" event fires, in order to avoid light dismissing the menu's before we've finished.
                         listenOnce(iframe.contentWindow, "resize", measureAfterContentWindowResize);
                         iframe.style.height = 500 + "px";
                         iframe.style.width = 500 + "px";

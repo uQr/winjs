@@ -1136,7 +1136,6 @@ define([
                     }
                 },
 
-                // Rename to updatePosition
                 _checkScrollPosition: function Flyout_checkScrollPosition(showing) {
                     if (this.hidden && !showing) {
                         return;
