@@ -567,8 +567,8 @@ define([
                     this._show(anchor, placement, alignment);
                 },
 
-                _show: function Flyout_show(anchor, placement, alignment, coordinates) {
-                    this._baseFlyoutShow(anchor, placement, alignment, null);
+                _show: function Flyout_show(anchor, placement, alignment) {
+                    this._baseFlyoutShow(anchor, placement, alignment);
                 },
 
                 hide: function () {
@@ -958,7 +958,7 @@ define([
                                 }
                             }
                             break;
-                        case "_cascade":
+                        case "_cascade": // Private placement used by MenuCommand._activateFlyoutCommand
 
                             // Align vertically
                             if (!fitBottom(anchor.top - flyout.marginTop, flyout) && !fitTop(anchor.bottom + flyout.marginBottom, flyout)) {
@@ -984,28 +984,6 @@ define([
                                     that._nextLeft = -1;
                                     that._nextAnimOffset = AnimationOffsets.right;
                                 }
-                            }
-
-                            break;
-
-                        case "cartesian":
-                            this._nextTop = this._currentCoordinates.y - flyout.marginTop;
-                            this._nextLeft = this._currentCoordinates.x - flyout.marginLeft;
-
-                            if (this._nextTop < 0) {
-                                // Overran top, pin to top edge.
-                                this._nextTop = 0;
-                            } else if (this._nextTop + this._adjustedHeight + this._verticalMarginBorderPadding > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
-                                // Overran bottom, pin to bottom edge.
-                                this._nextTop = -1;
-                            }
-
-                            if (this._nextLeft < 0) {
-                                // Overran left, pin to left edge.
-                                this._nextLeft = 0;
-                            } else if (this._nextLeft + flyout.width > _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
-                                // Overran right, pin to right edge.
-                                this._nextLeft = -1;
                             }
 
                             break;
