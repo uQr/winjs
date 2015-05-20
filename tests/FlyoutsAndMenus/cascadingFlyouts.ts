@@ -1096,7 +1096,7 @@ module CorsicaTests {
                     return new WinJS.Promise((c) => {
 
                         function configureAfterContentWindowResize() {
-                            iframe.contentWindow.removeEventListener("resize", configureAfterContentWindowResize, false);
+                            //iframe.contentWindow.removeEventListener("resize", configureAfterContentWindowResize, false);
 
                             // PRECONDITION: Sanity check that Iframe height is the value we intended.
                             Helper.Assert.areFloatsEqual(iframeHeight, iframe.offsetHeight,
@@ -1123,7 +1123,7 @@ module CorsicaTests {
                         // Sizing the iframe will trigger an async "resize" event in the iframe contentWindow. Wait until the "resize" event 
                         // fires to avoid light dismissing the menu's.
                         iframeHeight = visibleSpaceAboveFlyoutCommand + cachedFlyoutCommandBorderBoxHeight + visibleSpaceBelowFlyoutCommand;
-                        iframe.contentWindow.addEventListener("resize", configureAfterContentWindowResize, false);
+                        listenOnce(iframe.contentWindow, "resize", configureAfterContentWindowResize);
                         iframe.style.height = iframeHeight + "px";
 
                     });
