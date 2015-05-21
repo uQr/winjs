@@ -778,14 +778,12 @@ define([
                         // Won't fit top or bottom. Pick the one with the most space and add a scrollbar.
                         if (topHasMoreRoom(anchor)) {
                             // Top
-                            var availableSpaceAbove = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop
-                            that._adjustedHeight = availableSpaceAbove - that._verticalMarginBorderPadding;
+                            that._adjustedHeight = spaceAbove(anchor) - that._verticalMarginBorderPadding;
                             that._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
                             that._nextAnimOffset = AnimationOffsets.top;
                         } else {
                             // Bottom
-                            var availableSpaceBelow = _Overlay._Overlay._keyboardInfo._visibleDocBottom - anchor.bottom;
-                            that._adjustedHeight = availableSpaceBelow - that._verticalMarginBorderPadding;
+                            that._adjustedHeight = spaceBelow(anchor) - that._verticalMarginBorderPadding;
                             that._nextTop = _Constants.pinToBottomEdge;
                             that._nextAnimOffset = AnimationOffsets.bottom;
                         }
@@ -793,7 +791,7 @@ define([
                     }
 
                     // If the anchor is centered vertically, would the flyout fit above it?
-                    function fitsVerticallyWithAnchor(anchor, flyout) {
+                    function fitsVerticallyWithCenteredAnchor(anchor, flyout) {
                         // Returns true if the flyout would always fit at least top 
                         // or bottom of its anchor, regardless of the position of the anchor, 
                         // as long as the anchor never changed its height, nor did the height of 
@@ -801,10 +799,16 @@ define([
                         return ((_Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.height) / 2) >= flyout.totalHeight;
                     }
 
+                    function spaceAbove(anchor) {
+                        anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                    }
+
+                    function spaceBelow(anchor) {
+                        _Overlay._Overlay._keyboardInfo._visibleDocBottom - anchor.bottom;
+                    }
+
                     function topHasMoreRoom(anchor) {
-                        var visibleDocTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                        var visibleDocBottom = _Overlay._Overlay._keyboardInfo._visibleDocBottom;
-                        return anchor.top - visibleDocTop  > visibleDocBottom - anchor.bottom;
+                        return spaceAbove(anchor) > spaceBelow(anchor);
                     }
 
                     // See if we can fit in various places, fitting in the main view,
@@ -902,7 +906,7 @@ define([
                                 // Didn't fit, needs scrollbar
                                 this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
                                 this._doesScroll = true;
-                                this._adjustedHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._verticalMarginBorderPadding;
+                                this._adjustedHeight = spaceAbove(anchor) - this._verticalMarginBorderPadding;
                             }
                             alignHorizontally(anchor, flyout, this._currentAlignment);
                             break;
@@ -911,7 +915,7 @@ define([
                                 // Didn't fit, needs scrollbar
                                 this._nextTop = _Constants.pinToBottomEdge;
                                 this._doesScroll = true;
-                                this._adjustedHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._verticalMarginBorderPadding;
+                                this._adjustedHeight = spaceBelow(anchor) - this._verticalMarginBorderPadding;
                             }
                             alignHorizontally(anchor, flyout, this._currentAlignment);
                             break;
@@ -951,7 +955,7 @@ define([
                             break;
                         case "auto":
                             // Auto, if the anchor was in the vertical center of the display would we fit above it?
-                            if (fitsVerticallyWithAnchor(anchor, flyout)) {
+                            if (fitsVerticallyWithCenteredAnchor(anchor, flyout)) {
                                 // It will fit above or below the anchor
                                 if (!fitTop(anchor.top, flyout)) {
                                     // Didn't fit above (preferred), so go below.
