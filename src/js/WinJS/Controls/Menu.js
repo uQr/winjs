@@ -260,7 +260,7 @@ define([
                         );
                     }
                     // Call flyout show 
-                    this._baseFlyoutShow(anchor, placement, alignment, null);
+                    this._baseFlyoutShow(anchor, placement, alignment);
 
                     // Menu will need to adjust MenuCommand layouts based on the various 
                     // types of commands visible in our Menu, but only after we send the beforeshow

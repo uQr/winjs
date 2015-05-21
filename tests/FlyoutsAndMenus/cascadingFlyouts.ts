@@ -708,9 +708,9 @@ module CorsicaTests {
                 iframeDocument.body.appendChild(subMenu.element);
 
                 var cachedParentMenuBorderBoxWidth: number; // content, padding, border;
-                var parentMenuMargins: { left: number; right: number; top: number; bottom: number; };
+                var cachedParentMenuMargins: { left: number; right: number; top: number; bottom: number; };
                 var cachedSubMenuBorderBoxWidth: number; // content, padding, border, 
-                var subMenuMargins: { left: number; right: number; top: number; bottom: number; };
+                var cachedSubMenuMargins: { left: number; right: number; top: number; bottom: number; };
                 var iframeWidth: number;
                 var expectedOverlap = 4;
                 var minimumSpaceForLeftSubMenu: number;
@@ -743,15 +743,15 @@ module CorsicaTests {
                         asyncShow(parentMenu, defaultAnchor)
                             .then(() => {
                                 cachedParentMenuBorderBoxWidth = parentMenu.element.getBoundingClientRect().width;
-                                parentMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
+                                cachedParentMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
 
                                 return iframeMenuCommand._activateFlyoutCommand(flyoutCommand);
                             })
                             .then(() => {
                                 cachedSubMenuBorderBoxWidth = subMenu.element.getBoundingClientRect().width;
-                                subMenuMargins = WinJS.Utilities._getPreciseMargins(subMenu.element);
-                                minimumSpaceForLeftSubMenu = subMenuMargins.left + cachedSubMenuBorderBoxWidth - expectedOverlap;
-                                minimumSpaceForRightSubMenu = cachedSubMenuBorderBoxWidth - expectedOverlap + subMenuMargins.right;
+                                cachedSubMenuMargins = WinJS.Utilities._getPreciseMargins(subMenu.element);
+                                minimumSpaceForLeftSubMenu = cachedSubMenuMargins.left + cachedSubMenuBorderBoxWidth - expectedOverlap;
+                                minimumSpaceForRightSubMenu = cachedSubMenuBorderBoxWidth - expectedOverlap + cachedSubMenuMargins.right;
 
                                 return iframeMenuCommand._deactivateFlyoutCommand(flyoutCommand);
                             })
@@ -779,7 +779,7 @@ module CorsicaTests {
 
                             asyncShow(parentMenu, defaultAnchor)
                                 .then(() => {
-                                    parentMenu.element.style.left = (visibleSpaceLeftOfParentMenu - parentMenuMargins.left) + "px";
+                                    parentMenu.element.style.left = (visibleSpaceLeftOfParentMenu - cachedParentMenuMargins.left) + "px";
                                 })
                                 .done(c);
                         }
@@ -797,9 +797,9 @@ module CorsicaTests {
                     var subMenuRect = subMenu.element.getBoundingClientRect();
                     var tolerance = 1;
 
-                    LiveUnit.Assert.isTrue(subMenuRect.left - subMenuMargins.left > 0 - tolerance,
+                    LiveUnit.Assert.isTrue(subMenuRect.left - cachedSubMenuMargins.left > 0 - tolerance,
                         "left edge of subMenu marginbox should not overrun left edge of iframe visual viewport");
-                    LiveUnit.Assert.isTrue(subMenuRect.right + subMenuMargins.right < iframeWidth + tolerance,
+                    LiveUnit.Assert.isTrue(subMenuRect.right + cachedSubMenuMargins.right < iframeWidth + tolerance,
                         "right edge of subMenu marginbox should not overrun right edge of iframe visual viewport");
                 }
 
@@ -814,13 +814,6 @@ module CorsicaTests {
                             visibleSpaceToTheLeft,
                             visibleSpaceToTheRight)
                             .then(() => {
-
-                                // PRECONDITION: Sanity check that the position of the parentMenu has been configured correctly.
-                                parentMenuRect = parentMenu.element.getBoundingClientRect();
-                                Helper.Assert.areFloatsEqual(visibleSpaceToTheLeft, parentMenuRect.left,
-                                    "TEST ERROR: Test expects " + visibleSpaceToTheLeft + " free space to the left of the parentMenu", 1);
-                                Helper.Assert.areFloatsEqual(visibleSpaceToTheRight, iframeWidth - parentMenuRect.right,
-                                    "TEST ERROR: Test expects " + visibleSpaceToTheRight + " free space to the right of the parentMenu", 1);
 
                                 // PRECONDITION: Sanity check that parent menu has enough room to fit a subMenu on either side.
                                 parentMenuRect = parentMenu.element.getBoundingClientRect();
@@ -861,13 +854,6 @@ module CorsicaTests {
                             visibleSpaceToTheRight)
                             .then(() => {
 
-                                // PRECONDITION: Sanity check that the position of the parentMenu has been configured correctly.
-                                parentMenuRect = parentMenu.element.getBoundingClientRect();
-                                Helper.Assert.areFloatsEqual(visibleSpaceToTheLeft, parentMenuRect.left,
-                                    "TEST ERROR: Test expects " + visibleSpaceToTheLeft + " free space to the left of the parentMenu", 1);
-                                Helper.Assert.areFloatsEqual(visibleSpaceToTheRight, iframeWidth - parentMenuRect.right,
-                                    "TEST ERROR: Test expects " + visibleSpaceToTheRight + " free space to the right of the parentMenu", 1);
-
                                 // PRECONDITION: Sanity check that there is only enough room to fit a subMenu on the left side of the parentMenu.
                                 parentMenuRect = parentMenu.element.getBoundingClientRect();
                                 LiveUnit.Assert.isTrue(parentMenuRect.left >= minimumSpaceForLeftSubMenu,
@@ -906,15 +892,6 @@ module CorsicaTests {
                             visibleSpaceToTheLeft,
                             visibleSpaceToTheRight)
                             .then(() => {
-                                //configureHorizontalPositionOfParentMenuInIframe(minimumSpaceForLeftSubMenu + 1, minimumSpaceForRightSubMenu + 1)
-                                //    .then(() => {
-
-                                // PRECONDITION: Sanity check that the position of the parentMenu has been configured correctly.
-                                parentMenuRect = parentMenu.element.getBoundingClientRect();
-                                Helper.Assert.areFloatsEqual(visibleSpaceToTheLeft, parentMenuRect.left,
-                                    "TEST ERROR: Test expects " + visibleSpaceToTheLeft + " free space to the left of the parentMenu", 1);
-                                Helper.Assert.areFloatsEqual(visibleSpaceToTheRight, iframeWidth - parentMenuRect.right,
-                                    "TEST ERROR: Test expects " + visibleSpaceToTheRight + " free space to the right of the parentMenu", 1);
 
                                 // PRECONDITION: Sanity check that there is not enough room to fit a subMenu on either side of the parentMenu.
                                 parentMenuRect = parentMenu.element.getBoundingClientRect();
@@ -929,7 +906,7 @@ module CorsicaTests {
                             .then(() => {
 
                                 subMenuRect = subMenu.element.getBoundingClientRect();
-                                Helper.Assert.areFloatsEqual(iframeWidth, subMenuRect.right + subMenuMargins.right,
+                                Helper.Assert.areFloatsEqual(iframeWidth, subMenuRect.right + cachedSubMenuMargins.right,
                                     "right edge of subMenu marginbox should pin to the right edge of the iframe if there " +
                                     "isn't enough space to cascade on either side of the parentMenu", 1);
 
@@ -1003,10 +980,10 @@ module CorsicaTests {
                 iframeDocument.body.appendChild(subMenu.element);
 
                 var cachedParentMenuBorderBoxHeight: number; // content, padding, border;
-                var parentMenuMargins: { left: number; right: number; top: number; bottom: number; };
+                var cachedParentMenuMargins: { left: number; right: number; top: number; bottom: number; };
                 var cachedFlyoutCommandBorderBoxHeight: number;
                 var cachedSubMenuBorderBoxHeight: number; // content, padding, border, 
-                var subMenuMargins: { left: number; right: number; top: number; bottom: number; };
+                var cachedSubMenuMargins: { left: number; right: number; top: number; bottom: number; };
                 var iframeHeight: number;
                 var additionalSpaceRequiredBelow: number;
                 var additionalSpaceRequiredAbove: number;
@@ -1044,7 +1021,7 @@ module CorsicaTests {
                             asyncShow(parentMenu, defaultAnchor)
                                 .then(() => {
                                     cachedParentMenuBorderBoxHeight = parentMenu.element.getBoundingClientRect().height;
-                                    parentMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
+                                    cachedParentMenuMargins = WinJS.Utilities._getPreciseMargins(parentMenu.element);
                                     cachedFlyoutCommandBorderBoxHeight = flyoutCommand.element.getBoundingClientRect().height;
 
                                     return iframeMenuCommand._activateFlyoutCommand(flyoutCommand);
@@ -1057,11 +1034,11 @@ module CorsicaTests {
                                     LiveUnit.Assert.isTrue(cachedSubMenuBorderBoxHeight > cachedParentMenuBorderBoxHeight,
                                         "TEST ERROR: Test requires that the subMenu be taller than the parentMenu");
 
-                                    subMenuMargins = WinJS.Utilities._getPreciseMargins(subMenu.element);
+                                    cachedSubMenuMargins = WinJS.Utilities._getPreciseMargins(subMenu.element);
                                     // The additional space required between the bottom of the flyoutCommand and the bottom of the iframe in order to fit a top aligned subMenu.
-                                    additionalSpaceRequiredBelow = cachedSubMenuBorderBoxHeight + subMenuMargins.bottom - cachedFlyoutCommandBorderBoxHeight;
+                                    additionalSpaceRequiredBelow = cachedSubMenuBorderBoxHeight + cachedSubMenuMargins.bottom - cachedFlyoutCommandBorderBoxHeight;
                                     // The additional space required between the top of the flyoutCommand and the top of the iframe in order fit a bottom aligned subMenu.
-                                    additionalSpaceRequiredAbove = subMenuMargins.top + cachedSubMenuBorderBoxHeight - cachedFlyoutCommandBorderBoxHeight;
+                                    additionalSpaceRequiredAbove = cachedSubMenuMargins.top + cachedSubMenuBorderBoxHeight - cachedFlyoutCommandBorderBoxHeight;
 
                                     return iframeMenuCommand._deactivateFlyoutCommand(flyoutCommand);
                                 })
@@ -1076,21 +1053,19 @@ module CorsicaTests {
                         // Sizing the iframe will trigger an async "resize" event in the iframe contentWindow. Hold off on trying to measure 
                         // until the "resize" event fires, in order to avoid light dismissing the menu's before we've finished.
                         listenOnce(iframe.contentWindow, "resize", measureAfterContentWindowResize);
-                        iframe.style.height = 500 + "px";
-                        iframe.style.width = 500 + "px";
+                        iframe.style.height = "500px";
+                        iframe.style.width = "500px";
                     });
                 }
 
                 function configureVerticalPositionOfFlyoutComandInIframe(visibleSpaceAboveFlyoutCommand, visibleSpaceBelowFlyoutCommand): WinJS.Promise<any> {
 
-                    // Sizes the height iframe to be the sum of the two arguments plus the height of flyoutCommandBorderBox, 
-                    // then positions the parentMenu so that the height of vertical position of flyoutCommand 
+                    // Sizes the height of the iframe to be the sum of the two arguments plus the height of flyoutCommandBorderBox, 
+                    // then positions the parentMenu so that its flyoutCommand is located at the coordinates to perform the test.
 
                     return new WinJS.Promise((c) => {
 
                         function configureAfterContentWindowResize() {
-                            //iframe.contentWindow.removeEventListener("resize", configureAfterContentWindowResize, false);
-
                             // PRECONDITION: Sanity check that Iframe height is the value we intended.
                             Helper.Assert.areFloatsEqual(iframeHeight, iframe.offsetHeight,
                                 "TEST ERROR: Test expects iframe height of " + iframeHeight + "px", 1);
@@ -1104,7 +1079,7 @@ module CorsicaTests {
                                 .then(() => {
 
                                     // Find the distance between top of flyoutCommand and top of parentMenu's marginbox.
-                                    var parentMenuMarginBoxTop = (parentMenu.element.getBoundingClientRect().top - parentMenuMargins.top);
+                                    var parentMenuMarginBoxTop = (parentMenu.element.getBoundingClientRect().top - cachedParentMenuMargins.top);
                                     var distanceBetween = flyoutCommand.element.getBoundingClientRect().top - parentMenuMarginBoxTop;
 
                                     // Position the top of the parentMenu's marginBox so that the flyoutCommand is in the exact vertical location that was specified
@@ -1127,9 +1102,9 @@ module CorsicaTests {
                     var subMenuRect = subMenu.element.getBoundingClientRect();
                     var tolerance = 1;
 
-                    LiveUnit.Assert.isTrue(subMenuRect.top - subMenuMargins.top > 0 - tolerance,
+                    LiveUnit.Assert.isTrue(subMenuRect.top - cachedSubMenuMargins.top > 0 - tolerance,
                         "top edge of subMenu marginbox should not overrun top edge of iframe visual viewport");
-                    LiveUnit.Assert.isTrue(subMenuRect.bottom + subMenuMargins.bottom < iframeHeight + tolerance,
+                    LiveUnit.Assert.isTrue(subMenuRect.bottom + cachedSubMenuMargins.bottom < iframeHeight + tolerance,
                         "bottom edge of subMenu marginbox should not overrun bottom edge of iframe visual viewport");
                 }
 
@@ -1146,16 +1121,9 @@ module CorsicaTests {
                             visibleSpaceBelow)
                             .then(() => {
 
-                                // PRECONDITION: Sanity check that positioning the parentMenu has placed the flyoutCommandBorderBox at the exact 
-                                // vertical coordinates that were specified.
-                                flyoutCommandRect = flyoutCommand.element.getBoundingClientRect();
-                                Helper.Assert.areFloatsEqual(visibleSpaceAbove, flyoutCommandRect.top,
-                                    "TEST ERROR: Test configuration requires " + visibleSpaceAbove + " free space above the flyout command", 1);
-                                Helper.Assert.areFloatsEqual(visibleSpaceBelow, iframeHeight - flyoutCommandRect.bottom,
-                                    "TEST ERROR: Test configuration requires " + visibleSpaceBelow + " free space below the flyout command", 1);
-
                                 // PRECONDITION: Sanity check our configuration has enough room to top align or bottom align the subMenu 
                                 // without overrunning any edge of the iframe
+                                flyoutCommandRect = flyoutCommand.element.getBoundingClientRect();
                                 LiveUnit.Assert.isTrue(iframeHeight - flyoutCommandRect.bottom >= additionalSpaceRequiredBelow,
                                     "TEST ERROR: Test requires enough room to fit a top aligned subMenu");
                                 LiveUnit.Assert.isTrue(flyoutCommandRect.top >= additionalSpaceRequiredAbove,
@@ -1193,14 +1161,6 @@ module CorsicaTests {
                             visibleSpaceBelow)
                             .then(() => {
 
-                                // PRECONDITION: Sanity check that positioning the parentMenu has placed the flyoutCommandBorderBox at the exact 
-                                // vertical coordinates that were specified.
-                                flyoutCommandRect = flyoutCommand.element.getBoundingClientRect();
-                                Helper.Assert.areFloatsEqual(visibleSpaceAbove, flyoutCommandRect.top,
-                                    "TEST ERROR: Test expects " + visibleSpaceAbove + " free space above the flyout command", 1);
-                                Helper.Assert.areFloatsEqual(visibleSpaceBelow, iframeHeight - flyoutCommandRect.bottom,
-                                    "TEST ERROR: Test expects " + visibleSpaceBelow + " free space below the flyout command", 1);
-
                                 // PRECONDITION: Sanity check our configuration has enough room to bottom align the subMenu 
                                 // but not enough room to top align.
                                 flyoutCommandRect = flyoutCommand.element.getBoundingClientRect();
@@ -1221,9 +1181,9 @@ module CorsicaTests {
 
                                 verifySubMenuWithinVerticalBounds(subMenu);
 
-                                    // Hide subMenu
-                                    return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
-                                })
+                                // Hide subMenu
+                                return iframeMenuCommand._deactivateFlyoutCommand(subMenu.anchor.winControl)
+                            })
                             .done(c);
                     });
                 }
@@ -1240,14 +1200,6 @@ module CorsicaTests {
                             visibleSpaceAbove,
                             visibleSpaceBelow)
                             .then(() => {
-
-                                //PRECONDITION: Sanity check that positioning the parentMenu has placed the flyoutCommandBorderBox at the exact 
-                                // vertical coordinates that were specified.
-                                flyoutCommandRect = flyoutCommand.element.getBoundingClientRect();
-                                Helper.Assert.areFloatsEqual(visibleSpaceAbove, flyoutCommandRect.top,
-                                    "TEST ERROR: Test expects " + visibleSpaceAbove + " free space above the flyout command", 1);
-                                Helper.Assert.areFloatsEqual(visibleSpaceBelow, iframeHeight - flyoutCommandRect.bottom,
-                                    "TEST ERROR: Test expects " + visibleSpaceBelow + " free space below the flyout command", 1);
 
                                 // PRECONDITION: Sanity check our configuration doesn't have enough room to top align the subMenu 
                                 // nor enough room to bottom align.
