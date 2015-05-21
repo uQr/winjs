@@ -800,11 +800,11 @@ define([
                     }
 
                     function spaceAbove(anchor) {
-                        anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                        return anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop;
                     }
 
                     function spaceBelow(anchor) {
-                        _Overlay._Overlay._keyboardInfo._visibleDocBottom - anchor.bottom;
+                        return _Overlay._Overlay._keyboardInfo._visibleDocBottom - anchor.bottom;
                     }
 
                     function topHasMoreRoom(anchor) {
@@ -981,7 +981,7 @@ define([
                             // FALLBACK: When there is enough room to bottom align a subMenu but not enough room to top align it, 
                             // then the subMenu will align to the bottom of its anchor element.
                             // LASTRESORT: When there is not enough room to top align or bottom align the subMenu to its anchor,
-                            // then the subMenu will center aligned to it's anchor's vertical midpoint.
+                            // then the subMenu will be center aligned to it's anchor's vertical midpoint.
                             if (!fitBottom(anchor.top - flyout.marginTop, flyout) && !fitTop(anchor.bottom + flyout.marginBottom, flyout)) {
                                 centerVertically(anchor, flyout);
                             }
