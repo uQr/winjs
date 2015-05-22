@@ -73,6 +73,7 @@ define([
                     var index = this._clients.indexOf(client);
                     if (index === -1) {
                         this._clients.push(client);
+                        client.onShow(this);
                         if (!_LightDismissService.isShown(this)) {
                             _LightDismissService.shown(this);
                         } else {
@@ -107,6 +108,16 @@ define([
                             this._activateTopFocusableClientIfNeeded();
                         }
                     }
+                },
+                
+                keyDown: function _LightDismissableLayer_keyDown(client /*: ILightDismissable */, eventObject) {
+                    _LightDismissService.keyDown(this, eventObject);
+                },
+                keyUp: function _LightDismissableLayer_keyUp(client /*: ILightDismissable */, eventObject) {
+                    _LightDismissService.keyUp(this, eventObject);
+                },
+                keyPress: function _LightDismissableLayer_keyPress(client /*: ILightDismissable */, eventObject) {
+                    _LightDismissService.keyPress(this, eventObject);
                 },
 
                 // Used by tests.
@@ -150,7 +161,7 @@ define([
                         // If the last input type was keyboard, use focus() so a keyboard focus visual is drawn.
                         // Otherwise, use setActive() so no focus visual is drawn.
                         var useSetActive = !_KeyboardBehavior._keyboardSeenLast;
-                        topClient.onActivate(useSetActive);
+                        topClient.onTakeFocus(useSetActive);
                     }
                 },
 
@@ -168,7 +179,7 @@ define([
                 containsElement: function _LightDismissableLayer_containsElement(element) {
                     return !!this._clientForElement(element);
                 },
-                onActivate: function _LightDismissableLayer_onActivate(useSetActive) {
+                onTakeFocus: function _LightDismissableLayer_onTakeFocus(useSetActive) {
                     // Prefer the client that has focus
                     var client = this._focusableClientForElement(_Global.document.activeElement);
 
@@ -183,14 +194,28 @@ define([
                     }
 
                     this._currentlyFocusedClient = client;
-                    client && client.onActivate(useSetActive);
+                    client && client.onTakeFocus(useSetActive);
                 },
                 onFocus: function _LightDismissableLayer_onFocus(element) {
                     this._currentlyFocusedClient = this._clientForElement(element);
                     this._currentlyFocusedClient && this._currentlyFocusedClient.onFocus(element);
                 },
+                onShow: function _LightDismissableLayer_onShow(service /*: ILightDismissService */) { },
                 onHide: function _LightDismissableLayer_onHide() {
                     this._currentlyFocusedClient = null;
+                },
+                onKeyInStack: function _LightDismissableLayer_onKeyInStack(info /*: IKeyboardInfo*/) {
+                    // A keyboard event occurred in the light dismiss stack. Notify the flyouts to
+                    // give them the opportunity to handle this evnet.
+                    var index = this._clients.indexOf(this._currentlyFocusedClient);
+                    if (index !== -1) {
+                        var clients = this._clients.slice(0, index + 1);
+                        for (var i = clients.length - 1; i >= 0 && !info.propagationStopped; i--) {
+                            if (clients[i]._focusable) {
+                                clients[i].onKeyInStack(info);
+                            }
+                        }
+                    }
                 },
                 onShouldLightDismiss: function _LightDismissableLayer_onShouldLightDismiss(info) {
                     return _LightDismissService.DismissalPolicies.light(info);
@@ -418,7 +443,7 @@ define([
                         onLightDismiss: function () {
                             that.hide();
                         },
-                        onActivate: function (useSetActive) {
+                        onTakeFocus: function (useSetActive) {
                             if (!that._dismissable.restoreFocus()) {
                                 if (!_ElementUtilities.hasClass(that.element, _Constants.menuClass)) {
                                     // Put focus on the first child in the Flyout
@@ -985,7 +1010,6 @@ define([
                             if (!fitBottom(anchor.top - flyout.marginTop, flyout) && !fitTop(anchor.bottom + flyout.marginBottom, flyout)) {
                                 centerVertically(anchor, flyout);
                             }
-
                             // Determine horizontal direction
                             // PREFERRED: When there is enough room to fit a subMenu on either side of the anchor,
                             // the subMenu prefers to go on the right hand side.
@@ -995,9 +1019,9 @@ define([
                             // the subMenu is pinned to the right edge of the window.
                             var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
 
-                            // Cascading Menus should overlap their ancestor menu by a 4 pixels and we have a unit test to 
-                            // Verify that behavior. Because we don't have access to the ancestor flyout we need to specify
-                            // the overlap in terms of our anchor element which there is a 1px border around the menu that 
+                            // Cascading Menus should overlap their ancestor menu by 4 pixels and we have a unit test to 
+                            // verify that behavior. Because we don't have access to the ancestor flyout we need to specify
+                            // the overlap in terms of our anchor element. There is a 1px border around the menu that 
                             // contains our anchor we need to overlap our anchor by 3px to ensure that we overlap the containing 
                             // Menu by 4px.
                             var pixelsToOverlapAnchor = 3;
