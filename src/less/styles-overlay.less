@@ -492,10 +492,10 @@ Flyout control.
     border-style: solid;
     border-width: 1px;
     margin: 4px;
-    min-width: 70px; /* 96px - 2px border - 12px padding */
-    max-width: 430px; /* 456px - 2px border - 12px padding */
-    min-height: 16px; /* 44px - 2px border - 12px padding */
-    max-height: 730px; /* 758px - 2px border - 12px padding */
+    min-width: 70px; /* 96px - 2px border - 24px padding */
+    max-width: 430px; /* 456px - 2px border - 24px padding */
+    min-height: 16px; /* 44px - 2px border - 24px padding */
+    max-height: 730px; /* 758px - 2px border - 24px padding */
     width: auto;
     height: auto;
     word-wrap: break-word;
@@ -516,9 +516,9 @@ Flyout control.
 }
 
 @media(max-width:464px) {
-    // If the viewport can't fit 456px wide menu with 4px of margin on each side, reduce our max width
+    // If the viewport can't fit flyout with max-width 456px + 4px of margin on each side, reduce flyout max width
     .win-flyout {
-        max-width: ~"calc(100% - 34px)"; /* 100% - 8px margin - 2px border - 12px padding */
+        max-width: ~"calc(100% - 34px)"; /* 100% - 8px margin - 2px border - 24px padding */
     }
 }
 
@@ -640,9 +640,9 @@ Menu toggle and flyout commands.
 }
 
 @media(max-width:464px) {
-    // If the viewport can't fit 456px wide menu with 4px of margin on each side, reduce our max width
+    // If the viewport can't fit menu with max-width 456px + 4px of margin on each side, reduce menu max width
     .win-menu {
-        max-width: ~"calc(100% - 10px)"; /* 100% - margin - border */
+        max-width: ~"calc(100% - 10px)"; /* 100% - 8px margin - 2px border */
     }
 }
 
