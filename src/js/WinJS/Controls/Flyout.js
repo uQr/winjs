@@ -995,9 +995,9 @@ define([
                             // the subMenu is pinned to the right edge of the window.
                             var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
 
-                            // Cascading Menus should overlap their ancestor menu by a 4 pixels and we have a unit test to 
-                            // Verify that behavior. Because we don't have access to the ancestor flyout we need to specify
-                            // the overlap in terms of our anchor element which there is a 1px border around the menu that 
+                            // Cascading Menus should overlap their ancestor menu by 4 pixels and we have a unit test to 
+                            // verify that behavior. Because we don't have access to the ancestor flyout we need to specify
+                            // the overlap in terms of our anchor element. There is a 1px border around the menu that 
                             // contains our anchor we need to overlap our anchor by 3px to ensure that we overlap the containing 
                             // Menu by 4px.
                             var pixelsToOverlapAnchor = 3;
