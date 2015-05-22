@@ -492,8 +492,8 @@ Flyout control.
     border-style: solid;
     border-width: 1px;
     margin: 5px;
-    min-width: 68px; /* 96px - padding - border */
-    max-width: 428px; /* 456px - padding - border */
+    min-width: 70px; /* 96px - padding - border */
+    max-width: 430px; /* 456px - padding - border */
     min-height: 16px; /* 44px - padding - border */
     max-height: 730px; /* 758px - padding - border */
     width: auto;
@@ -515,6 +515,12 @@ Flyout control.
     overflow: auto;
 }
 
+@media(max-width:456px) {
+    .win-flyout {
+        max-width: ~"calc(100vw - 26px)"; /* 100vw - border - padding */
+    }
+}
+
 /*
 Menu control.
 */
@@ -524,8 +530,8 @@ Menu control.
     text-align: left; /* Set explicitly in case our parent has different alignment, like appbar overflow. */
     min-height: 46px; /* 44px -  2px in border = 46px */
     max-height: ~"calc(100% - 26px)";
-    min-width: 136px;
-    max-width: 456px;
+    min-width: 134px; /* 136px - border */
+    max-width: 454px; /* 456px - border */
 }
 
 /*
@@ -630,6 +636,12 @@ Menu toggle and flyout commands.
 .win-menu-containstogglecommand button.win-command-toggle[aria-checked=true] .win-menucommand-liner .win-toggleicon,
 .win-menu-containsflyoutcommand button.win-command-flyout .win-menucommand-liner .win-flyouticon {
     visibility: visible;
+}
+
+@media(max-width:456px) {
+    .win-menu {
+        max-width: ~"calc(100vw - 2px)"; /* 100vw - border */
+    }
 }
 
 /*
