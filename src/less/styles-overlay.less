@@ -491,11 +491,11 @@ Flyout control.
     padding: 12px;
     border-style: solid;
     border-width: 1px;
-    margin: 5px;
-    min-width: 70px; /* 96px - padding - border */
-    max-width: 430px; /* 456px - padding - border */
-    min-height: 16px; /* 44px - padding - border */
-    max-height: 730px; /* 758px - padding - border */
+    margin: 4px;
+    min-width: 70px; /* 96px - 2px border - 12px padding */
+    max-width: 430px; /* 456px - 2px border - 12px padding */
+    min-height: 16px; /* 44px - 2px border - 12px padding */
+    max-height: 730px; /* 758px - 2px border - 12px padding */
     width: auto;
     height: auto;
     word-wrap: break-word;
@@ -515,9 +515,10 @@ Flyout control.
     overflow: auto;
 }
 
-@media(max-width:456px) {
+@media(max-width:464px) {
+    // If the viewport can't fit 456px wide menu with 4px of margin on each side, reduce our max width
     .win-flyout {
-        max-width: ~"calc(100vw - 26px)"; /* 100vw - border - padding */
+        max-width: ~"calc(100% - 34px)"; /* 100% - 8px margin - 2px border - 12px padding */
     }
 }
 
@@ -528,10 +529,10 @@ Menu control.
     padding: 0;
     line-height: 33px;
     text-align: left; /* Set explicitly in case our parent has different alignment, like appbar overflow. */
-    min-height: 46px; /* 44px -  2px in border = 46px */
+    min-height: 42px; /* 44px - 2px border */
     max-height: ~"calc(100% - 26px)";
-    min-width: 134px; /* 136px - border */
-    max-width: 454px; /* 456px - border */
+    min-width: 134px; /* 136px - 2px border */
+    max-width: 454px; /* 456px - 2px border */
 }
 
 /*
@@ -638,9 +639,10 @@ Menu toggle and flyout commands.
     visibility: visible;
 }
 
-@media(max-width:456px) {
+@media(max-width:464px) {
+    // If the viewport can't fit 456px wide menu with 4px of margin on each side, reduce our max width
     .win-menu {
-        max-width: ~"calc(100vw - 2px)"; /* 100vw - border */
+        max-width: ~"calc(100% - 10px)"; /* 100% - margin - border */
     }
 }
 
