@@ -138,7 +138,7 @@ define([
 
                 // Attach our css class.
                 _ElementUtilities.addClass(this._element, _Constants.appBarClass);
-                
+
                 var that = this;
                 this._dismissable = new _LightDismissService.LightDismissableElement({
                     element: this._element,
@@ -429,6 +429,25 @@ define([
                     }
                 },
 
+                sticky: {
+                    get: function () {
+                        return !!this._sticky;
+                    },
+                    set: function (value) {
+                        if (!!this._sticky !== !!value) {
+                            this._sticky = !!value;
+
+                            this._updateFirstAndFinalDiv();
+
+                            if (this._sticky) {
+                                _LightDismissService.hidden(this._dismissable);
+                            } else if(this.opened) {
+                                _LightDismissService.shown(this._dismissable);
+                            }
+                        }
+                    }
+                },
+
                 /// <field type="Function" locid="WinJS.UI._LegacyAppBar.onbeforeopen" helpKeyword="WinJS.UI._LegacyAppBar.onbeforeopen">
                 /// Occurs immediately before the control is opened.
                 /// </field>
@@ -545,8 +564,9 @@ define([
                     if (showing) {
                         // Clean up tabbing behavior by making sure first and final divs are correct after showing.
                         this._updateFirstAndFinalDiv();
-                        
-                        _LightDismissService.shown(this._dismissable);
+                        if (!this._sticky) {
+                            _LightDismissService.shown(this._dismissable);
+                        }
                     }
                 },
 
@@ -734,11 +754,11 @@ define([
                         if (this._doNext === this._lastPositionVisited) {
                             this._doNext = "";
                         }
-                        
+
                         if (newState === appbarHiddenState) {
                             _LightDismissService.hidden(this._dismissable);
                         }
-                        
+
                         if (newPosition === displayModeVisiblePositions.hidden) {
                             // Make sure animation is finished.
                             this._element.style.visibility = "hidden";
@@ -1141,7 +1161,6 @@ define([
                         this._element.appendChild(appBarFinalDiv);
                     }
 
-
                     // invokeButton should be the second to last element in the _LegacyAppBar's tab order. Second to the finalDiv.
                     if (this._element.children[this._element.children.length - 2] !== this._invokeButton) {
                         this._element.insertBefore(this._invokeButton, appBarFinalDiv);
@@ -1152,10 +1171,10 @@ define([
 
                     // Update the tabIndex of the firstDiv & finalDiv
                     if (appBarFirstDiv) {
-                        appBarFirstDiv.tabIndex = _ElementUtilities._getLowestTabIndexInList(elms);
+                        appBarFirstDiv.tabIndex = this.sticky? -1: _ElementUtilities._getLowestTabIndexInList(elms);
                     }
                     if (appBarFinalDiv) {
-                        appBarFinalDiv.tabIndex = highestTabIndex;
+                        appBarFinalDiv.tabIndex = this.sticky? -1 : highestTabIndex;
                     }
                 },
 
