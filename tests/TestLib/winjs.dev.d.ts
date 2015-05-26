@@ -143,14 +143,29 @@ declare module WinJS {
                 stopPropagation(): void;
                 preventDefault(): void;
             }
+            
+            export interface IKeyboardInfo {
+                type: string;
+                keyCode: number;
+                propagationStopped: boolean;
+                stopPropagation(): void;
+            }
+            
+            export interface ILightDismissService {
+                keyDown(client: ILightDismissable, eventObject: KeyboardEvent): void;
+                keyUp(client: ILightDismissable, eventObject: KeyboardEvent): void;
+                keyPress(client: ILightDismissable, eventObject: KeyboardEvent): void;
+            }
 
-            interface ILightDismissable {
+            export interface ILightDismissable {
                 setZIndex(zIndex: string): void;
                 getZIndexCount(): number;
                 containsElement(element: HTMLElement): boolean;
-                onActivate(): void;
+                onTakeFocus(useSetActive: boolean): void;
                 onFocus(element: HTMLElement): void;
+                onShow(service: ILightDismissService): void;
                 onHide(): void;
+                onKeyInStack(info: IKeyboardInfo): void;
                 onShouldLightDismiss(info: ILightDismissInfo): boolean;
                 onLightDismiss(info: ILightDismissInfo): void;
             }
@@ -159,7 +174,27 @@ declare module WinJS {
             function hidden(client: ILightDismissable): void;
             function isShown(client: ILightDismissable): boolean;
             function isTopmost(client: ILightDismissable): boolean;
+            function keyDown(client: ILightDismissable, eventObject: KeyboardEvent): void;
+            function keyUp(client: ILightDismissable, eventObject: KeyboardEvent): void;
+            function keyPress(client: ILightDismissable, eventObject: KeyboardEvent): void;
             function _clickEaterTapped(): void;
+        }
+
+        module _Accents {
+            export enum ColorTypes {
+                accent,
+                listSelectRest,
+                listSelectHover,
+                listSelectPress,
+                _listSelectRestInverse,
+                _listSelectHoverInverse,
+                _listSelectPressInverse
+            } 
+
+            export function createAccentRule(selector: string, props: { name: string; value: ColorTypes }[]);
+
+            export var _colors: string[];
+            export function _reset();
         }
 
         class _ParallelWorkQueue {
@@ -234,6 +269,15 @@ declare module WinJS {
             _clearAnimation(): void;
             _disposed: boolean;
             _machine: IOpenCloseMachine
+        }
+        
+        class PrivateSplitViewPaneToggle extends WinJS.UI.SplitViewPaneToggle {
+            static _ClassNames: {
+                splitViewPaneToggle: string;
+            }
+            
+            _invoked(): void;
+            _disposed: boolean;
         }
 
         interface ISelect {
@@ -427,7 +471,7 @@ declare module WinJS {
             _primaryCommands: PrivateCommand[];
             _secondaryCommands: PrivateCommand[];
             _getCommandWidth(command: ICommand): number;
-            _contentFlyout: WinJS.UI.Flyout;
+            _contentFlyout: WinJS.UI.PrivateFlyout;
             _contentFlyoutInterior: HTMLElement;
             _dom: {
                 root: HTMLElement;
@@ -543,7 +587,6 @@ declare module WinJS {
 
         class PrivateFlyout extends Flyout {
             _disposed;
-            _previousFocus;
 
             static _cascadeManager;
         }
@@ -554,7 +597,8 @@ declare module WinJS {
             _labelSpan;
             _flyoutSpan;
             _invoke;
-            static _activateFlyoutCommand;
+            static _activateFlyoutCommand: (command: WinJS.UI.PrivateMenuCommand) => Promise<any>;
+            static _deactivateFlyoutCommand: (command: WinJS.UI.PrivateMenuCommand) => Promise<any>;
         }
 
         class PrivateMenu extends Menu {
@@ -621,6 +665,7 @@ declare module WinJS {
             _goNext;
             _goPrevious;
             _headersContainerElement;
+            _headerItemsElement;
             _headersState;
             forceLayout();
             _navMode;

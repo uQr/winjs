@@ -8,6 +8,7 @@ define([
     '../Core/_Log',
     '../Core/_Resources',
     '../Core/_WriteProfilerMark',
+    '../_Accents',
     '../Animations',
     '../Animations/_TransitionAnimation',
     '../BindingList',
@@ -36,8 +37,27 @@ define([
     './ListView/_VirtualizeContentsView',
     'require-style!less/styles-listview',
     'require-style!less/colors-listview'
-], function listViewImplInit(_Global, _Base, _BaseUtils, _ErrorFromName, _Events, _Log, _Resources, _WriteProfilerMark, Animations, _TransitionAnimation, BindingList, Promise, Scheduler, _Signal, _Control, _Dispose, _ElementUtilities, _Hoverable, _ItemsManager, _SafeHtml, _TabContainer, _UI, _VersionManager, _Constants, _ItemEventsHandler, _BrowseMode, _ErrorMessages, _GroupFocusCache, _GroupsContainer, _Helpers, _ItemsContainer, _Layouts, _SelectionManager, _VirtualizeContentsView) {
+], function listViewImplInit(_Global, _Base, _BaseUtils, _ErrorFromName, _Events, _Log, _Resources, _WriteProfilerMark, _Accents, Animations, _TransitionAnimation, BindingList, Promise, Scheduler, _Signal, _Control, _Dispose, _ElementUtilities, _Hoverable, _ItemsManager, _SafeHtml, _TabContainer, _UI, _VersionManager, _Constants, _ItemEventsHandler, _BrowseMode, _ErrorMessages, _GroupFocusCache, _GroupsContainer, _Helpers, _ItemsContainer, _Layouts, _SelectionManager, _VirtualizeContentsView) {
     "use strict";
+
+    _Accents.createAccentRule(
+        ".win-listview:not(.win-selectionstylefilled) .win-selectioncheckmarkbackground,\
+         .win-itemcontainer:not(.win-selectionstylefilled) .win-selectioncheckmarkbackground", [
+             { name: "border-color", value: _Accents.ColorTypes.accent },
+             { name: "background-color", value: _Accents.ColorTypes.accent },
+         ]);
+
+    _Accents.createAccentRule(
+        ".win-listview:not(.win-selectionstylefilled) .win-container.win-selected .win-selectionborder,\
+         .win-itemcontainer:not(.win-selectionstylefilled).win-container.win-selected .win-selectionborder", [
+            { name: "border-color", value: _Accents.ColorTypes.accent },
+         ]);
+
+    _Accents.createAccentRule(
+        ".win-listview.win-selectionstylefilled .win-selected .win-selectionbackground,\
+         .win-itemcontainer.win-selectionstylefilled.win-selected .win-selectionbackground", [
+             { name: "background-color", value: _Accents.ColorTypes.accent }
+         ]);
 
     var transformNames = _BaseUtils._browserStyleEquivalents["transform"];
     var DISPOSE_TIMEOUT = 1000;
@@ -1187,7 +1207,7 @@ define([
                 _configureSelectionMode: function () {
                     var selectionModeClass = _Constants._selectionModeClass,
                         hidingSelectionModeClass = _Constants._hidingSelectionMode;
-                    if (this.tapBehavior === _UI.TapBehavior.toggleSelect && this.selectionMode === _UI.SelectionMode.multi) {
+                    if (this._isInSelectionMode()) {
                         _ElementUtilities.addClass(this._canvas, selectionModeClass);
                         _ElementUtilities.removeClass(this._canvas, hidingSelectionModeClass);
                     } else {
@@ -3649,6 +3669,10 @@ define([
                     return this._selectionMode === _UI.SelectionMode.multi;
                 },
 
+                _isInSelectionMode: function ListView_isInSelectionMode() {
+                    return (this.tapBehavior === _UI.TapBehavior.toggleSelect && this.selectionMode === _UI.SelectionMode.multi);
+                },
+
                 _selectOnTap: function ListView_selectOnTap() {
                     return this._tap === _UI.TapBehavior.toggleSelect || this._tap === _UI.TapBehavior.directSelect;
                 },
@@ -4086,7 +4110,7 @@ define([
                                 footerMargins: calculateMargins(_Constants._listFooterContainerClass)
                             };
                         }
-                        return this._headerFooterMargins[(type === _UI.ObjectType.header? "headerMargins" : "footerMargins")];
+                        return this._headerFooterMargins[(type === _UI.ObjectType.header ? "headerMargins" : "footerMargins")];
                     }
                 },
 
