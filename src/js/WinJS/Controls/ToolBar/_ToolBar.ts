@@ -486,29 +486,51 @@ export class ToolBar {
             this._dom.root.style.top = (topOfViewport + closedBorderBox.top) - closedMargins.top + "px";
         }
 
+        // Leave an equal sized placeHolder element at our original DOM location to avoid 
+        // reflowing surrounding app content.
+        this._dom.root.parentElement.insertBefore(placeHolder, this._dom.root);
+
         // Render opened state
         _ElementUtilities.addClass(this._dom.root, _Constants.ClassNames.openedClass);
         _ElementUtilities.removeClass(this._dom.root, _Constants.ClassNames.closedClass);
         this._commandingSurface.synchronousOpen();
 
-        // Move ToolBar element to the body in preparation of becoming a light dismissible. Leave an equal sized placeHolder element 
-        // at our original DOM location to avoid reflowing surrounding app content.
-        _ElementUtilities._maintainFocus(() => {
-            this._dom.root.parentElement.insertBefore(placeHolder, this._dom.root);
+        // Move ToolBar element to the body in preparation of becoming a light dismissible. 
+        _ElementUtilities._maintainFocus(function () {
             _Global.document.body.appendChild(this._dom.root);
         });
-
         _LightDismissService.shown(this._dismissable); // Call at the start of the open animation
     }
 
     private _updateDomImpl_renderClosed(): void {
 
-        // Restore our placement in the DOM
-        if (this._dom.placeHolder.parentElement) {
+        //    // Restore our placement in the DOM
+        //    if (this._dom.placeHolder.parentElement) {
+        //        _ElementUtilities._maintainFocus(() => {
+        //            var placeHolder = this._dom.placeHolder;
+        //            placeHolder.parentElement.insertBefore(this._dom.root, placeHolder);
+        //            placeHolder.parentElement.removeChild(placeHolder);
+        //        });
+        //    }
+
+        //    // Render Closed
+        //    this._dom.root.style.top = "";
+        //    this._dom.root.style.right = "";
+        //    this._dom.root.style.bottom = "";
+        //    this._dom.root.style.left = "";
+        //    this._dom.root.style.width = this._updateDomImpl_renderedState.prevInlineWidth;
+        //    _ElementUtilities.addClass(this._dom.root, _Constants.ClassNames.closedClass);
+        //    _ElementUtilities.removeClass(this._dom.root, _Constants.ClassNames.openedClass);
+        //    this._commandingSurface.synchronousClose();
+        //    _LightDismissService.hidden(this._dismissable); // Call after the close animation
+
+        var placeHolder = this._dom.placeHolder;
+        var usingPlaceHolder = placeHolder.parentElement;
+
+        if (usingPlaceHolder) {
+            // Restore our placement in the DOM
             _ElementUtilities._maintainFocus(() => {
-                var placeHolder = this._dom.placeHolder;
                 placeHolder.parentElement.insertBefore(this._dom.root, placeHolder);
-                placeHolder.parentElement.removeChild(placeHolder);
             });
         }
 
@@ -521,6 +543,12 @@ export class ToolBar {
         _ElementUtilities.addClass(this._dom.root, _Constants.ClassNames.closedClass);
         _ElementUtilities.removeClass(this._dom.root, _Constants.ClassNames.openedClass);
         this._commandingSurface.synchronousClose();
+
+        if (usingPlaceHolder) {
+            // Remove placeHolder from the DOM
+            placeHolder.parentElement.removeChild(placeHolder);
+        }
+
         _LightDismissService.hidden(this._dismissable); // Call after the close animation
     }
 }
