@@ -462,13 +462,6 @@ export class ToolBar {
         placeHolderStyle.marginBottom = closedMargins.bottom + "px";
         placeHolderStyle.marginLeft = closedMargins.left + "px";
 
-        // Move ToolBar element to the body in preparation of becoming a light dismissible. Leave an equal sized placeHolder element 
-        // at our original DOM location to avoid reflowing surrounding app content.
-        _ElementUtilities._maintainFocus(() => {
-            this._dom.root.parentElement.insertBefore(placeHolder, this._dom.root);
-            _Global.document.body.appendChild(this._dom.root);
-        }, _Global.document.body );
-
         // Position the ToolBar to completely cover the same region as the placeholder element.
         this._dom.root.style.width = closedContentWidth + "px";
         this._dom.root.style.left = closedBorderBox.left - closedMargins.left + "px";
@@ -497,6 +490,14 @@ export class ToolBar {
         _ElementUtilities.addClass(this._dom.root, _Constants.ClassNames.openedClass);
         _ElementUtilities.removeClass(this._dom.root, _Constants.ClassNames.closedClass);
         this._commandingSurface.synchronousOpen();
+
+        // Move ToolBar element to the body in preparation of becoming a light dismissible. Leave an equal sized placeHolder element 
+        // at our original DOM location to avoid reflowing surrounding app content.
+        _ElementUtilities._maintainFocus(() => {
+            this._dom.root.parentElement.insertBefore(placeHolder, this._dom.root);
+            _Global.document.body.appendChild(this._dom.root);
+        });
+
         _LightDismissService.shown(this._dismissable); // Call at the start of the open animation
     }
 
@@ -508,7 +509,7 @@ export class ToolBar {
                 var placeHolder = this._dom.placeHolder;
                 placeHolder.parentElement.insertBefore(this._dom.root, placeHolder);
                 placeHolder.parentElement.removeChild(placeHolder);
-            }, _Global.document.body);
+            });
         }
 
         // Render Closed
