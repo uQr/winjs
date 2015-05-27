@@ -467,7 +467,7 @@ export class ToolBar {
         _ElementUtilities._maintainFocus(() => {
             this._dom.root.parentElement.insertBefore(placeHolder, this._dom.root);
             _Global.document.body.appendChild(this._dom.root);
-        });
+        }, _Global.document.body );
 
         // Position the ToolBar to completely cover the same region as the placeholder element.
         this._dom.root.style.width = closedContentWidth + "px";
@@ -508,7 +508,7 @@ export class ToolBar {
                 var placeHolder = this._dom.placeHolder;
                 placeHolder.parentElement.insertBefore(this._dom.root, placeHolder);
                 placeHolder.parentElement.removeChild(placeHolder);
-            });
+            }, _Global.document.body);
         }
 
         // Render Closed

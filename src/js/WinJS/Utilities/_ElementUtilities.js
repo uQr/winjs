@@ -2504,10 +2504,10 @@ define([
         // called. Useful if moving focus is an unintentional side effect of *callback*.
         // For example, this could happen if *callback* removes and reinserts elements
         // to the DOM.
-        _maintainFocus: function ElementUtilities_maintainFocus(callback) {
+        _maintainFocus: function ElementUtilities_maintainFocus(callback, scroller) {
             var focusedElement = _Global.document.activeElement;
             callback();
-            exports._trySetActiveOnAnyElement(focusedElement);
+            exports._trySetActiveOnAnyElement(focusedElement, scroller);
         },
         
         // Tries to give focus to an element (even if its tabIndex is -1) via setActive.
