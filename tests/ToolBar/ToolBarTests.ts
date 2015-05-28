@@ -2131,82 +2131,65 @@ module CorsicaTests {
             this._testLightDismissWithTrigger((toolBar) => { _LightDismissService._clickEaterTapped(); }).then(complete);
         }
 
-        testVerticalAlignmentOfCascadedSubMenus = function (complete) {
-            // Verifies the following vertical alignment logic for cascading menus.
-            // 1. PREFERRED: When there is enough room to align a subMenu to either the top or the bottom of its anchor element, 
-            // the subMenu prefers to be top aligned.
-            // 2. FALLBACK: When there is enough room to bottom align a subMenu but not enough room to top align it, 
-            // then the subMenu will be aligned to the bottom of its anchor element.
-            // 3. LASTRESORT: When there is not enough room to top align or bottom align the subMenu to its anchor,
-            // then the subMenu will be center aligned to it's anchor's vertical midpoint.
+        testToolBarDoesntScrollPage = function (complete) {
+            // https://github.com/winjs/winjs/issues/1174
+            // When the ToolBar is opened or closed, it reparents itself to or from the <body>. If the ToolBar had focus before reparenting,
+            // it will lose focus in most browsers, to combat this the ToolBar will refocus itself after re-parenting. Verify that the operation 
+            // for opening and closing, the ToolBar will not cause the body to scroll.
 
             var iframe = document.createElement("iframe");
             iframe.src = "$(TESTDATA)/WinJSSandbox.html";
             iframe.onload = function () {
 
-                // This test requires the WinJS loaded inside of the iframe to ensure that private
-                // WinJS internal helper functions identify the edge of the iframe's visual
-                // viewport as the edge of the visible document, so that Cascading Menu's will
-                // correctly avoid clipping through the edge of their contentwindow when showing.
+                // Be safe, and only use the WinJS loaded inside of the Iframe.
                 var iframeWinJS = <typeof WinJS>iframe.contentWindow["WinJS"];
                 var ToolBar = <typeof WinJS.UI.PrivateToolBar> iframeWinJS.UI.ToolBar;
                 var AppBarCommand = <typeof WinJS.UI.PrivateCommand> iframeWinJS.UI.AppBarCommand;
 
-                var iframeDocument = iframe.contentDocument;
+                var iframeWindow = iframe.contentWindow;
+                var iframeDocument = iframeWindow.document;
                 iframeDocument.documentElement.style.overflowY = "auto";
 
                 var data = new iframeWinJS.Binding.List([
                     new Command(null, { type: _Constants.typeButton, icon: 'add', label: "button" }),
                     new Command(null, { type: _Constants.typeButton, section: 'secondary', label: "secondary" })
                 ]);
-                var toolBar = new ToolBar(null, { data: data, opened: false });
+
+                var element = iframeDocument.createElement("DIV");
+                iframeDocument.body.appendChild(element);
+                var toolBar = new ToolBar(element, { data: data, opened: false });
                 Helper.ToolBar.useSynchronousAnimations(toolBar);
 
                 var spacer = iframeDocument.createElement("DIV");
                 spacer.style.height = "100%";
-
-                iframeDocument.body.appendChild(toolBar.element);
                 iframeDocument.body.appendChild(spacer);
 
                 // PRECONDITION: Sanity check that our confiiguration gave us a scroll bar.
                 LiveUnit.Assert.isTrue(iframeDocument.documentElement.scrollHeight > iframeDocument.documentElement.clientHeight + 1,
                     "Test Error: Test requires a vertical scroll bar.")
 
-                // PRECONDITION: Sanity check that we are at the top of the page.
-                var scrollTop = 0;
-                LiveUnit.Assert.areEqual(scrollTop, iframeDocument.body.scrollTop,
-                    "Test Error: Test should begin scrolled all the way to the top.");
-
-
-                toolBar.element.focus()
-                // PRECONDITION: Sanity check that the toolBar has focus so that ToolBar's call to _ElementUtilities.maintainFocus() 
-                // will cache the ToolBar as the activeElement. 
+                // PRECONDITION: Sanity check that the we give toolBar focus before we start. This ensures that ToolBar's call to 
+                // _ElementUtilities.maintainFocus() will cache the ToolBar as the activeElement when we open/close the ToolBar. 
+                toolBar.element.focus();
                 LiveUnit.Assert.areEqual(toolBar.element, iframeDocument.activeElement,
                     "Test Error: Test Requires that the ToolBar recieve focus at the beginning")
 
-                //new iframeWinJS.Promise((c) => {
-                //    toolBar.onafteropen = () => {
-                //        c();
-                //    };
-                    toolBar.open();
-                //}).then(
-                //    () => {
-                        LiveUnit.Assert.areEqual(scrollTop, iframeDocument.body.scrollTop,
-                            "Opening the ToolBar should not cause any ancestors to scroll.");
+                // PRECONDITION: Sanity check that we are at the top of the page.
+                var scrollTop = 0;
+                LiveUnit.Assert.areEqual(scrollTop, iframeWindow.pageYOffset,
+                    "Test Error: Test should begin with <body> scrolled all the way to the top.");
 
-                console.log(iframeDocument.body.scrollTop);
-                        //return new iframeWinJS.Promise((c) => {
-                        //    toolBar.onafterclose = () => {
-                        //        c();
-                        //    };
-                            toolBar.close();
-                        //});
+                //iframeWinJS.Promise.timeout(1000).then(() => { 
+                toolBar.open();
+                LiveUnit.Assert.areEqual(scrollTop, iframeWindow.pageYOffset,
+                    "Opening the ToolBar should not cause ancestors to scroll.");
 
-                    //}).then(() => {
-                        LiveUnit.Assert.areEqual(scrollTop, iframeDocument.body.scrollTop,
-                            "Closing the ToolBar should not cause any ancestors to scroll.");
-                //}).done(complete);
-                complete();
+                toolBar.close();
+                LiveUnit.Assert.areEqual(scrollTop, iframeWindow.pageYOffset,
+                    "Closing the ToolBar should not cause ancestors to scroll.");
+
+                    complete();
+                //})
             };
             this._element.appendChild(iframe);
         }
