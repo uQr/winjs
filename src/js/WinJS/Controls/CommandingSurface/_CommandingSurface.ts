@@ -415,8 +415,8 @@ export class _CommandingSurface {
                     overflowAreaHeight: boundingRects.overflowArea.height,
                     menuPositionedAbove: (that.overflowDirection === OverflowDirection.top),
                 }).then(function () {
-                    that._clearAnimation();
-                });
+                        that._clearAnimation();
+                    });
             }
         };
     }
@@ -447,9 +447,9 @@ export class _CommandingSurface {
                     overflowAreaHeight: overflowAreaOpenedHeight,
                     menuPositionedAbove: (that.overflowDirection === OverflowDirection.top),
                 }).then(function () {
-                    _ElementUtilities.removeClass(that.element, _Constants.ClassNames.closingClass);
-                    that._clearAnimation();
-                });
+                        _ElementUtilities.removeClass(that.element, _Constants.ClassNames.closingClass);
+                        that._clearAnimation();
+                    });
             }
         };
     }
@@ -689,14 +689,20 @@ export class _CommandingSurface {
         return new BindingList.List(commands);
     }
 
+    private _canMeasure() {
+        return _Global.document.body.contains(this._dom.root) && this._dom.actionArea.offsetWidth > 0;
+    }
+
     private _resizeHandler() {
-        if (this._dom.root.offsetWidth) {
+        if (this._canMeasure) {
             var currentActionAreaWidth = _ElementUtilities._getPreciseContentWidth(this._dom.actionArea);
             if (this._cachedMeasurements && this._cachedMeasurements.actionAreaContentBoxWidth !== currentActionAreaWidth) {
                 this._cachedMeasurements.actionAreaContentBoxWidth = currentActionAreaWidth
                 this._layoutDirty();
                 this._machine.updateDom();
             }
+        } else {
+            this._meaurementsDirty();
         }
     }
 
@@ -730,7 +736,7 @@ export class _CommandingSurface {
 
             this._updateDomImpl_renderedState.overflowAlignmentOffset !== 0 &&
             _Log.log("The CommandingSurface should only attempt to compute adjusted overflowArea offset " +
-            " when it has been rendered with an overflowAlignementOffset of 0");
+                " when it has been rendered with an overflowAlignementOffset of 0");
         }
 
         var overflowArea = this._dom.overflowArea,
@@ -944,8 +950,8 @@ export class _CommandingSurface {
 
     private _measure(): boolean {
         this._writeProfilerMark("_measure,info");
-        var canMeasure = (_Global.document.body.contains(this._dom.root) && this._dom.actionArea.offsetWidth > 0);
-        if (canMeasure) {
+        //var canMeasure = (_Global.document.body.contains(this._dom.root) && this._dom.actionArea.offsetWidth > 0);
+        if (this._canMeasure()) {
             var overflowButtonWidth = _ElementUtilities._getPreciseTotalWidth(this._dom.overflowButton),
                 actionAreaContentBoxWidth = _ElementUtilities._getPreciseContentWidth(this._dom.actionArea),
                 separatorWidth = 0,
@@ -1057,7 +1063,7 @@ export class _CommandingSurface {
             }
             menuCommand.dispose();
         });
-        
+
         var hasToggleCommands = false,
             menuCommandProjections: _MenuCommand.MenuCommand[] = [];
 
