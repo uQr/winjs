@@ -1062,7 +1062,6 @@ define([
                             }
 
                             break;
-			
                         case "_cascade": 
                             // Align vertically
                             // PREFERRED: When there is enough room to align a subMenu to either the top or the bottom of its
@@ -1074,6 +1073,7 @@ define([
                             if (!fitBottom(anchor.top - flyout.marginTop, flyout) && !fitTop(anchor.bottom + flyout.marginBottom, flyout)) {
                                 centerVertically(anchor, flyout);
                             }
+
                             // Determine horizontal direction
                             // PREFERRED: When there is enough room to fit a subMenu on either side of the anchor,
                             // the subMenu prefers to go on the right hand side.
@@ -1082,12 +1082,14 @@ define([
                             // LASTRESORT: When there is not enough room to fit a subMenu on either side of the anchor,
                             // the subMenu is pinned to the right edge of the window.
                             var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
+
                             // Cascading Menus should overlap their ancestor menu by 4 pixels and we have a unit test to 
                             // verify that behavior. Because we don't have access to the ancestor flyout we need to specify
                             // the overlap in terms of our anchor element. There is a 1px border around the menu that 
                             // contains our anchor we need to overlap our anchor by 3px to ensure that we overlap the containing 
                             // Menu by 4px.
                             var pixelsToOverlapAnchor = 3;
+
                             var beginRight = anchor.right - flyout.marginLeft - pixelsToOverlapAnchor;
                             var beginLeft = anchor.left + flyout.marginRight + pixelsToOverlapAnchor;
 
@@ -1109,7 +1111,6 @@ define([
                         default:
                             // Not a legal this._currentPlacement value
                             throw new _ErrorFromName("WinJS.UI.Flyout.BadPlacement", strings.badPlacement);
-
                     }
                 },
 
@@ -1256,7 +1257,6 @@ define([
                     }
                 },
 
-                // Rename to updatePosition
                 _checkScrollPosition: function Flyout_checkScrollPosition(showing) {
                     if (this.hidden && !showing) {
                         return;
