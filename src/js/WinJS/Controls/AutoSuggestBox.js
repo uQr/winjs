@@ -11,6 +11,7 @@ define([
     "../Utilities/_ElementListUtilities",
     "../Utilities/_ElementUtilities",
     '../Utilities/_Hoverable',
+    "../_Accents",
     "../Animations",
     "../BindingList",
     "../Promise",
@@ -18,8 +19,12 @@ define([
     "./AutoSuggestBox/_SearchSuggestionManagerShim",
     "require-style!less/styles-autosuggestbox",
     "require-style!less/colors-autosuggestbox"
-], function autoSuggestBoxInit(exports, _Global, _WinRT, _Base, _ErrorFromName, _Events, _Resources, _Control, _ElementListUtilities, _ElementUtilities, _Hoverable, Animations, BindingList, Promise, Repeater, _SuggestionManagerShim) {
+], function autoSuggestBoxInit(exports, _Global, _WinRT, _Base, _ErrorFromName, _Events, _Resources, _Control, _ElementListUtilities, _ElementUtilities, _Hoverable, _Accents, Animations, BindingList, Promise, Repeater, _SuggestionManagerShim) {
     "use strict";
+
+    _Accents.createAccentRule("html.win-hoverable .win-autosuggestbox .win-autosuggestbox-suggestion-selected:hover", [{ name: "background-color", value: _Accents.ColorTypes.listSelectHover }]);
+    _Accents.createAccentRule(".win-autosuggestbox .win-autosuggestbox-suggestion-selected", [{ name: "background-color", value: _Accents.ColorTypes.listSelectRest }]);
+    _Accents.createAccentRule(".win-autosuggestbox .win-autosuggestbox-suggestion-selected.win-autosuggestbox-suggestion-selected:hover:active", [{ name: "background-color", value: _Accents.ColorTypes.listSelectPress }]);
 
     var ClassNames = {
         asb: "win-autosuggestbox",
@@ -315,6 +320,7 @@ define([
                     this._inputElement.autocorrect = "off";
                     this._inputElement.type = "search";
                     this._inputElement.classList.add(ClassNames.asbInput);
+                    this._inputElement.classList.add("win-textbox");
                     this._inputElement.setAttribute("role", "textbox");
                     this._inputElement.addEventListener("keydown", this._keyDownHandler.bind(this));
                     this._inputElement.addEventListener("keypress", this._keyPressHandler.bind(this));
@@ -363,11 +369,7 @@ define([
 
                 _setupSSM: function asb_setupSSM() {
                     // Get the search suggestion provider if it is available
-                    if (_WinRT.Windows.ApplicationModel.Search.Core.SearchSuggestionManager) {
-                        this._suggestionManager = new _WinRT.Windows.ApplicationModel.Search.Core.SearchSuggestionManager();
-                    } else {
-                        this._suggestionManager = new _SuggestionManagerShim._SearchSuggestionManagerShim();
-                    }
+                    this._suggestionManager = new _SuggestionManagerShim._SearchSuggestionManagerShim();
                     this._suggestions = this._suggestionManager.suggestions;
 
                     this._suggestions.addEventListener("vectorchanged", this._suggestionsChangedHandler);
@@ -382,7 +384,10 @@ define([
                 },
 
                 _showFlyout: function asb_showFlyout() {
-                    if (this._isFlyoutShown()) {
+                    var prevNumSuggestions = this._prevNumSuggestions || 0;
+                    this._prevNumSuggestions = this._suggestionsData.length;
+
+                    if (this._isFlyoutShown() && prevNumSuggestions === this._suggestionsData.length) {
                         return;
                     }
 
@@ -456,20 +461,18 @@ define([
                     var inputRect = this._inputElement.getBoundingClientRect();
                     var flyoutTop = inputRect.bottom;
                     var flyoutBottom = inputRect.bottom + flyoutRect.height;
-                    if (((imeRect.top < flyoutTop) || (imeRect.top > flyoutBottom)) &&
-                        ((imeRect.bottom < flyoutTop) || (imeRect.bottom > flyoutBottom))) {
+                    if (imeRect.top > flyoutBottom || imeRect.bottom < flyoutTop) {
                         return;
                     }
 
-                    // Shift the flyout down or to the left depending on IME aspect ratio
-                    // When width > height, then we have a constant height horizontal IME,
-                    // otherwise we have a constant width vertical IME.
-                    var rect = context.getCandidateWindowClientRect();
+                    // Shift the flyout down or to the right depending on IME/ASB width ratio.
+                    // When the IME width is less than 45% of the ASB's width, the flyout gets
+                    // shifted right, otherwise shifted down.
                     var animation = Animations.createRepositionAnimation(this._flyoutElement);
-                    if (rect.width > rect.height) {
-                        this._flyoutElement.style.marginTop = (rect.bottom - rect.top + 4) + "px";
+                    if (imeRect.width < (inputRect.width * 0.45)) {
+                        this._flyoutElement.style.marginLeft = imeRect.width + "px";
                     } else {
-                        this._flyoutElement.style.marginLeft = rect.width + "px";
+                        this._flyoutElement.style.marginTop = (imeRect.bottom - imeRect.top + 4) + "px";
                     }
                     animation.execute();
                 },
@@ -613,8 +616,14 @@ define([
                         }
 
                         if (_WinRT.Windows.ApplicationModel.Search.SearchQueryLinguisticDetails) {
-                            linguisticDetails = new _WinRT.Windows.ApplicationModel.Search.SearchQueryLinguisticDetails(fullCompositionAlternatives, compositionStartOffset, compositionLength);
-                        } else {
+                            try {
+                                linguisticDetails = new _WinRT.Windows.ApplicationModel.Search.SearchQueryLinguisticDetails(fullCompositionAlternatives, compositionStartOffset, compositionLength);
+                            } catch (e) {
+                                // WP10 currently exposes SQLD API but throws on instantiation.
+                            }
+                        }
+
+                        if (!linguisticDetails) {
                             // If we're in web compartment, create a script version of the WinRT SearchQueryLinguisticDetails object
                             linguisticDetails = {
                                 queryTextAlternatives: fullCompositionAlternatives,
@@ -943,7 +952,7 @@ define([
                                 event.preventDefault();
                                 event.stopPropagation();
                             }
-                        } else if (event.keyCode === Key.upArrow) {
+                        } else if ((this._flyoutBelowInput && event.keyCode === Key.upArrow) || (!this._flyoutBelowInput && event.keyCode === Key.downArrow)) {
                             var prevIndex;
                             if (this._currentSelectedIndex !== -1) {
                                 prevIndex = this._findPreviousSuggestionElementIndex(this._currentSelectedIndex);
@@ -956,7 +965,7 @@ define([
                             }
                             setSelection(prevIndex);
                             this._updateQueryTextWithSuggestionText(this._currentFocusedIndex);
-                        } else if (event.keyCode === Key.downArrow) {
+                        } else if ((this._flyoutBelowInput && event.keyCode === Key.downArrow) || (!this._flyoutBelowInput && event.keyCode === Key.upArrow)) {
                             var nextIndex = this._findNextSuggestionElementIndex(this._currentSelectedIndex);
                             // Restore user entered query when user navigates back to input.
                             if ((this._currentSelectedIndex !== -1) && (nextIndex === -1)) {

@@ -13,7 +13,7 @@ define([
     './_Signal',
     './Scheduler',
     './Utilities/_ElementUtilities'
-    ], function applicationInit(exports, _Global, _WinRT, _Base, _Events, _Log, _WriteProfilerMark, _State, Navigation, Promise, _Signal, Scheduler, _ElementUtilities) {
+], function applicationInit(exports, _Global, _WinRT, _Base, _Events, _Log, _WriteProfilerMark, _State, Navigation, Promise, _Signal, Scheduler, _ElementUtilities) {
     "use strict";
 
     _Global.Debug && (_Global.Debug.setNonUserCodeExceptions = true);
@@ -45,27 +45,16 @@ define([
     var pendingDeferrals = {};
     var pendingDeferralID = 0;
     var TypeToSearch = {
-        _suggestionManager: null,
         _registered: false,
 
         updateRegistration: function Application_TypeToSearch_updateRegistration() {
             var ls = listeners._listeners && listeners._listeners[requestingFocusOnKeyboardInputET] || [];
             if (!TypeToSearch._registered && ls.length > 0) {
-                if (_WinRT.Windows.ApplicationModel.Search.Core.SearchSuggestionManager) {
-                    TypeToSearch._suggestionManager = new _WinRT.Windows.ApplicationModel.Search.Core.SearchSuggestionManager();
-                    TypeToSearch._suggestionManager.addEventListener("requestingfocusonkeyboardinput", requestingFocusOnKeyboardInput);
-                } else {
-                    TypeToSearch._updateKeydownCaptureListeners(_Global.top, true /*add*/);
-                }
+                TypeToSearch._updateKeydownCaptureListeners(_Global.top, true /*add*/);
                 TypeToSearch._registered = true;
             }
             if (TypeToSearch._registered && ls.length === 0) {
-                if (_WinRT.Windows.ApplicationModel.Search.Core.SearchSuggestionManager) {
-                    TypeToSearch._suggestionManager && TypeToSearch._suggestionManager.removeEventListener("requestingfocusonkeyboardinput", requestingFocusOnKeyboardInput);
-                    TypeToSearch._suggestionManager = null;
-                } else {
-                    TypeToSearch._updateKeydownCaptureListeners(_Global.top, false /*add*/);
-                }
+                TypeToSearch._updateKeydownCaptureListeners(_Global.top, false /*add*/);
                 TypeToSearch._registered = false;
             }
         },
@@ -229,7 +218,7 @@ define([
                         return value;
                     } else {
                         return "[circular]";
-        }
+                    }
                 } else {
                     return value;
                 }
@@ -247,6 +236,23 @@ define([
             str = JSON.stringify("[object]");
         }
         return str;
+    }
+
+    function fatalErrorHandler(e) {
+        _Log.log && _Log.log(safeSerialize(e), "winjs", "error");
+
+        if (_Global.document && exports._terminateApp) {
+            var data = e.detail;
+            var number = data && (data.number || (data.exception && (data.exception.number || data.exception.code)) || (data.error && data.error.number) || data.errorCode || 0);
+            var terminateData = {
+                description: safeSerialize(data),
+                // note: because of how we listen to events, we rarely get a stack
+                stack: data && (data.stack || (data.exception && (data.exception.stack || data.exception.message)) || (data.error && data.error.stack) || null),
+                errorNumber: number,
+                number: number
+            };
+            exports._terminateApp(terminateData, e);
+        }
     }
 
     function defaultTerminateAppHandler(data, e) {
@@ -339,7 +345,11 @@ define([
             }
         }
         catch (err) {
-            queueEvent({ type: errorET, detail: err });
+            if (eventRecord.type === errorET) {
+                fatalErrorHandler(eventRecord);
+            } else {
+                queueEvent({ type: errorET, detail: err });
+            }
         }
 
 
@@ -475,21 +485,7 @@ define([
                 if (handled) {
                     return;
                 }
-
-                _Log.log && _Log.log(safeSerialize(e), "winjs", "error");
-
-                if (_Global.document && exports._terminateApp) {
-                    var data = e.detail;
-                    var number = data && (data.number || (data.exception && (data.exception.number || data.exception.code)) || (data.error && data.error.number) || data.errorCode || 0);
-                    var terminateData = {
-                        description: safeSerialize(data),
-                        // note: because of how we listen to events, we rarely get a stack
-                        stack: data && (data.stack || (data.exception && (data.exception.stack || data.exception.message)) || (data.error && data.error.stack) || null),
-                        errorNumber: number,
-                        number: number
-                    };
-                    exports._terminateApp(terminateData, e);
-                }
+                fatalErrorHandler(e);
             }
         ],
         backclick: [

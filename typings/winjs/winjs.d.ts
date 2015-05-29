@@ -3842,9 +3842,15 @@ declare module WinJS.UI {
         /**
          * Returns the Command object identified by id.
          * @param id The element idenitifier (ID) of the command to be returned.
-         * @returns The command identified by id. If multiple commands have the same ID, returns an array of all the commands matching the ID.
+         * @returns The command identified by id. If multiple commands have the same ID, returns the first command found.
         **/
         getCommandById(id: string): ICommand;
+
+        /**
+         * Shows the specified commands of the AppBar while hiding all other commands.
+         * @param commands The commands to show. The array elements may be ICommand objects, or the string identifiers (IDs) of commands.
+        **/
+        showOnlyCommands(commands: Array<string|ICommand>): void;
 
         /**
          * Opens the AppBar.
@@ -3855,27 +3861,6 @@ declare module WinJS.UI {
          * Closes the AppBar.
         **/
         close(): void;
-
-        /**
-         * Hides the specified commands of the AppBar.
-         * @param commands The commands to hide. The array elements may be ICommand objects, or the string identifiers (IDs) of commands.
-         * @param immediate The parameter immediate is not supported and may be altered or unavailable in the future. true to hide the commands immediately, without animating them; otherwise, false.
-        **/
-        hideCommands(commands: any[], immediate?: boolean): void;
-
-        /**
-         * Opens the specified commands of the AppBar.
-         * @param commands The commands to show. The array elements may be ICommand objects, or the string identifiers (IDs) of commands.
-         * @param immediate The parameter immediate is not supported and may be altered or unavailable in the future. true to open the commands immediately, without animating them; otherwise, false.
-        **/
-        showCommands(commands: any[], immediate?: boolean): void;
-
-        /**
-         * Opens the specified commands of the AppBar while hiding all other commands.
-         * @param commands The commands to show. The array elements may be ICommand objects, or the string identifiers (IDs) of commands.
-         * @param immediate The parameter immediate is not supported and may be altered or unavailable in the future. true to show the specified commands (and hide the others) immediately, without animating them; otherwise, false.
-        **/
-        showOnlyCommands(commands: any[], immediate?: boolean): void;
 
         /**
          * Forces the AppBar to update its layout.
@@ -4076,7 +4061,7 @@ declare module WinJS.UI {
          * Raised when the user selects a suggested option for their query.
          * @param eventInfo An object that contains information about the event. The detail property of this object contains the following sub-properties: detail.tag, detail.keyModifiers, detail.storageFile.
         **/
-        onresultsuggestionschosen(eventInfo: CustomEvent): void;
+        onresultsuggestionchosen(eventInfo: CustomEvent): void;
 
         /**
          * Raised when the system requests suggestions from this app.
@@ -4401,7 +4386,7 @@ declare module WinJS.UI {
         element: HTMLElement;
 
         /**
-         * Read only. True if the dialog is currently not visible.
+         * Gets or sets the ContentDialog's visibility.
         **/
         hidden: boolean;
 
@@ -4909,7 +4894,7 @@ declare module WinJS.UI {
         element: HTMLElement;
 
         /**
-         * Gets a value that indicates whether the Flyout is hidden or in the process of becoming hidden.
+         * Gets a value that indicates whether the Flyout is hidden or in the process of becoming hidden, or sets the Flyout to hide or show itself.
         **/
         hidden: boolean;
 
@@ -6069,6 +6054,558 @@ declare module WinJS.UI {
     }
 
     /**
+     * An enumeration of Media commands that the transport bar buttons support.
+    **/
+    interface MediaCommand {
+        audioTracks: string;
+        cast: string;
+        chapterSkipBack: string;
+        chapterSkipForward: string;
+        closedCaptions: string;
+        fastForward: string;
+        goToLive: string;
+        nextTrack: string;
+        pause: string;
+        play: string;
+        playbackRate: string;
+        playFromBeginning: string;
+        previousTrack: string;
+        rewind: string;
+        seek: string;
+        stop: string;
+        timeSkipBack: string;
+        timeSkipForward: string;
+        volume: string;
+        zoom: string;
+    }
+
+    /**
+     * The types of timeline markers supported by the MediaPlayer.
+    **/
+    interface MarkerType {
+        advertisement: string;
+        chapter: string;
+        custom: string;
+    }
+
+    /**
+     * An interface between the MediaPlayer control and a video or audio element.
+    **/
+    class MediaElementAdapter {
+        //#region Constructors
+
+        /**
+         * Creates a new MenuCommand object.
+         * @constructor
+         * @param element The DOM element that will host the control.
+         * @param existingMediaElement A WinJS.UI.MediaPlayer that is associated with this mediaElementAdapter.
+        **/
+        constructor(mediaPlayer: any, existingMediaElement: HTMLElement);
+
+        //#endregion Constructors
+
+        //#region Methods
+
+        /**
+         * Disposes this control.
+        **/
+        dispose(): void;
+
+        /**
+         * The base class constructor. If you are deriving from the MediaElementAdapter class, you
+         * must call this base class constructor.
+         * @param element The DOM element that will host the control.
+         * @param existingMediaElement A WinJS.UI.MediaPlayer that is associated with this mediaElementAdapter.
+        **/
+        baseMediaElementAdapterConstructor(mediaPlayer: any, existingMediaElement: HTMLElement): void;
+
+        /**
+        * Skips to the next track in a playlist. This function is empty by default and
+        * meant to be overridden with a custom implementation.
+        **/
+        nextTrack(): void;
+
+        /**
+        * Pauses the media.
+        **/
+        pause(): void;
+
+        /**
+        * Sets the playbackRate to the default playbackRate for the media and plays the media.
+        **/
+        play(): void;
+
+        /**
+        * Skips to the previous track in a playlist. This function is empty by default and
+        * meant to be overridden with a custom implementation.
+        **/
+        previousTrack(): void;
+
+        /**
+        * Skips to the previous track in a playlist. This function is empty by default and
+        * meant to be overridden with a custom implementation.
+        * @param newTime The new time to set the media to.
+        **/
+        seek(newTime: number): void;
+
+        /**
+        * Navigates to the specified position in the media.
+        **/
+        stop(): void;
+
+        //#endregion Methods
+
+        //#region Properties
+
+        /**
+         * Gets or sets the live time.
+        **/
+        liveTime: number;
+
+        /**
+         * Gets or sets whether the content is a live stream.
+        **/
+        isLive: boolean;
+
+        /**
+         * Gets or sets a value that specifies whether the pause method can be executed.
+        **/
+        pauseAllowed: boolean;
+
+        /**
+         * The following property only exists to make it easier for app developers who created apps prior 
+         * to Windows 10 to migrate to Windows 10. Developers are recommended to use the above property instead.
+        **/
+        isPauseAllowed: boolean;
+
+        /**
+         * Gets or sets a value that specifies whether the play method can be executed.
+        **/
+        playAllowed: boolean;
+
+        /**
+         * The following property only exists to make it easier for app developers who created apps prior 
+         * to Windows 10 to migrate to Windows 10. Developers are recommended to use the above property instead.
+        **/
+        isPlayAllowed: boolean;
+
+        /**
+         * Gets or sets a value that specifies whether the seek method can be executed.
+        **/
+        seekAllowed: boolean;
+
+        /**
+         * The following property only exists to make it easier for app developers who created apps prior 
+         * to Windows 10 to migrate to Windows 10. Developers are recommended to use the above property instead.
+        **/
+        isSeekAllowed: boolean;
+
+        /**
+         * Gets or sets a value the underlying media element. This is either a video or audio tag.
+        **/
+        mediaElement: HTMLElement;
+
+        //#endregion Properties
+    }
+
+    /**
+     * A UI control for video playback.
+    **/
+    class MediaPlayer {
+        //#region Constructors
+
+        /**
+         * Creates a new MenuCommand object.
+         * @constructor
+         * @param element The DOM element that hosts the MediaPlayer control.
+         * @param options Each property of the options object corresponds to one of the control's properties or events.
+        **/
+        constructor(element?: HTMLElement, options?: any);
+
+        //#endregion Constructors
+
+        //#region Methods
+
+        /**
+         * Adds a new timeline marker.
+         * @param time The marker time.
+         * @param type The marker type.
+         * @param data The marker data.
+         * @param extraClass An extra class that can be used to style the marker.
+        **/
+        addMarker(time: number, type: string, data: any, extraClass: string): void;
+
+        /**
+         * Seeks to the previous chapter marker.
+        **/
+        chapterSkipBack(): void;
+
+        /**
+         * Seeks to the next chapter marker.
+        **/
+        chapterSkipForward(): void;
+
+        /**
+         * Disposes this control.
+        **/
+        dispose(): void;
+
+        /**
+         * Increases the playback rate of the media.
+        **/
+        fastForward(): void;
+
+        /**
+         * Navigates to the real-time position in live streamed media.
+        **/
+        goToLive(): void;
+
+        /**
+         * Hides all the UI associated with the MediaPlayer.
+        **/
+        hideControls(): void;
+
+        /**
+         * Plays the next track.
+        **/
+        nextTrack(): void;
+
+        /**
+         * Pauses the media.
+        **/
+        pause(): void;
+
+        /**
+         * Sets the playbackRate to the default playbackRate for the media and plays the media.
+        **/
+        play(): void;
+
+        /**
+         * Plays the next track.
+        **/
+        previousTrack(): void;
+
+        /**
+         * The time of the marker to remove.
+        **/
+        removeMarker(): void;
+
+        /**
+         * Decreases the playbackRate of the media.
+        **/
+        rewind(): void;
+
+        /**
+         * The position in seconds to seek to.
+        **/
+        seek(): void;
+
+        /**
+         * Sets the metadata fields for the given peice of media. This method should be called before changing the video stream.
+         * @param contentType The type of content that will be played by the mediaPlayer.
+         * @param metadata A collection of name value pairs that provide additional information about the current media.
+        **/
+        setContentMetadata(contentType: string, metadata: any): void;
+
+        /**
+         * Displays the UI associated with the MediaPlayer.
+        **/
+        showControls(): void;
+
+        /**
+         * Stops the media.
+        **/
+        stop(): void;
+
+        /**
+         * Moves the current timeline position backward by a short interval.
+        **/
+        timeSkipBack(): void;
+
+        /**
+         * Moves the current timeline position forward short interval.
+        **/
+        timeSkipForward(): void;
+
+        //#endregion Properties
+
+        //#region Properties
+
+        /**
+         * Gets a property that specifies whether the transport controls are visible.
+        **/
+        controlsVisible: boolean;
+
+        /**
+         * The following property only exists to make it easier for app developers who created apps prior 
+         * to Windows 10 to migrate to Windows 10. Developers are recommended to use the above property instead.
+        **/
+        isControlsVisible: boolean;
+
+        /**
+         * Gets or sets maximum playback position of the media. By default, the value is the duration of the media.
+        **/
+        endTime: boolean;
+
+        /**
+         * The DOM element that hosts the MediaPlayer control.
+        **/
+        element: HTMLElement;
+
+        /**
+         * Gets or sets a value indicating whether the MediaPlayer is using a layout that minimized space used, but only has room for a limited number of
+         * commands or a layout that has room for a lot of commands, but takes up more space.
+        **/
+        compact: boolean;
+
+        /**
+         * Gets or sets a value indicating whether the MediaPlayer is full screen.
+        **/
+        fullScreen: boolean;
+
+        /**
+         * The following property only exists to make it easier for app developers who created apps prior 
+         * to Windows 10 to migrate to Windows 10. Developers are recommended to use the above property instead.
+        **/
+        isFullScreen: boolean;
+
+        /**
+         * Gets or sets a value indicating whether to use thumbnails for fast forward, rewind and scrubbing. If true, the fast forward, rewind and scrub operations
+         * will pause the mediaElement and cycle thumbnails as the user changes position. If false, the fast forward, rewind operations will increase or decrease
+         * the mediaElement's playbackRate and the scrub operation will move the position.
+        **/
+        thumbnailEnabled: boolean;
+
+        /**
+         * The following property is purposely not documented. It only exists to make it easier for app developers who created
+         * apps prior to Windows 10 to migrate to Windows 10. The property forwards to the real property above.
+        **/
+        isThumbnailEnabled: boolean;
+
+        /**
+         * Gets or sets the MediaPlayer's marker collection.
+        **/
+        markers: any;
+
+        /**
+         * Gets or sets an interface that your application can implement to have more control over synchronization between
+         * the MediaPlayer and your media.
+        **/
+        mediaElementAdapter: any;
+
+        /**
+         * Gets or sets the playback mode, which specifies how many transport controls are shown.
+         **/
+        layout: string;
+
+        /**
+         * Gets or sets minimum playback position of the media. By default the value is zero.
+         **/
+        startTime: number;
+
+        /**
+         * Gets the current time as it is represented in the UI. While fast forwarding or rewinding, this property may be different than the video or audio
+         * tag's 'currentTime' property. This is because during an fast forward or rewind operation, the media is paused while the timeline animates to
+         * simulate a fast forward or rewind operation.
+         **/
+        targetCurrentTime: number;
+
+        /**
+         * Gets the playbackRate as it is represented in the UI. While fast forwarding or rewinding, this property may be different than the video or audio
+         * tag's 'playbackRate' property. This is because during an fast forward or rewind operation, the media is paused while the timeline animates to
+         * simulate a fast forward or rewind operation.
+         **/
+        targetPlaybackRate: number;
+
+        /**
+         * Gets or sets a function that converts raw time data from the video or audio tag into text to display in the UI of the MediaPlayer.
+         **/
+        timeFormatter: any;
+
+        /**
+         * Sets the path to the current thumbnail image to display.
+         **/
+        thumbnailImage: string;
+
+        /**
+         * Gets or sets whether the CAST button is visible.
+         **/
+        castButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the cast button is enabled.
+         **/
+        castButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the chapter skip back button is visible.
+         **/
+        chapterSkipBackButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the chapter skip back button is enabled.
+         **/
+        chapterSkipBackButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the chapter skip forward button is visible.
+         **/
+        chapterSkipForwardButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the chapter skip forward button is enabled.
+         **/
+        chapterSkipForwardButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the fast forward button is visible.
+         **/
+        fastForwardButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the fast forward button is enabled.
+         **/
+        fastForwardButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the full screen button is visible.
+         **/
+        fullscreenButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the more button is enabled.
+         **/
+        fullscreenButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the LIVE button is visible.
+         **/
+        goToLiveButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the LIVE button is enabled.
+         **/
+        goToLiveButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the next track button is visible.
+         **/
+        nextTrackButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the next track button is enabled.
+         **/
+        nextTrackButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the play from beginning button is visible.
+         **/
+        playFromBeginningButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the play from beginning button is enabled.
+         **/
+        playFromBeginningButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the play / pause button is visible.
+         **/
+        playPauseButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the play / pause button is enabled.
+         **/
+        playPauseButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the playback rate button is visible.
+         **/
+        playbackRateButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the playback rate button is enabled.
+         **/
+        playbackRateButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the previous track button is enabled.
+         **/
+        previousTrackButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the rewind button is visible.
+         **/
+        rewindButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the rewind button is enabled.
+         **/
+        rewindButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the seek bar is visible.
+         **/
+        seekBarVisible: boolean;
+
+        /**
+         * Gets or sets whether the seeking is enabled.
+         **/
+        seekingEnabled: boolean;
+
+        /**
+         * Gets or sets whether the stop button is visible.
+         **/
+        stopButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the stop button is enabled.
+         **/
+        stopButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the time skip back button is visible.
+         **/
+        timeSkipBackButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the time skip back button is enabled.
+         **/
+        timeSkipBackButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the time skip forward button is visible.
+         **/
+        timeSkipForwardButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the time skip forward button is enabled.
+         **/
+        timeSkipForwardButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the volume button is visible.
+         **/
+        volumeButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the volume button is enabled.
+         **/
+        volumeButtonEnabled: boolean;
+
+        /**
+         * Gets or sets whether the zoom button is visible.
+         **/
+        zoomButtonVisible: boolean;
+
+        /**
+         * Gets or sets whether the zoom button is enabled.
+         **/
+        zoomButtonEnabled: boolean;
+
+        //#endregion Properties
+    }
+
+    /**
      * A tab control that displays multiple items.
     **/
     class Pivot {
@@ -6147,14 +6684,14 @@ declare module WinJS.UI {
         element: HTMLElement;
 
         /**
-         * Gets or sets the left custom content header.
+         * Gets or sets the left custom header.
         **/
-        customHeaderContentLeft: HTMLElement;
+        customLeftHeader: HTMLElement;
 
         /**
-         * Gets or sets the right custom content header.
+         * Gets or sets the right custom header.
         **/
-        customHeaderContentRight: HTMLElement;
+        customRightHeader: HTMLElement;
 
         /**
          * Gets or sets the Binding.List that contains the PivotItem objects that belong to this Pivot.
@@ -6362,7 +6899,7 @@ declare module WinJS.UI {
         element: HTMLElement;
 
         /**
-         * Gets a value that indicates whether the Menu is hidden or in the process of becoming hidden.
+         * Gets a value that indicates whether the Menu is hidden or in the process of becoming hidden, or sets the Menu to hide or show itself.
         **/
         hidden: boolean;
 
@@ -6599,7 +7136,7 @@ declare module WinJS.UI {
         element: HTMLElement;
 
         /**
-         * Gets a value that indicates whether the NavBar is opened or in the process of becoming opened.
+         * Gets a value that indicates whether the NavBar is opened or in the process of becoming opened, or sets the NavBar to hide or show itself.
         **/
         opened: boolean;
 
@@ -7114,7 +7651,7 @@ declare module WinJS.UI {
          * Raised when the user selects a suggested option for the search.
          * @param eventInfo An object that contains information about the event. The detail property of this object contains the following sub-properties: detail.tag, detail.keyModifiers, detail.storageFile.
         **/
-        onresultsuggestionschosen(eventInfo: CustomEvent): void;
+        onresultsuggestionchosen(eventInfo: CustomEvent): void;
 
         /**
          * Raised when the system requests search suggestions from this app.
@@ -7601,6 +8138,65 @@ declare module WinJS.UI {
         **/
         onafterclose(eventInfo: Event): void;
     }
+    
+    /**
+     * Displays a button which is used for opening and closing a SplitView's pane.
+    **/
+    class SplitViewPaneToggle {
+        /**
+         * Creates a new SplitViewPaneToggle.
+         * @constructor
+         * @param element The DOM element hosts the new SplitViewPaneToggle.
+         * @param options An object that contains one or more property/value pairs to apply to the new control. Each property of the options object corresponds to one of the control's properties or events.
+        **/
+        constructor(element?: HTMLButtonElement, options?: any);
+
+        /**
+         * Gets the DOM element that hosts the SplitViewPaneToggle control.
+        **/
+        element: HTMLButtonElement;
+        
+        /**
+         * Gets or sets the DOM element of the SplitView that is associated with the SplitViewPaneToggle control.
+         * When the SplitViewPaneToggle is invoked, it'll toggle this SplitView's pane.
+        **/
+        splitView: HTMLElement;
+
+        /**
+         * Disposes this control.
+        **/
+        dispose(): void;
+
+        /**
+         * Registers an event handler for the specified event.
+         * @param eventName The name of the event to handle. Note that you drop the "on" when specifying the event name. For example, instead of specifying "onclick", you specify "click".
+         * @param eventHandler The event handler function to associate with the event.
+         * @param useCapture Set to true to register the event handler for the capturing phase; otherwise, set to false to register the event handler for the bubbling phase.
+        **/
+        addEventListener(eventName: string, eventHandler: Function, useCapture?: boolean): void;
+
+        /**
+         * Removes an event handler that the addEventListener method registered.
+         * @param eventName The name of the event that the event handler is registered for.
+         * @param eventCallback The event handler function to remove.
+         * @param useCapture Set to true to remove the capturing phase event handler; set to false to remove the bubbling phase event handler.
+        **/
+        removeEventListener(eventName: string, eventCallback: Function, useCapture?: boolean): void;
+
+        /**
+         * Raises an event of the specified type and with additional properties.
+         * @param type The type (name) of the event.
+         * @param eventProperties The set of additional properties to be attached to the event object when the event is raised.
+         * @returns true if preventDefault was called on the event, otherwise false.
+        **/
+        dispatchEvent(type: string, eventProperties: any): boolean;
+
+        /**
+         * Raised when the SplitViewPaneToggle is invoked.
+         * @param eventInfo An object that contains information about the event.
+        **/
+        oninvoked(eventInfo: Event): void;
+    }
 
     /**
      * A type of IListDataSource that provides read-access to an object that implements the IStorageQueryResultBase interface. A StorageDataSource enables you to query and bind to items in the data source.
@@ -7955,6 +8551,19 @@ declare module WinJS.UI {
          * Closes the ToolBar
         **/
         public close(): void;
+
+        /**
+         * Returns the Command object identified by id.
+         * @param id The element idenitifier (ID) of the command to be returned.
+         * @returns The command identified by id. If multiple commands have the same ID, returns the first command found.
+        **/
+        getCommandById(id: string): ICommand;
+
+        /**
+         * Shows the specified commands of the ToolBar while hiding all other commands.
+         * @param commands The commands to show. The array elements may be ICommand objects, or the string identifiers (IDs) of commands.
+        **/
+        showOnlyCommands(commands: Array<string|ICommand>): void;
 
         /**
          * Gets or sets whether the ToolBar is currently opened.
@@ -8432,9 +9041,6 @@ declare module WinJS.UI.XYFocus {
     export function moveFocus(direction: "right", options?: XYFocusOptions): HTMLElement;
     export function moveFocus(direction: "up", options?: XYFocusOptions): HTMLElement;
     export function moveFocus(direction: "down", options?: XYFocusOptions): HTMLElement;
-
-    export function enableXYFocus(): void;
-    export function disableXYFocus(): void;
 }
 /**
  * Provides functions to load HTML content programmatically.
@@ -8951,6 +9557,38 @@ declare module WinJS.Utilities {
         **/
         F12,
         /**
+         * The XBox One Remote navigation view button.
+        **/
+        NavigationView,
+        /**
+         * The XBox One Remote navigation menu button.
+        **/
+        NavigationMenu,
+        /**
+         * The XBox One Remote navigation up button.
+        **/
+        NavigationUp,
+        /**
+         * The XBox One Remote navigation down button.
+        **/
+        NavigationDown,
+        /**
+         * The XBox One Remote navigation left button.
+        **/
+        NavigationLeft,
+        /**
+         * The XBox One Remote navigation right button.
+        **/
+        NavigationRight,
+        /**
+         * The XBox One Remote navigation accept button.
+        **/
+        NavigationAccept,
+        /**
+         * The XBox One Remote navigation cancel button.
+        **/
+        NavigationCancel,
+        /**
          * The NUMBER LOCK key.
         **/
         numLock,
@@ -8996,6 +9634,105 @@ declare module WinJS.Utilities {
         graveAccent,
         /**
          * The open bracket key ([).
+        **/
+        /**
+         * The XBox One gamepad A button.
+        **/
+        GamepadA,
+        /**
+         * The XBox One gamepad B button.
+        **/
+        GamepadB,
+        /**
+         * The XBox One gamepad X button.
+        **/
+        GamepadX,
+        /**
+         * The XBox One gamepad Y button.
+        **/
+        GamepadY,
+        /**
+         * The XBox One gamepad right shoulder.
+        **/
+        GamepadRightShoulder,
+        /**
+         * The XBox One gamepad left shoulder.
+        **/
+        GamepadLeftShoulder,
+        /**
+         * The XBox One gamepad left trigger.
+        **/
+        GamepadLeftTrigger,
+        /**
+         * The XBox One gamepad right trigger.
+        **/
+        GamepadRightTrigger,
+        /**
+         * The XBox One gamepad dpad up.
+        **/
+        GamepadDPadUp,
+        /**
+         * The XBox One gamepad dpad down.
+        **/
+        GamepadDPadDown,
+        /**
+         * The XBox One gamepad dpad left.
+        **/
+        GamepadDPadLeft,
+        /**
+         * The XBox One gamepad dpad right.
+        **/
+        GamepadDPadRight,
+        /**
+         * The XBox One gamepad menu button.
+        **/
+        GamepadMenu,
+        /**
+         * The XBox One gamepad view button.
+        **/
+        GamepadView,
+        /**
+         * The XBox One gamepad left thumbstick button.
+        **/
+        GamepadLeftThumbstick,
+        /**
+         * The XBox One gamepad right thumbstick button.
+        **/
+        GamepadRightThumbstick,
+        /**
+         * The XBox One gamepad left thumbstick's up.
+        **/
+        GamepadLeftThumbstickUp,
+        /**
+         * The XBox One gamepad left thumbstick's down.
+        **/
+        GamepadLeftThumbstickDown,
+        /**
+         * The XBox One gamepad left thumbstick's right.
+        **/
+        GamepadLeftThumbstickRight,
+        /**
+         * The XBox One gamepad left thumbstick's left.
+        **/
+        GamepadLeftThumbstickLeft,
+        /**
+         * The XBox One gamepad right thumbstick's up.
+        **/
+        GamepadRightThumbstickUp,
+        /**
+         * The XBox One gamepad right thumbstick's down.
+        **/
+        GamepadRightThumbstickDown,
+        /**
+         * The XBox One gamepad right thumbstick's right.
+        **/
+        GamepadRightThumbstickRight,
+        /**
+         * The XBox One gamepad right thumbstick's left.
+        **/
+        GamepadRightThumbstickLeft,
+        /**
+            * The open bracket key ([).
         **/
         openBracket,
         /**

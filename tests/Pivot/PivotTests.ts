@@ -1183,7 +1183,8 @@ module WinJSTests {
             waitForNextItemAnimationEnd(pivot).done(function () {
                 var headers = document.querySelectorAll("." + Pivot._ClassName.pivotHeader);
                 var longHeader = <HTMLElement>headers[1];
-                LiveUnit.Assert.areEqual(Math.floor(pivotWidth * 0.8), parseInt(longHeader.style.width));
+                var width = parseInt(getComputedStyle(pivot._headerItemsElement).width);
+                LiveUnit.Assert.areEqual(Math.floor(width * 0.8), parseInt(longHeader.style.width));
                 complete();
             });
         });
@@ -1448,13 +1449,13 @@ module WinJSTests {
 
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(5)),
-                customHeaderContentLeft: left,
-                customHeaderContentRight: right,
+                customLeftHeader: left,
+                customRightHeader: right,
             });
             pivotWrapperEl.appendChild(pivot.element);
             waitForNextItemAnimationEnd(pivot).done(function () {
-                LiveUnit.Assert.areEqual(left, document.querySelector(".win-pivot-header-customcontent-left").firstElementChild);
-                LiveUnit.Assert.areEqual(right, document.querySelector(".win-pivot-header-customcontent-right").firstElementChild);
+                LiveUnit.Assert.areEqual(left, document.querySelector(".win-pivot-header-leftcustom").firstElementChild);
+                LiveUnit.Assert.areEqual(right, document.querySelector(".win-pivot-header-rightcustom").firstElementChild);
                 complete();
             });
         };
@@ -1466,8 +1467,8 @@ module WinJSTests {
 
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(5)),
-                customHeaderContentLeft: left,
-                customHeaderContentRight: right,
+                customLeftHeader: left,
+                customRightHeader: right,
             });
             pivotWrapperEl.appendChild(pivot.element);
 
@@ -1493,8 +1494,8 @@ module WinJSTests {
 
             var pivot = new Pivot(undefined, {
                 items: new WinJS.Binding.List(getPivotItemsProgrammatically(5)),
-                customHeaderContentLeft: left,
-                customHeaderContentRight: right,
+                customLeftHeader: left,
+                customRightHeader: right,
             });
             pivotWrapperEl.appendChild(pivot.element);
 
@@ -1505,7 +1506,7 @@ module WinJSTests {
                 return WinJS.Promise.timeout(0);
             }).then(function () {
                 LiveUnit.Assert.areEqual(headersWidth, pivot._headerItemsWidth);
-                pivot.customHeaderContentLeft = left;
+                pivot.customLeftHeader = left;
                 return WinJS.Promise.timeout(0);
             }).then(function () {
                 LiveUnit.Assert.areEqual(headersWidth - 25, pivot._headerItemsWidth);
@@ -1513,7 +1514,7 @@ module WinJSTests {
                 return WinJS.Promise.timeout(0);
             }).then(function () {
                 LiveUnit.Assert.areEqual(headersWidth - 25, pivot._headerItemsWidth);
-                pivot.customHeaderContentRight = right;
+                pivot.customRightHeader = right;
                 return WinJS.Promise.timeout(0);
             }).done(function () {
                 LiveUnit.Assert.areEqual(headersWidth - 50, pivot._headerItemsWidth);

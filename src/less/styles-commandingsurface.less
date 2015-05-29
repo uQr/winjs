@@ -6,13 +6,13 @@
     position: relative;
 
     &.win-commandingsurface-overflowbottom {
-        .win-commandingsurface-overflowarea {
+        .win-commandingsurface-overflowareacontainer {
             top: 100%;
         }
     }
 
     &.win-commandingsurface-overflowtop {
-        .win-commandingsurface-overflowarea {
+        .win-commandingsurface-overflowareacontainer {
             bottom: 100%;
         }
     }
@@ -33,6 +33,7 @@
 
         .win-command,
         .win-commandingsurface-overflowbutton {
+            touch-action: manipulation;
             #flex > .flex(none);
         }
 
@@ -71,7 +72,8 @@
             height: auto;
         }
 
-        .win-commandingsurface-overflowarea {
+        .win-commandingsurface-overflowarea,
+        .win-commandingsurface-overflowareacontainer {
             display: block;
         }
     }
@@ -101,7 +103,8 @@
             display: none;
         }
 
-        .win-commandingsurface-overflowarea {
+        .win-commandingsurface-overflowarea,
+        .win-commandingsurface-overflowareacontainer {
             display: none;
         }
     }
@@ -112,16 +115,9 @@
         }
     }
 
-    .win-commandingsurface-overflowarea {
-        #flex > .display-flex();
-        #flex > .flex-direction(column);
-        min-width: 160px;
-        min-height: 0;
-        max-height: 50vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding: 0;
+    .win-commandingsurface-overflowareacontainer {
         position: absolute;
+        overflow: hidden;
         right: 0;
         left: auto;
 
@@ -129,6 +125,19 @@
             left:0;
             right:auto;
         });
+    }
+    .win-commandingsurface-overflowarea,
+    .win-commandingsurface-overflowareacontainer {
+        min-width: 160px;
+        min-height: 0;
+        max-height: 50vh;
+        padding: 0;
+    }
+    .win-commandingsurface-overflowarea {
+        #flex > .display-flex();
+        #flex > .flex-direction(column);
+        overflow-y: auto;
+        overflow-x: hidden;
 
         &.win-menu {
             max-width: 480px; /* override max-width styles from WinJS.UI.Menu */
@@ -139,7 +148,7 @@
             min-height: 44px;
             border: 1px dotted transparent;
             padding: 10px 11px 12px 11px;
-            .win-type-body();
+            ._win-type-body();
             white-space: nowrap;
             overflow: hidden;
         }
@@ -149,6 +158,17 @@
             height: 2px;
             margin: 6px 12px 4px 12px;
         }
+    }
+    .win-commandingsurface-actionareacontainer {
+        overflow: hidden;
+    }
+
+    // Hide the commands (or just command labels, where appropriate) when animating closed, but use opacity: 0 instead of display: none so the layout doesn't
+    // get changed and invalidate measurements taken during the animation function.
+    &.win-commandingsurface-closing.win-commandingsurface-closeddisplaycompact .win-command .win-label,
+    &.win-commandingsurface-closing.win-commandingsurface-closeddisplayminimal .win-command,
+    &.win-commandingsurface-closing.win-commandingsurface-closeddisplaynone .win-command {
+        opacity: 0;
     }
 }
 

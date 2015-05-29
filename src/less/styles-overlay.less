@@ -1,48 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
-/*
-AppBar/Flyout z-index values:
-    1000 - AppBar/settings click-eating div
-    1002 - AppBar
-    1004 - Settings Flyout
-    1006 - Flyout click-eating div
-    1008 - Flyout
-*/
 
 @import "base.less";
 @import "mixins.less";
-
-.win-appbarclickeater {
-    z-index: 1000;
-    background-color: transparent;
-    display: none;
-    width: 110%;
-    height: 110%;
-    left: -5%;
-    top: -5%;
-    position: fixed;
-    touch-action: none;
-    outline: 1px solid Purple; /*Necessary to block passthrough over webviews*/
-    -ms-high-contrast-adjust: none;
-}
-
-.win-flyoutmenuclickeater {
-    z-index: 1006;
-    background-color: transparent;
-    display: none;
-    width: 110%;
-    height: 110%;
-    left: -5%;
-    top: -5%;
-    position: fixed;
-    touch-action: none;
-    outline: 1px solid Lime; /*Necessary to block passthrough over webviews*/
-    -ms-high-contrast-adjust: none;
-}
 
 /*
 Command buttons.
 */
 button.win-command {
+    touch-action: manipulation;
     background: none;
     background-clip: border-box;
     height: auto;
@@ -176,6 +141,8 @@ button[aria-checked=true]:disabled:active .win-commandimage {
 Command button labels.
 */
 button.win-command .win-label {
+    .win-font-family-list();
+    ._win-type-caption();
     position: relative;
     line-height: 16px;
     display: block;
@@ -235,7 +202,6 @@ div.win-command:focus {
 AppBar
 */
 .win-navbar {
-    z-index: 1002;
     border-width: 0;
     width: 100%;
     height: auto;
@@ -281,6 +247,7 @@ AppBar
     }
 
     .win-navbar-invokebutton {
+        touch-action: manipulation;
         width: 32px;
         height: 100%;
         min-height: 25px;
@@ -523,22 +490,21 @@ High contrast AppBar needs a border
 Flyout control.
 */
 .win-flyout {
-    z-index: 1008;
     position: fixed;
     position: -ms-device-fixed;
     padding: 12px;
     border-style: solid;
     border-width: 1px;
-    margin: 5px;
-    min-width: 68px; /* 96px - padding - border */
-    max-width: 428px; /* 456px - padding - border */
-    min-height: 16px; /* 44px - padding - border */
-    max-height: 730px; /* 758px - padding - border */
+    margin: 4px;
+    min-width: 70px; /* 96px - 2px border - 24px padding */
+    max-width: 430px; /* 456px - 2px border - 24px padding */
+    min-height: 16px; /* 44px - 2px border - 24px padding */
+    max-height: 730px; /* 758px - 2px border - 24px padding */
     width: auto;
     height: auto;
     word-wrap: break-word;
     overflow: auto;
-    .win-type-body();
+    ._win-type-body();
 }
 
 .win-flyout.win-leftalign {
@@ -553,6 +519,13 @@ Flyout control.
     overflow: auto;
 }
 
+@media(max-width:464px) {
+    // If the viewport can't fit flyout with max-width 456px + 4px of margin on each side, reduce flyout max width
+    .win-flyout {
+        max-width: ~"calc(100% - 34px)"; /* 100% - 8px margin - 2px border - 24px padding */
+    }
+}
+
 /*
 Menu control.
 */
@@ -560,10 +533,10 @@ Menu control.
     padding: 0;
     line-height: 33px;
     text-align: left; /* Set explicitly in case our parent has different alignment, like appbar overflow. */
-    min-height: 46px; /* 44px -  2px in border = 46px */
+    min-height: 42px; /* 44px - 2px border */
     max-height: ~"calc(100% - 26px)";
-    min-width: 136px;
-    max-width: 456px;
+    min-width: 134px; /* 136px - 2px border */
+    max-width: 454px; /* 456px - 2px border */
 }
 
 /*
@@ -575,7 +548,7 @@ Menu commands.
     margin-right: 0;
     text-align: left;
     width: 100%;
-    .win-type-body();
+    ._win-type-body();
 
     &:focus {
         outline: none;
@@ -670,6 +643,13 @@ Menu toggle and flyout commands.
     visibility: visible;
 }
 
+@media(max-width:464px) {
+    // If the viewport can't fit menu with max-width 456px + 4px of margin on each side, reduce menu max width
+    .win-menu {
+        max-width: ~"calc(100% - 10px)"; /* 100% - 8px margin - 2px border */
+    }
+}
+
 /*
 Grippers in touch selection do not dissapear when focus moves to an element outside of the selection range and they are always drawn on a layer above all HTML elemements.
 When an _Overlay derived control such as AppBar/Flyout/Menu/SettingsFlyout is invoked and steals focus, if that _Overlay is laid out on top of the elements in the touch selection,
@@ -709,7 +689,6 @@ the style "-ms-touch-select: none;"
 Settings Pane
 */
 .win-settingsflyout {
-    z-index: 1004; /* above appbar and below flyouts */
     border-left: 1px solid;
     position: fixed;
     top: 0;
@@ -745,7 +724,7 @@ Settings Pane
 
         .win-label {
             display: inline-block;
-            .win-type-title(32px);
+            ._win-type-title(32px);
             white-space: nowrap;
         }
 
@@ -761,7 +740,7 @@ Settings Pane
         padding: 0px 12px;
 
         .win-label {
-            .win-type-subtitle();
+            ._win-type-subtitle();
         }
 
         .win-settings-section {

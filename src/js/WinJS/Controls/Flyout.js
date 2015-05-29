@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 /// <dictionary>appbar,Flyout,Flyouts,Statics</dictionary>
 define([
     'exports',
@@ -12,13 +12,14 @@ define([
     '../Core/_WriteProfilerMark',
     '../Animations',
     '../_Signal',
+    '../_LightDismissService',
     '../Utilities/_Dispose',
     '../Utilities/_ElementUtilities',
-    '../Utilities/_Hoverable',
     '../Utilities/_KeyboardBehavior',
+    '../Utilities/_Hoverable',
     './_LegacyAppBar/_Constants',
     './Flyout/_Overlay'
-], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Events, _Log, _Resources, _WriteProfilerMark, Animations, _Signal, _Dispose, _ElementUtilities, _Hoverable, _KeyboardBehavior, _Constants, _Overlay) {
+], function flyoutInit(exports, _Global, _Base, _BaseUtils, _ErrorFromName, _Events, _Log, _Resources, _WriteProfilerMark, Animations, _Signal, _LightDismissService, _Dispose, _ElementUtilities, _KeyboardBehavior, _Hoverable, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace._moduleDefine(exports, "WinJS.UI", {
@@ -56,8 +57,184 @@ define([
 
             var createEvent = _Events._createEventProperty;
 
+            // _LightDismissableLayer is an ILightDismissable which manages a set of ILightDismissables.
+            // It acts as a proxy between the LightDismissService and the light dismissables it manages.
+            // It enables multiple dismissables to be above the click eater at the same time.
+            var _LightDismissableLayer = _Base.Class.define(function _LightDismissableLayer_ctor(onLightDismiss) {
+                this._onLightDismiss = onLightDismiss;
+                this._currentlyFocusedClient = null;
+                this._clients = []; // Array of ILightDismissables
+            }, {
+                // Dismissables should call this as soon as they are ready to be shown. More specifically, they should call this:
+                //   - After they are in the DOM and ready to receive focus (e.g. style.display cannot be "none")
+                //   - Before their entrance animation is played
+                shown: function _LightDismissableLayer_shown(client /*: ILightDismissable */) {
+                    client._focusable = true;
+                    var index = this._clients.indexOf(client);
+                    if (index === -1) {
+                        this._clients.push(client);
+                        client.onShow(this);
+                        if (!_LightDismissService.isShown(this)) {
+                            _LightDismissService.shown(this);
+                        } else {
+                            _LightDismissService.updated(this);
+                            this._activateTopFocusableClientIfNeeded();
+                        }
+                    }
+                },
+
+                // Dismissables should call this at the start of their exit animation. A "hiding",
+                // dismissable will still be rendered with the proper z-index but it will no
+                // longer be given focus. Also, focus is synchronously moved out of this dismissable.
+                hiding: function _LightDismissableLayer_hiding(client /*: ILightDismissable */) {
+                    var index = this._clients.indexOf(client);
+                    if (index !== -1) {
+                        this._clients[index]._focusable = false;
+                        this._activateTopFocusableClientIfNeeded();
+                    }
+                },
+
+                // Dismissables should call this when they are done being dismissed (i.e. after their exit animation has finished)
+                hidden: function _LightDismissableLayer_hidden(client /*: ILightDismissable */) {
+                    var index = this._clients.indexOf(client);
+                    if (index !== -1) {
+                        this._clients.splice(index, 1);
+                        client.setZIndex("");
+                        client.onHide();
+                        if (this._clients.length === 0) {
+                            _LightDismissService.hidden(this);
+                        } else {
+                            _LightDismissService.updated(this);
+                            this._activateTopFocusableClientIfNeeded();
+                        }
+                    }
+                },
+                
+                keyDown: function _LightDismissableLayer_keyDown(client /*: ILightDismissable */, eventObject) {
+                    _LightDismissService.keyDown(this, eventObject);
+                },
+                keyUp: function _LightDismissableLayer_keyUp(client /*: ILightDismissable */, eventObject) {
+                    _LightDismissService.keyUp(this, eventObject);
+                },
+                keyPress: function _LightDismissableLayer_keyPress(client /*: ILightDismissable */, eventObject) {
+                    _LightDismissService.keyPress(this, eventObject);
+                },
+
+                // Used by tests.
+                clients: {
+                    get: function _LightDismissableLayer_clients_get() {
+                        return this._clients;
+                    }
+                },
+
+                _clientForElement: function _LightDismissableLayer_clientForElement(element) {
+                    for (var i = this._clients.length - 1; i >= 0; i--) {
+                        if (this._clients[i].containsElement(element)) {
+                            return this._clients[i];
+                        }
+                    }
+                    return null;
+                },
+
+                _focusableClientForElement: function _LightDismissableLayer_focusableClientForElement(element) {
+                    for (var i = this._clients.length - 1; i >= 0; i--) {
+                        if (this._clients[i]._focusable && this._clients[i].containsElement(element)) {
+                            return this._clients[i];
+                        }
+                    }
+                    return null;
+                },
+
+                _getTopmostFocusableClient: function _LightDismissableLayer_getTopmostFocusableClient() {
+                    for (var i = this._clients.length - 1; i >= 0; i--) {
+                        var client = this._clients[i];
+                        if (client && client._focusable) {
+                            return client;
+                        }
+                    }
+                    return null;
+                },
+
+                _activateTopFocusableClientIfNeeded: function _LightDismissableLayer_activateTopFocusableClientIfNeeded() {
+                    var topClient = this._getTopmostFocusableClient();
+                    if (topClient && _LightDismissService.isTopmost(this)) {
+                        // If the last input type was keyboard, use focus() so a keyboard focus visual is drawn.
+                        // Otherwise, use setActive() so no focus visual is drawn.
+                        var useSetActive = !_KeyboardBehavior._keyboardSeenLast;
+                        topClient.onTakeFocus(useSetActive);
+                    }
+                },
+
+                // ILightDismissable
+                //
+
+                setZIndex: function _LightDismissableLayer_setZIndex(zIndex) {
+                    this._clients.forEach(function (client, index) {
+                        client.setZIndex(zIndex + index);
+                    }, this);
+                },
+                getZIndexCount: function _LightDismissableLayer_getZIndexCount() {
+                    return this._clients.length;
+                },
+                containsElement: function _LightDismissableLayer_containsElement(element) {
+                    return !!this._clientForElement(element);
+                },
+                onTakeFocus: function _LightDismissableLayer_onTakeFocus(useSetActive) {
+                    // Prefer the client that has focus
+                    var client = this._focusableClientForElement(_Global.document.activeElement);
+
+                    if (!client && this._clients.indexOf(this._currentlyFocusedClient) !== -1 && this._currentlyFocusedClient._focusable) {
+                        // Next try the client that had focus most recently
+                        client = this._currentlyFocusedClient;
+                    }
+
+                    if (!client) {
+                        // Finally try the client at the top of the stack
+                        client = this._getTopmostFocusableClient();
+                    }
+
+                    this._currentlyFocusedClient = client;
+                    client && client.onTakeFocus(useSetActive);
+                },
+                onFocus: function _LightDismissableLayer_onFocus(element) {
+                    this._currentlyFocusedClient = this._clientForElement(element);
+                    this._currentlyFocusedClient && this._currentlyFocusedClient.onFocus(element);
+                },
+                onShow: function _LightDismissableLayer_onShow(service /*: ILightDismissService */) { },
+                onHide: function _LightDismissableLayer_onHide() {
+                    this._currentlyFocusedClient = null;
+                },
+                onKeyInStack: function _LightDismissableLayer_onKeyInStack(info /*: IKeyboardInfo*/) {
+                    // A keyboard event occurred in the light dismiss stack. Notify the flyouts to
+                    // give them the opportunity to handle this evnet.
+                    var index = this._clients.indexOf(this._currentlyFocusedClient);
+                    if (index !== -1) {
+                        var clients = this._clients.slice(0, index + 1);
+                        for (var i = clients.length - 1; i >= 0 && !info.propagationStopped; i--) {
+                            if (clients[i]._focusable) {
+                                clients[i].onKeyInStack(info);
+                            }
+                        }
+                    }
+                },
+                onShouldLightDismiss: function _LightDismissableLayer_onShouldLightDismiss(info) {
+                    return _LightDismissService.DismissalPolicies.light(info);
+                },
+                onLightDismiss: function _LightDismissableLayer_onLightDismiss(info) {
+                    this._onLightDismiss(info);
+                }
+            });
+
             // Singleton class for managing cascading flyouts
             var _CascadeManager = _Base.Class.define(function _CascadeManager_ctor() {
+                var that = this;
+                this._dismissableLayer = new _LightDismissableLayer(function _CascadeManager_onLightDismiss(info) {
+                    if (info.reason === _LightDismissService.LightDismissalReasons.escape) {
+                        that.collapseFlyout(that.getAt(that.length - 1));
+                    } else {
+                        that.collapseAll();
+                    }
+                });
                 this._cascadingStack = [];
                 this._handleKeyDownInCascade_bound = this._handleKeyDownInCascade.bind(this);
                 this._inputType = null;
@@ -85,6 +262,7 @@ define([
 
                     flyoutToAdd.element.addEventListener("keydown", this._handleKeyDownInCascade_bound, false);
                     this._cascadingStack.push(flyoutToAdd);
+                    this._dismissableLayer.shown(flyoutToAdd._dismissable);
                 },
                 collapseFlyout: function _CascadeManager_collapseFlyout(flyout) {
                     // Removes flyout param and its subflyout descendants from the _cascadingStack.
@@ -111,11 +289,16 @@ define([
                         signal.complete();
                     }
                 },
-                collapseAll: function _CascadeManager_collapseAll(keyboardInvoked) {
+                flyoutHiding: function _CascadeManager_flyoutHiding(flyout) {
+                    this._dismissableLayer.hiding(flyout._dismissable);
+                },
+                flyoutHidden: function _CascadeManager_flyoutHidden(flyout) {
+                    this._dismissableLayer.hidden(flyout._dismissable);
+                },
+                collapseAll: function _CascadeManager_collapseAll() {
                     // Empties the _cascadingStack and hides all flyouts.
                     var headFlyout = this.getAt(0);
                     if (headFlyout) {
-                        headFlyout._keyboardInvoked = keyboardInvoked;
                         this.collapseFlyout(headFlyout);
                     }
                 },
@@ -151,12 +334,6 @@ define([
                         this.collapseFlyout(subFlyout);
                     }
                 },
-                handleFocusOutOfCascade: function _CascadeManager_handleFocusOutOfCascade(event) {
-                    // Hide the entire cascade if focus has moved somewhere outside of it
-                    if (this.indexOfElement(event.relatedTarget) < 0) {
-                        this.collapseAll();
-                    }
-                },
                 // Compute the input type that is associated with the cascading stack on demand. Allows
                 // each Flyout in the cascade to adjust its sizing based on the current input type
                 // and to do it in a way that is consistent with the rest of the Flyouts in the cascade.
@@ -166,6 +343,12 @@ define([
                             this._inputType = _KeyboardBehavior._lastInputType;
                         }
                         return this._inputType;
+                    }
+                },
+                // Used by tests.
+                dismissableLayer: {
+                    get: function _CascadeManager_dismissableLayer_get() {
+                        return this._dismissableLayer;
                     }
                 },
                 _handleKeyDownInCascade: function _CascadeManager_handleKeyDownInCascade(event) {
@@ -178,18 +361,22 @@ define([
                         var index = this.indexOfElement(target);
                         if (index >= 1) {
                             var subFlyout = this.getAt(index);
-                            // Show a focus rect where focus is restored.
-                            subFlyout._keyboardInvoked = true;
                             this.collapseFlyout(subFlyout);
                             // Prevent document scrolling
                             event.preventDefault();
                         }
                     } else if (event.keyCode === Key.alt || event.keyCode === Key.F10) {
-                        // Show a focus rect where focus is restored.
-                        this.collapseAll(true);
+                        this.collapseAll();
                     }
-                },
+                }
             });
+
+            var AnimationOffsets = {
+                top: { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" },
+                bottom: { top: "-50px", left: "0px", keyframe: "WinJS-showFlyoutBottom" },
+                left: { top: "0px", left: "50px", keyframe: "WinJS-showFlyoutLeft" },
+                right: { top: "0px", left: "-50px", keyframe: "WinJS-showFlyoutRight" },
+            };
 
             var Flyout = _Base.Class.derive(_Overlay._Overlay, function Flyout_ctor(element, options) {
                 /// <signature helpKeyword="WinJS.UI.Flyout.Flyout">
@@ -240,15 +427,34 @@ define([
                     // Call the base overlay constructor helper
                     this._baseOverlayConstructor(element, options);
 
-                    // Make a click eating div
-                    _Overlay._Overlay._createClickEatingDivFlyout();
-
                     // Start flyouts hidden
                     this._element.style.visibilty = "hidden";
                     this._element.style.display = "none";
 
                     // Attach our css class
                     _ElementUtilities.addClass(this._element, _Constants.flyoutClass);
+
+                    var that = this;
+                    // Each flyout has an ILightDismissable that is managed through the
+                    // CascasdeManager rather than by the _LightDismissService directly.
+                    this._dismissable = new _LightDismissService.LightDismissableElement({
+                        element: this._element,
+                        tabIndex: this._element.hasAttribute("tabIndex") ? this._element.tabIndex : -1,
+                        onLightDismiss: function () {
+                            that.hide();
+                        },
+                        onTakeFocus: function (useSetActive) {
+                            if (!that._dismissable.restoreFocus()) {
+                                if (!_ElementUtilities.hasClass(that.element, _Constants.menuClass)) {
+                                    // Put focus on the first child in the Flyout
+                                    that._focusOnFirstFocusableElementOrThis();
+                                } else {
+                                    // Make sure the menu has focus, but don't show a focus rect
+                                    _Overlay._Overlay._trySetActive(that._element);
+                                }
+                            }
+                        }
+                    });
 
                     // Make sure we have an ARIA role
                     var role = this._element.getAttribute("role");
@@ -269,10 +475,6 @@ define([
                     this._currentAnimateOut = this._flyoutAnimateOut;
 
                     _ElementUtilities._addEventListener(this.element, "focusin", this._handleFocusIn.bind(this), false);
-                    _ElementUtilities._addEventListener(this.element, "focusout", this._handleFocusOut.bind(this), false);
-
-                    // Make sure additional _Overlay event handlers are hooked up
-                    this._handleOverlayEventsForFlyoutOrSettingsFlyout();
                 },
 
                 /// <field type="String" locid="WinJS.UI.Flyout.anchor" helpKeyword="WinJS.UI.Flyout.anchor">
@@ -365,6 +567,7 @@ define([
                 _dispose: function Flyout_dispose() {
                     _Dispose.disposeSubTree(this.element);
                     this._hide();
+                    Flyout._cascadeManager.flyoutHidden(this);
                     this.anchor = null;
                 },
 
@@ -428,7 +631,6 @@ define([
                     /// </signature>
                     // Just wrap the private one, turning off keyboard invoked flag
                     this._writeProfilerMark("hide,StartTM"); // The corresponding "stop" profiler mark is handled in _Overlay._baseEndHide().
-                    this._keyboardInvoked = false;
                     this._hide();
                 },
 
@@ -439,58 +641,17 @@ define([
                     Flyout._cascadeManager.collapseFlyout(this);
 
                     if (this._baseHide()) {
-                        // Return focus if this or the flyout CED has focus
-                        var active = _Global.document.activeElement;
-                        if (this._previousFocus
-                           && active
-                           && (this._element.contains(active)
-                               || _ElementUtilities.hasClass(active, _Overlay._Overlay._clickEatingFlyoutClass))
-                           && this._previousFocus.focus !== undefined) {
-
-                            // _isAppBarOrChild may return a CED or sentinal
-                            var appBar = _Overlay._Overlay._isAppBarOrChild(this._previousFocus);
-                            if (!appBar || (appBar.winControl && appBar.winControl.opened && !appBar.winAnimating)) {
-                                // Don't move focus back to a appBar that is hidden
-                                // We cannot rely on element.style.visibility because it will be visible while animating
-                                var role = this._previousFocus.getAttribute("role");
-                                var fHideRole = _Overlay._Overlay._keyboardInfo._visible && !this._keyboardWasUp;
-                                if (fHideRole) {
-                                    // Convince IHM to dismiss because it only came up after the flyout was up.
-                                    // Change aria role and back to get IHM to dismiss.
-                                    this._previousFocus.setAttribute("role", "");
-                                }
-
-                                if (this._keyboardInvoked) {
-                                    this._previousFocus.focus();
-                                } else {
-                                    _Overlay._Overlay._trySetActive(this._previousFocus);
-                                }
-                                active = _Global.document.activeElement;
-
-                                if (fHideRole) {
-                                    // Restore the role so that css is applied correctly
-                                    var previousFocus = this._previousFocus;
-                                    if (previousFocus) {
-                                        _BaseUtils._yieldForDomModification(function () {
-                                            previousFocus.setAttribute("role", role);
-                                        });
-                                    }
-                                }
-                            }
-                        }
-
-                        this._previousFocus = null;
-
-                        // Need click-eating div to be hidden if there are no other visible flyouts
-                        if (!this._isThereVisibleFlyout()) {
-                            _Overlay._Overlay._hideClickEatingDivFlyout();
-                        }
+                        Flyout._cascadeManager.flyoutHiding(this);
                     }
                 },
 
+                _beforeEndHide: function Flyout_beforeEndHide() {
+                    Flyout._cascadeManager.flyoutHidden(this);
+                },
+
                 _baseFlyoutShow: function Flyout_baseFlyoutShow(anchor, placement, alignment, coordinates) {
-                    // Don't do anything if disabled
-                    if (this.disabled) {
+                    if (this.disabled || this._disposed) {
+                        // Don't do anything.
                         return;
                     }
 
@@ -546,11 +707,6 @@ define([
                     this._currentAlignment = alignment;
                     this._currentCoordinates = coordinates;
 
-                    // Need click-eating div to be visible, no matter what
-                    if (!this._sticky) {
-                        _Overlay._Overlay._showClickEatingDivFlyout();
-                    }
-
                     // If we're animating (eg baseShow is going to fail), or the cascadeManager is in the middle of 
                     // updating the cascade, then don't mess up our current state.
                     if (this._element.winAnimating) {
@@ -595,33 +751,8 @@ define([
                             }
 
                             Flyout._cascadeManager.appendFlyout(this);
-
-                            // Store what had focus before showing the Flyout. This must happen after we've appended this
-                            // Flyout to the cascade and subsequently triggered other branches of cascading flyouts to
-                            // collapse. Ensures that focus has already been restored to the correct element by the
-                            // previous branch before we try to record it here.
-                            this._previousFocus = _Global.document.activeElement;
-
-                            if (!_ElementUtilities.hasClass(this.element, _Constants.menuClass)) {
-                                // Put focus on the first child in the Flyout
-                                this._focusOnFirstFocusableElementOrThis();
-                            } else {
-                                // Make sure the menu has focus, but don't show a focus rect
-                                _Overlay._Overlay._trySetActive(this._element);
-                            }
                         }
                     }
-                },
-
-                _endShow: function Flyout_endShow() {
-                    // Remember if the IHM was up since we may need to hide it when the flyout hides.
-                    // This check needs to happen after we've hidden any other visible flyouts from
-                    // the cascasde as a result of showing this flyout.
-                    this._keyboardWasUp = _Overlay._Overlay._keyboardInfo._visible;
-                },
-
-                _isLightDismissible: function Flyout_isLightDismissible() {
-                    return (!this.hidden);
                 },
 
                 _lightDismiss: function Flyout_lightDismiss() {
@@ -634,19 +765,21 @@ define([
                     this._nextTop = 0;
                     this._nextLeft = 0;
                     this._keyboardMovedUs = false;
-                    this._needsScrolls = false;
+                    this._doesScroll = false;
 
                     // Make sure menu commands display correctly
                     if (this._checkMenuCommands) {
                         this._checkMenuCommands();
                     }
 
-                    // Remove old height restrictions and scrolling
+                    // Remove old height restrictions and scrolling.
                     this._clearAdjustedStyles();
 
                     this._setAlignment(this._currentAlignment);
 
-                    // Set up the new position, and prep the offset for showPopup
+                    this._setAlignment(this._currentAlignment);
+
+                    // Set up the new position, and prep the offset for showPopup.
                     this._getTopLeft();
 
                     // Adjust position
@@ -670,7 +803,7 @@ define([
                     }
 
                     // Adjust height/scrollbar
-                    if (this._needsScrolls) {
+                    if (this._doesScroll) {
                         _ElementUtilities.addClass(this._element, _Constants.scrollsClass);
                         this._lastMaxHeight = this._element.style.maxHeight;
                         this._element.style.maxHeight = this._adjustedHeight + "px";
@@ -687,7 +820,7 @@ define([
                     }
                 },
 
-                // This determines our positioning.  We have 7 modes, the 1st four are explicit, the last three are automatic:
+                // This determines our positioning.  We have 8 modes, the 1st four are explicit, the last 4 are automatic:
                 // * top - position explicitly on the top of the anchor, shrinking and adding scrollbar as needed.
                 // * bottom - position explicitly below the anchor, shrinking and adding scrollbar as needed.
                 // * left - position left of the anchor, shrinking and adding a vertical scrollbar as needed.
@@ -695,6 +828,7 @@ define([
                 // * auto - Automatic placement.
                 // * autohorizontal - Automatic placement (only left or right).
                 // * autovertical - Automatic placement (only top or bottom).
+                // * _cascasde - Private placement used by MenuCommand._activateFlyoutCommand
                 // Auto tests the height of the anchor and the flyout.  For consistency in orientation, we imagine
                 // that the anchor is placed in the vertical center of the display.  If the flyout would fit above
                 // that centered anchor, then we will place the flyout vertically in relation to the anchor, otherwise
@@ -704,6 +838,7 @@ define([
                 // Horizontal auto or autohorizontal placement will be positioned to the left of the anchor if room, otherwise to the right.
                 //   - this is because right handed users would be more likely to obscure a flyout on the right of the anchor.
                 // All three auto placements will add a vertical scrollbar if necessary.
+                // 
                 _getTopLeft: function Flyout_getTopLeft() {
 
                     var that = this;
@@ -712,95 +847,95 @@ define([
                         // Won't fit top or bottom. Pick the one with the most space and add a scrollbar.
                         if (topHasMoreRoom(anchor)) {
                             // Top
+                            that._adjustedHeight = spaceAbove(anchor) - that._verticalMarginBorderPadding;
                             that._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                            that._adjustedHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - that._verticalMarginBorderPadding;
+                            that._nextAnimOffset = AnimationOffsets.top;
                         } else {
                             // Bottom
-                            that._nextTop = -1;
-                            that._adjustedHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - that._verticalMarginBorderPadding;
+                            that._adjustedHeight = spaceBelow(anchor) - that._verticalMarginBorderPadding;
+                            that._nextTop = _Constants.pinToBottomEdge;
+                            that._nextAnimOffset = AnimationOffsets.bottom;
                         }
-                        that._needsScrolls = true;
+                        that._doesScroll = true;
                     }
 
                     // If the anchor is centered vertically, would the flyout fit above it?
-                    function sometimesFitsAbove(anchor, flyout) {
-                        return ((_Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.height) / 2) >= flyout.height;
+                    function fitsVerticallyWithCenteredAnchor(anchor, flyout) {
+                        // Returns true if the flyout would always fit at least top 
+                        // or bottom of its anchor, regardless of the position of the anchor, 
+                        // as long as the anchor never changed its height, nor did the height of 
+                        // the visualViewport change.
+                        return ((_Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.height) / 2) >= flyout.totalHeight;
+                    }
+
+                    function spaceAbove(anchor) {
+                        return anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop;
+                    }
+
+                    function spaceBelow(anchor) {
+                        return _Overlay._Overlay._keyboardInfo._visibleDocBottom - anchor.bottom;
                     }
 
                     function topHasMoreRoom(anchor) {
-                        return anchor.top > _Overlay._Overlay._keyboardInfo._visibleDocHeight - anchor.bottom;
+                        return spaceAbove(anchor) > spaceBelow(anchor);
                     }
-
-                    function fitVertical(preferredTop, preferredBottom, boundaryTop, boundaryBottom) {
-                        return boundaryTop <= preferredTop && preferredBottom <= boundaryBottom;
-
-                    };
-
-                    function fitHorizontal(preferredLeft, preferredRight, boundaryLeft, boundaryRight) {
-                        return boundaryLeft <= preferredLeft && preferredRight <= boundaryRight;
-
-                    };
-
 
                     // See if we can fit in various places, fitting in the main view,
                     // ignoring viewport changes, like for the IHM.
-                    //function fitTop(anchor, flyout) {
-                    //    that._nextTop = anchor.top - flyout.height;
-                    //    var preferredTop = anchor.top - flyout.height;
-                    //    var preferredBottom = anchor.top;
-                    //    var boundar
-                    //    that._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
-                    //    return (that._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
-                    //            that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
-                    //}
-                    function fitTop(anchor, flyout) {
-                        that._nextTop = anchor.top - flyout.height;
-                        that._nextAnimOffset = { top: "50px", left: "0px", keyframe: "WinJS-showFlyoutTop" };
+                    function fitTop(bottomConstraint, flyout) {
+                        that._nextTop = bottomConstraint - flyout.totalHeight;
+                        that._nextAnimOffset = AnimationOffsets.top;
                         return (that._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
-                                that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
+                                that._nextTop + flyout.totalHeight <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
                     }
 
-                    function fitBottom(anchor, flyout) {
-                        that._nextTop = anchor.bottom;
-                        that._nextAnimOffset = { top: "-50px", left: "0px", keyframe: "WinJS-showFlyoutBottom" };
+                    function fitBottom(topConstraint, flyout) {
+                        that._nextTop = topConstraint;
+                        that._nextAnimOffset = AnimationOffsets.bottom;
                         return (that._nextTop >= _Overlay._Overlay._keyboardInfo._visibleDocTop &&
-                                that._nextTop + flyout.height <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
+                                that._nextTop + flyout.totalHeight <= _Overlay._Overlay._keyboardInfo._visibleDocBottom);
                     }
 
-                    function fitLeft(anchor, flyout) {
-                        that._nextLeft = anchor.left - flyout.width;
-                        that._nextAnimOffset = { top: "0px", left: "50px", keyframe: "WinJS-showFlyoutLeft" };
-                        return (that._nextLeft >= 0 && that._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
+                    function fitLeft(leftConstraint, flyout) {
+                        that._nextLeft = leftConstraint - flyout.totalWidth;
+                        that._nextAnimOffset = AnimationOffsets.left;
+                        return (that._nextLeft >= 0 && that._nextLeft + flyout.totalWidth <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
                     }
 
-                    function fitRight(anchor, flyout) {
-                        that._nextLeft = anchor.right;
-                        that._nextAnimOffset = { top: "0px", left: "-50px", keyframe: "WinJS-showFlyoutRight" };
-                        return (that._nextLeft >= 0 && that._nextLeft + flyout.width <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
+                    function fitRight(rightConstraint, flyout) {
+                        that._nextLeft = rightConstraint;
+                        that._nextAnimOffset = AnimationOffsets.right;
+                        return (that._nextLeft >= 0 && that._nextLeft + flyout.totalWidth <= _Overlay._Overlay._keyboardInfo._visualViewportWidth);
                     }
 
                     function centerVertically(anchor, flyout) {
-                        that._nextTop = anchor.top + anchor.height / 2 - flyout.height / 2;
+                        that._nextTop = anchor.top + anchor.height / 2 - flyout.totalHeight / 2;
                         if (that._nextTop < _Overlay._Overlay._keyboardInfo._visibleDocTop) {
                             that._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                        } else if (that._nextTop + flyout.height >= _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
-                            // Flag to put on bottom
-                            that._nextTop = -1;
+                        } else if (that._nextTop + flyout.totalHeight >= _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
+                            // Flag to pin to bottom edge of visual document.
+                            that._nextTop = _Constants.pinToBottomEdge;
                         }
                     }
 
-                    function centerHorizontally(anchor, flyout, alignment) {
+                    function alignHorizontally(anchor, flyout, alignment) {
                         if (alignment === "center") {
-                            that._nextLeft = anchor.left + anchor.width / 2 - flyout.width / 2;
+                            that._nextLeft = anchor.left + anchor.width / 2 - flyout.totalWidth / 2;
                         } else if (alignment === "left") {
                             that._nextLeft = anchor.left;
                         } else if (alignment === "right") {
-                            that._nextLeft = anchor.right - flyout.width;
+                            that._nextLeft = anchor.right - flyout.totalWidth;
                         } else {
                             throw new _ErrorFromName("WinJS.UI.Flyout.BadAlignment", strings.badAlignment);
                         }
                         if (that._nextLeft < 0) {
                             that._nextLeft = 0;
+                        } else if (that._nextLeft + flyout.totalWidth >= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
+                            // Flag to pin to right edge of visible document.
+                            that._nextLeft = _Constants.pinToRightEdge;
+                        }
+                    }
+
                         } else if (that._nextLeft + flyout.width >= _Global.document.documentElement.clientWidth) {
                             // flag to put on right
                             that._nextLeft = -1;
@@ -832,89 +967,89 @@ define([
                     flyout.marginBottom = getDimension(this._element, "marginBottom");
                     flyout.marginLeft = getDimension(this._element, "marginLeft");
                     flyout.marginRight = getDimension(this._element, "marginRight");
-                    flyout.width = _ElementUtilities.getTotalWidth(this._element);
-                    flyout.height = _ElementUtilities.getTotalHeight(this._element);
-                    flyout.innerWidth = _ElementUtilities.getContentWidth(this._element);
-                    flyout.innerHeight = _ElementUtilities.getContentHeight(this._element);
-                    this._verticalMarginBorderPadding = (flyout.height - flyout.innerHeight);
-                    this._adjustedHeight = flyout.innerHeight;
+                    flyout.totalWidth = _ElementUtilities.getTotalWidth(this._element);
+                    flyout.totalHeight = _ElementUtilities.getTotalHeight(this._element);
+                    flyout.contentWidth = _ElementUtilities.getContentWidth(this._element);
+                    flyout.contentHeight = _ElementUtilities.getContentHeight(this._element);
+                    this._verticalMarginBorderPadding = (flyout.totalHeight - flyout.contentHeight);
+                    this._adjustedHeight = flyout.contentHeight;
 
                     // Check fit for requested this._currentPlacement, doing fallback if necessary
                     switch (this._currentPlacement) {
                         case "top":
-                            if (!fitTop(anchor, flyout)) {
+                            if (!fitTop(anchor.top, flyout)) {
                                 // Didn't fit, needs scrollbar
                                 this._nextTop = _Overlay._Overlay._keyboardInfo._visibleDocTop;
-                                this._needsScrolls = true;
-                                this._adjustedHeight = anchor.top - _Overlay._Overlay._keyboardInfo._visibleDocTop - this._verticalMarginBorderPadding;
+                                this._doesScroll = true;
+                                this._adjustedHeight = spaceAbove(anchor) - this._verticalMarginBorderPadding;
                             }
-                            centerHorizontally(anchor, flyout, this._currentAlignment);
+                            alignHorizontally(anchor, flyout, this._currentAlignment);
                             break;
                         case "bottom":
-                            if (!fitBottom(anchor, flyout)) {
+                            if (!fitBottom(anchor.bottom, flyout)) {
                                 // Didn't fit, needs scrollbar
-                                this._nextTop = -1;
-                                this._needsScrolls = true;
-                                this._adjustedHeight = _Overlay._Overlay._keyboardInfo._visibleDocHeight - (anchor.bottom - _Overlay._Overlay._keyboardInfo._visibleDocTop) - this._verticalMarginBorderPadding;
+                                this._nextTop = _Constants.pinToBottomEdge;
+                                this._doesScroll = true;
+                                this._adjustedHeight = spaceBelow(anchor) - this._verticalMarginBorderPadding;
                             }
-                            centerHorizontally(anchor, flyout, this._currentAlignment);
+                            alignHorizontally(anchor, flyout, this._currentAlignment);
                             break;
                         case "left":
-                            if (!fitLeft(anchor, flyout)) {
+                            if (!fitLeft(anchor.left, flyout)) {
                                 // Didn't fit, just shove it to edge
                                 this._nextLeft = 0;
                             }
                             centerVertically(anchor, flyout);
                             break;
                         case "right":
-                            if (!fitRight(anchor, flyout)) {
-                                // Didn't fit,just shove it to edge
-                                this._nextLeft = -1;
+                            if (!fitRight(anchor.right, flyout)) {
+                                // Didn't fit, just shove it to edge
+                                this._nextLeft = _Constants.pinToRightEdge;
                             }
                             centerVertically(anchor, flyout);
                             break;
                         case "autovertical":
-                            if (!fitTop(anchor, flyout)) {
+                            if (!fitTop(anchor.top, flyout)) {
                                 // Didn't fit above (preferred), so go below.
-                                if (!fitBottom(anchor, flyout)) {
+                                if (!fitBottom(anchor.bottom, flyout)) {
                                     // Didn't fit, needs scrollbar
                                     configureVerticalWithScroll(anchor);
                                 }
                             }
-                            centerHorizontally(anchor, flyout, this._currentAlignment);
+                            alignHorizontally(anchor, flyout, this._currentAlignment);
                             break;
                         case "autohorizontal":
-                            if (!fitLeft(anchor, flyout)) {
+                            if (!fitLeft(anchor.left, flyout)) {
                                 // Didn't fit left (preferred), so go right.
-                                if (!fitRight(anchor, flyout)) {
+                                if (!fitRight(anchor.right, flyout)) {
                                     // Didn't fit,just shove it to edge
-                                    this._nextLeft = -1;
+                                    this._nextLeft = _Constants.pinToRightEdge;
                                 }
                             }
                             centerVertically(anchor, flyout);
                             break;
                         case "auto":
                             // Auto, if the anchor was in the vertical center of the display would we fit above it?
-                            if (sometimesFitsAbove(anchor, flyout)) {
+                            if (fitsVerticallyWithCenteredAnchor(anchor, flyout)) {
                                 // It will fit above or below the anchor
-                                if (!fitTop(anchor, flyout)) {
+                                if (!fitTop(anchor.top, flyout)) {
                                     // Didn't fit above (preferred), so go below.
-                                    fitBottom(anchor, flyout);
+                                    fitBottom(anchor.bottom, flyout);
                                 }
-                                centerHorizontally(anchor, flyout, this._currentAlignment);
+                                alignHorizontally(anchor, flyout, this._currentAlignment);
                             } else {
                                 // Won't fit above or below, try a side
-                                if (!fitLeft(anchor, flyout) &&
-                                    !fitRight(anchor, flyout)) {
+                                if (!fitLeft(anchor.left, flyout) &&
+                                    !fitRight(anchor.right, flyout)) {
                                     // Didn't fit left or right either
                                     configureVerticalWithScroll(anchor);
-                                    centerHorizontally(anchor, flyout, this._currentAlignment);
+                                    alignHorizontally(anchor, flyout, this._currentAlignment);
                                 } else {
                                     centerVertically(anchor, flyout);
                                 }
                             }
                             break;
-                        case "cartesian":
+                            case "cartesian":
                             this._nextTop = this._currentCoordinates.y - flyout.marginTop;
                             this._nextLeft = this._currentCoordinates.x - flyout.marginLeft;
 
@@ -935,9 +1070,54 @@ define([
                             }
 
                             break;
+			
+                        case "_cascade": 
+                            // Align vertically
+                            // PREFERRED: When there is enough room to align a subMenu to either the top or the bottom of its
+                            // anchor element, the subMenu prefers to be top aligned.
+                            // FALLBACK: When there is enough room to bottom align a subMenu but not enough room to top align it, 
+                            // then the subMenu will align to the bottom of its anchor element.
+                            // LASTRESORT: When there is not enough room to top align or bottom align the subMenu to its anchor,
+                            // then the subMenu will be center aligned to it's anchor's vertical midpoint.
+                            if (!fitBottom(anchor.top - flyout.marginTop, flyout) && !fitTop(anchor.bottom + flyout.marginBottom, flyout)) {
+                                centerVertically(anchor, flyout);
+                            }
+                            // Determine horizontal direction
+                            // PREFERRED: When there is enough room to fit a subMenu on either side of the anchor,
+                            // the subMenu prefers to go on the right hand side.
+                            // FALLBACK: When there is only enough room to fit a subMenu on the left side of the anchor,
+                            // the subMenu is placed to the left of the parent menu.
+                            // LASTRESORT: When there is not enough room to fit a subMenu on either side of the anchor,
+                            // the subMenu is pinned to the right edge of the window.
+                            var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
+                            // Cascading Menus should overlap their ancestor menu by 4 pixels and we have a unit test to 
+                            // verify that behavior. Because we don't have access to the ancestor flyout we need to specify
+                            // the overlap in terms of our anchor element. There is a 1px border around the menu that 
+                            // contains our anchor we need to overlap our anchor by 3px to ensure that we overlap the containing 
+                            // Menu by 4px.
+                            var pixelsToOverlapAnchor = 3;
+                            var beginRight = anchor.right - flyout.marginLeft - pixelsToOverlapAnchor;
+                            var beginLeft = anchor.left + flyout.marginRight + pixelsToOverlapAnchor;
+
+                            if (rtl) {
+                                if (!fitLeft(beginLeft, flyout) && !fitRight(beginRight, flyout)) {
+                                    // Doesn't fit on either side, pin to the left edge.
+                                    that._nextLeft = 0;
+                                    that._nextAnimOffset = AnimationOffsets.left;
+                                }
+                            } else {
+                                if (!fitRight(beginRight, flyout) && !fitLeft(beginLeft, flyout)) {
+                                    // Doesn't fit on either side, pin to the right edge of the visible document.
+                                    that._nextLeft = _Constants.pinToRightEdge;
+                                    that._nextAnimOffset = AnimationOffsets.right;
+                                }
+                            }
+
+                            break;
                         default:
                             // Not a legal this._currentPlacement value
                             throw new _ErrorFromName("WinJS.UI.Flyout.BadPlacement", strings.badPlacement);
+
                     }
                 },
 
@@ -1016,10 +1196,10 @@ define([
                     }
                 },
 
-                // If you were not pinned to the bottom, you might have to be now. I only need this for IHM, any maybe not even then..
+                // If you were not pinned to the bottom, you might have to be now.
                 _checkKeyboardFit: function Flyout_checkKeyboardFit() {
                     // Special Flyout positioning rules to determine if the Flyout needs to adjust its
-                    // position because of the IHM. If the Flyout needs to adjust for the IHM,it will reposition
+                    // position because of the IHM. If the Flyout needs to adjust for the IHM, it will reposition
                     // itself to be pinned to either the top or bottom edge of the visual viewport.
                     // - Too Tall, above top, or below bottom.
 
@@ -1029,15 +1209,15 @@ define([
                     if (adjustedMarginBoxHeight > viewportHeight) {
                         // The Flyout is now too tall to fit in the viewport, pin to top and adjust height.
                         keyboardMovedUs = true;
-                        this._nextTop = -1;
-                        this._adjustedHeight = viewportHeight;
-                        this._needsScrolls = true;
+                        this._nextTop = _Constants.pinToBottomEdge;
+                        this._adjustedHeight = viewportHeight - this._verticalMarginBorderPadding;
+                        this._doesScroll = true;
                     } else if (this._nextTop >= 0 &&
                         this._nextTop + adjustedMarginBoxHeight > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
                         // Flyout clips the bottom of the viewport. Pin to bottom.
-                        this._nextTop = -1;
+                        this._nextTop = _Constants.pinToBottomEdge;
                         keyboardMovedUs = true;
-                    } else if (this._nextTop === -1) {
+                    } else if (this._nextTop === _Constants.pinToBottomEdge) {
                         // We were already pinned to the bottom, so our position on screen will change
                         keyboardMovedUs = true;
                     }
@@ -1048,7 +1228,7 @@ define([
 
                 _adjustForKeyboard: function Flyout_adjustForKeyboard() {
                     // Keyboard moved us, update our metrics as needed
-                    if (this._needsScrolls) {
+                    if (this._doesScroll) {
                         // Add scrollbar if we didn't already have scrollsClass
                         if (!this._lastMaxHeight) {
                             _ElementUtilities.addClass(this._element, _Constants.scrollsClass);
@@ -1091,7 +1271,7 @@ define([
                     }
 
                     // May need to adjust top by viewport offset
-                    if (this._nextTop === -1) {
+                    if (this._nextTop < 0) {
                         // Need to attach to bottom
                         this._element.style.bottom = _Overlay._Overlay._keyboardInfo._visibleDocBottomOffset + "px";
                         this._element.style.top = "auto";
@@ -1133,34 +1313,11 @@ define([
                     }
                 },
 
-                // Returns true if there is a flyout in the DOM that is not hidden
-                _isThereVisibleFlyout: function Flyout_isThereVisibleFlyout() {
-                    var flyouts = _Global.document.querySelectorAll("." + _Constants.flyoutClass);
-                    for (var i = 0; i < flyouts.length; i++) {
-                        var flyoutControl = flyouts[i].winControl;
-                        if (flyoutControl && !flyoutControl.hidden) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                },
-
                 _handleKeyDown: function Flyout_handleKeyDown(event) {
-                    // Escape closes flyouts but if the user has a text box with an IME candidate
-                    // window open, we want to skip the ESC key event since it is handled by the IME.
-                    // When the IME handles a key it sets event.keyCode === Key.IME for an easy check.
-                    if (event.keyCode === Key.escape && event.keyCode !== Key.IME) {
-                        // Show a focus rect on what we move focus to
-                        event.preventDefault();
-                        event.stopPropagation();
-                        this.winControl._keyboardInvoked = true;
-                        this.winControl._hide();
-                    } else if ((event.keyCode === Key.space || event.keyCode === Key.enter)
+                    if ((event.keyCode === Key.space || event.keyCode === Key.enter)
                          && (this === _Global.document.activeElement)) {
                         event.preventDefault();
                         event.stopPropagation();
-                        this.winControl._keyboardInvoked = true;
                         this.winControl.hide();
                     } else if (event.shiftKey && event.keyCode === Key.tab
                           && this === _Global.document.activeElement
@@ -1178,14 +1335,6 @@ define([
                     // Else focus is only moving between elements in the flyout.
                     // Doesn't need to be handled by cascadeManager.
                 },
-                _handleFocusOut: function Flyout_handleFocusOut(event) {
-                    if (!this.element.contains(event.relatedTarget)) {
-                        Flyout._cascadeManager.handleFocusOutOfCascade(event);
-                    }
-                    // Else focus is only moving between elements in the flyout.
-                    // Doesn't need to be handled by cascadeManager.
-                },
-
 
                 // Create and add a new first div as the first child
                 _addFirstDiv: function Flyout_addFirstDiv() {

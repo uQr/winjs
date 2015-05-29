@@ -10,7 +10,6 @@
         },
         all: [
             config.desktopOutput,
-            config.modulesOutput,
             config.compiledTsOutput
         ],
         tests: [
@@ -19,8 +18,8 @@
         qunit: [
             config.testsOutput + "TestLib/liveToQ/*.*"
         ],
-        modules: [
-            config.modulesOutput
+        strings: [
+            config.stringsOutput
         ]
     };
 })();

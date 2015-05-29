@@ -1,7 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 
+import Promise = require("../Promise");
+
 export declare var hasWinRT: boolean;
 
+export declare function _setImmediate(callback: Function): number;
 export declare function _setHasWinRT(value: boolean): void;
 export declare function _setIsiOS(value: boolean): void;
 export declare function _isiOS(func: any): any;
@@ -15,3 +18,5 @@ export interface IBrowserStyleEquivalent {
 	scriptName: string;
 }
 export declare var _browserStyleEquivalents: { [styleName: string]: IBrowserStyleEquivalent  };
+
+export declare function ready(callback?: Function, async?: boolean): Promise<void>;

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 /// <reference path="../../../../typings/require.d.ts" />
 
+import _BaseCoreUtils = require('../Core/_BaseCoreUtils');
 import _Global = require('../Core/_Global');
 import _WinRT = require('../Core/_WinRT');
 
@@ -29,6 +30,7 @@ export var _KeyboardInfo: {
     _visualViewportSpace: ClientRect;
     _animationShowLength: number;
     _scrollTimeout: number;
+    _layoutViewportCoords: { visibleDocTop: number; visibleDocBottom: number };
 }
 
 // WWA Soft Keyboard offsets
@@ -39,7 +41,7 @@ _KeyboardInfo = {
             return (
                 _WinRT.Windows.UI.ViewManagement.InputPane &&
                 _WinRT.Windows.UI.ViewManagement.InputPane.getForCurrentView().occludedRect.height > 0
-            );
+                );
         } catch (e) {
             return false;
         }
@@ -120,17 +122,27 @@ _KeyboardInfo = {
 
     // Get total length of the IHM showPanel animation
     get _animationShowLength(): number {
-        if (_WinRT.Windows.UI.Core.AnimationMetrics) {
-            var a = _WinRT.Windows.UI.Core.AnimationMetrics,
-                animationDescription = new a.AnimationDescription(a.AnimationEffect.showPanel, a.AnimationEffectTarget.primary);
-            var animations = animationDescription.animations;
-            var max = 0;
-            for (var i = 0; i < animations.size; i++) {
-                var animation = animations[i];
-                max = Math.max(max, animation.delay + animation.duration);
+        if (_BaseCoreUtils.hasWinRT) {
+            if (_WinRT.Windows.UI.Core.AnimationMetrics) {
+                // Desktop exposes the AnimationMetrics API that allows us to look up the relevant IHM animation metrics.
+                var a = _WinRT.Windows.UI.Core.AnimationMetrics, animationDescription = new a.AnimationDescription(a.AnimationEffect.showPanel, a.AnimationEffectTarget.primary);
+                var animations = animationDescription.animations;
+                var max = 0;
+                for (var i = 0; i < animations.size; i++) {
+                    var animation = animations[i];
+                    max = Math.max(max, animation.delay + animation.duration);
+                }
+                return max;
+            } else {
+                // Phone platform does not yet expose the Animation Metrics API. 
+                // Hard code the correct values for the time being.
+                // https://github.com/winjs/winjs/issues/1060
+                var animationDuration = 300;
+                var animationDelay = 50;
+                return animationDelay + animationDuration;
             }
-            return max;
-        } else {
+        }
+        else {
             return 0;
         }
     },
@@ -140,5 +152,16 @@ _KeyboardInfo = {
     // a window resize to occur.
     get _scrollTimeout(): number {
         return _Constants.scrollTimeout;
+    },
+
+    // _layoutViewportCoords is used with elements that use position:fixed instead of position:-ms-device-fixed
+    get _layoutViewportCoords(): { visibleDocTop: number; visibleDocBottom: number } {
+        var topOffset = _Global.window.pageYOffset - _Global.document.documentElement.scrollTop;
+        var bottomOffset = _Global.document.documentElement.clientHeight - (topOffset + this._visibleDocHeight);
+
+        return {
+            visibleDocTop: topOffset,
+            visibleDocBottom: bottomOffset
+        };
     }
 };

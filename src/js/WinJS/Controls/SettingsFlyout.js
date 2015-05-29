@@ -12,13 +12,14 @@ define([
     '../Animations',
     '../Pages',
     '../Promise',
+    '../_LightDismissService',
     '../Utilities/_Dispose',
     '../Utilities/_ElementUtilities',
     '../Utilities/_ElementListUtilities',
     '../Utilities/_Hoverable',
     './_LegacyAppBar/_Constants',
     './Flyout/_Overlay'
-    ], function settingsFlyoutInit(_Global, _WinRT, _Base, _BaseUtils, _ErrorFromName, _Events, _Resources, _WriteProfilerMark, Animations, Pages, Promise, _Dispose, _ElementUtilities, _ElementListUtilities, _Hoverable, _Constants, _Overlay) {
+    ], function settingsFlyoutInit(_Global, _WinRT, _Base, _BaseUtils, _ErrorFromName, _Events, _Resources, _WriteProfilerMark, Animations, Pages, Promise, _LightDismissService, _Dispose, _ElementUtilities, _ElementListUtilities, _Hoverable, _Constants, _Overlay) {
     "use strict";
 
     _Base.Namespace.define("WinJS.UI", {
@@ -98,8 +99,14 @@ define([
                 /// The set of properties and values to apply to the new SettingsFlyout.
                 /// </param>
                 /// <returns type="WinJS.UI.SettingsFlyout" locid="WinJS.UI.SettingsFlyout.constructor_returnValue">The new SettingsFlyout control.</returns>
+                /// <deprecated type="deprecate">
+                /// SettingsFlyout is deprecated and may not be available in future releases. Instead, put
+                /// settings on their own page within the app.
+                /// </deprecated>
                 /// <compatibleWith platform="Windows" minVersion="8.0"/>
                 /// </signature>
+                
+                _ElementUtilities._deprecated(strings.settingsFlyoutIsDeprecated);
 
                 // Make sure there's an input element
                 this._element = element || _Global.document.createElement("div");
@@ -115,15 +122,35 @@ define([
                 // Handle "esc" & "tab" key presses
                 this._element.addEventListener("keydown", this._handleKeyDown, true);
 
-                // Make a click eating div
-                _Overlay._Overlay._createClickEatingDivAppBar();
-
                 // Start settings hidden
                 this._element.style.visibilty = "hidden";
                 this._element.style.display = "none";
 
                 // Attach our css class
                 _ElementUtilities.addClass(this._element, _Constants.settingsFlyoutClass);
+                
+                var that = this;
+                this._dismissable = new _LightDismissService.LightDismissableElement({
+                    element: this._element,
+                    tabIndex: this._element.hasAttribute("tabIndex") ? this._element.tabIndex : -1,
+                    onLightDismiss: function () {
+                        that.hide();
+                    },
+                    onTakeFocus: function (useSetActive) {
+                        if (!that._dismissable.restoreFocus()) {
+                            var firstDiv = that.element.querySelector("." + _Constants.firstDivClass);
+                            if (firstDiv) {
+                                if (!firstDiv.msSettingsFlyoutFocusOut) {
+                                    _ElementUtilities._addEventListener(firstDiv, "focusout", function () { settingsPageIsFocusedOnce = 1; }, false);
+                                    firstDiv.msSettingsFlyoutFocusOut = true;
+                                }
+                                
+                                settingsPageIsFocusedOnce = 0;
+                                _ElementUtilities._tryFocus(firstDiv, useSetActive);
+                            }
+                        }
+                    },
+                });
 
                 // apply the light theme styling to the win-content elements inside the SettingsFlyout
                 _ElementListUtilities.query("div.win-content", this._element).
@@ -142,13 +169,6 @@ define([
                 if (label === null || label === "" || label === undefined) {
                     this._element.setAttribute("aria-label", strings.ariaLabel);
                 }
-
-                // Need to hide ourselves if we lose focus
-                var that = this;
-                _ElementUtilities._addEventListener(this._element, "focusout", function (e) { _Overlay._Overlay._hideIfLostFocus(that, e); }, false);
-
-                // Make sure additional _Overlay event handlers are hooked up.
-                this._handleOverlayEventsForFlyoutOrSettingsFlyout();
 
                 // Make sure animations are hooked up
                 this._currentAnimateIn = this._animateSlideIn;
@@ -262,53 +282,38 @@ define([
                 },
 
                 _dispose: function SettingsFlyout_dispose() {
+                    _LightDismissService.hidden(this._dismissable);
                     _Dispose.disposeSubTree(this.element);
                     this._dismiss();
                 },
 
                 _show: function SettingsFlyout_show() {
                     // We call our base "_baseShow" because SettingsFlyout overrides show
-                    this._baseShow();
-                    // Need click-eating div to be visible,
-                    // (even if now hiding, we'll show and need click eater)
-                    _Overlay._Overlay._showClickEatingDivAppBar();
-                },
-
-                _endShow: function SettingsFlyout_endShow() {
-                    // Clean up after showing
-                    this._initAfterAnimation();
-                },
-
-                _initAfterAnimation: function SettingsFlyout_initAfterAnimation() {
-                    settingsPageIsFocusedOnce = 0;
-
-                    // Verify that the firstDiv and finalDiv are in the correct location.
-                    // Move them to the correct location or add them if they are not.
-                    if (!_ElementUtilities.hasClass(this.element.children[0], _Constants.firstDivClass)) {
-                        var firstDiv = this.element.querySelectorAll(".win-first");
-                        if (firstDiv && firstDiv.length > 0) {
-                            firstDiv.item(0).parentNode.removeChild(firstDiv.item(0));
+                    if (this._baseShow()) {
+                        // Verify that the firstDiv and finalDiv are in the correct location.
+                        // Move them to the correct location or add them if they are not.
+                        if (!_ElementUtilities.hasClass(this.element.children[0], _Constants.firstDivClass)) {
+                            var firstDiv = this.element.querySelectorAll("." + _Constants.firstDivClass);
+                            if (firstDiv && firstDiv.length > 0) {
+                                firstDiv.item(0).parentNode.removeChild(firstDiv.item(0));
+                            }
+    
+                            this._addFirstDiv();
                         }
-
-                        this._addFirstDiv();
-                    }
-
-                    // Set focus to the firstDiv
-                    if (this.element.children[0]) {
-                        _ElementUtilities._addEventListener(this.element.children[0], "focusout", function () { settingsPageIsFocusedOnce = 1; }, false);
-                        this.element.children[0].focus();
-                    }
-
-                    if (!_ElementUtilities.hasClass(this.element.children[this.element.children.length - 1], _Constants.finalDivClass)) {
-                        var finalDiv = this.element.querySelectorAll(".win-final");
-                        if (finalDiv && finalDiv.length > 0) {
-                            finalDiv.item(0).parentNode.removeChild(finalDiv.item(0));
+    
+                        if (!_ElementUtilities.hasClass(this.element.children[this.element.children.length - 1], _Constants.finalDivClass)) {
+                            var finalDiv = this.element.querySelectorAll("." + _Constants.finalDivClass);
+                            if (finalDiv && finalDiv.length > 0) {
+                                finalDiv.item(0).parentNode.removeChild(finalDiv.item(0));
+                            }
+    
+                            this._addFinalDiv();
                         }
-
-                        this._addFinalDiv();
+                        
+                        this._setBackButtonsAriaLabel();
+                        
+                        _LightDismissService.shown(this._dismissable);
                     }
-
-                    this._setBackButtonsAriaLabel();
                 },
 
                 _setBackButtonsAriaLabel: function SettingsFlyout_setBackButtonsAriaLabel() {
@@ -335,10 +340,11 @@ define([
                 },
 
                 _hide: function SettingsFlyout_hide() {
-                    if (this._baseHide()) {
-                        // Need click-eating div to be hidden
-                        _Overlay._Overlay._hideClickEatingDivAppBar();
-                    }
+                    this._baseHide();
+                },
+                
+                _beforeEndHide: function SettingsFlyout_beforeEndHide() {
+                    _LightDismissService.hidden(this._dismissable);
                 },
 
                 // SettingsFlyout animations
@@ -415,11 +421,7 @@ define([
                 },
 
                 _handleKeyDown: function SettingsFlyout_handleKeyDown(event) {
-                    if (event.keyCode === Key.escape) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        this.winControl._dismiss();
-                    } else if ((event.keyCode === Key.space || event.keyCode === Key.enter)
+                    if ((event.keyCode === Key.space || event.keyCode === Key.enter)
                            && (this.children[0] === _Global.document.activeElement)) {
                         event.preventDefault();
                         event.stopPropagation();
@@ -662,6 +664,7 @@ define([
                 get badReference() { return "Invalid argument: Invalid href to settings flyout fragment"; },
                 get backbuttonAriaLabel() { return _Resources._getWinJSString("ui/backbuttonarialabel").value; },
                 get widthDeprecationMessage() { return "SettingsFlyout.width may be altered or unavailable in future versions. Instead, style the CSS width property on elements with the .win-settingsflyout class."; },
+                get settingsFlyoutIsDeprecated() { return "SettingsFlyout is deprecated and may not be available in future releases. Instead, put settings on their own page within the app."; }
             };
 
             return SettingsFlyout;

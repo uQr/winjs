@@ -135,7 +135,7 @@ declare module WinJS {
         var _CallExpression;
         var _IdentifierExpression;
         var _GroupFocusCache;
-        
+
         module _LightDismissService {
             interface ILightDismissInfo {
                 reason: string;
@@ -144,22 +144,57 @@ declare module WinJS {
                 preventDefault(): void;
             }
             
-            interface ILightDismissable {
+            export interface IKeyboardInfo {
+                type: string;
+                keyCode: number;
+                propagationStopped: boolean;
+                stopPropagation(): void;
+            }
+            
+            export interface ILightDismissService {
+                keyDown(client: ILightDismissable, eventObject: KeyboardEvent): void;
+                keyUp(client: ILightDismissable, eventObject: KeyboardEvent): void;
+                keyPress(client: ILightDismissable, eventObject: KeyboardEvent): void;
+            }
+
+            export interface ILightDismissable {
                 setZIndex(zIndex: string): void;
+                getZIndexCount(): number;
                 containsElement(element: HTMLElement): boolean;
-                requiresClickEater(): boolean;
-                onActivate(): void;
+                onTakeFocus(useSetActive: boolean): void;
                 onFocus(element: HTMLElement): void;
+                onShow(service: ILightDismissService): void;
                 onHide(): void;
+                onKeyInStack(info: IKeyboardInfo): void;
                 onShouldLightDismiss(info: ILightDismissInfo): boolean;
                 onLightDismiss(info: ILightDismissInfo): void;
             }
-            
+
             function shown(client: ILightDismissable): void;
             function hidden(client: ILightDismissable): void;
             function isShown(client: ILightDismissable): boolean;
             function isTopmost(client: ILightDismissable): boolean;
+            function keyDown(client: ILightDismissable, eventObject: KeyboardEvent): void;
+            function keyUp(client: ILightDismissable, eventObject: KeyboardEvent): void;
+            function keyPress(client: ILightDismissable, eventObject: KeyboardEvent): void;
             function _clickEaterTapped(): void;
+        }
+
+        module _Accents {
+            export enum ColorTypes {
+                accent,
+                listSelectRest,
+                listSelectHover,
+                listSelectPress,
+                _listSelectRestInverse,
+                _listSelectHoverInverse,
+                _listSelectPressInverse
+            } 
+
+            export function createAccentRule(selector: string, props: { name: string; value: ColorTypes }[]);
+
+            export var _colors: string[];
+            export function _reset();
         }
 
         class _ParallelWorkQueue {
@@ -234,6 +269,15 @@ declare module WinJS {
             _clearAnimation(): void;
             _disposed: boolean;
             _machine: IOpenCloseMachine
+        }
+        
+        class PrivateSplitViewPaneToggle extends WinJS.UI.SplitViewPaneToggle {
+            static _ClassNames: {
+                splitViewPaneToggle: string;
+            }
+            
+            _invoked(): void;
+            _disposed: boolean;
         }
 
         interface ISelect {
@@ -424,21 +468,23 @@ declare module WinJS {
 
         class PrivateCommandingSurface extends WinJS.UI._CommandingSurface {
             _disposed: boolean;
-            _primaryCommands: ICommand[];
-            _secondaryCommands: ICommand[];
+            _primaryCommands: PrivateCommand[];
+            _secondaryCommands: PrivateCommand[];
             _getCommandWidth(command: ICommand): number;
-            _contentFlyout: WinJS.UI.Flyout;
+            _contentFlyout: WinJS.UI.PrivateFlyout;
             _contentFlyoutInterior: HTMLElement;
-            _playShowAnimation(): Promise<any>;
-            _playHideAnimation(): Promise<any>;
             _dom: {
                 root: HTMLElement;
                 actionArea: HTMLElement;
+                actionAreaContainer: HTMLElement;
                 spacer: HTMLDivElement;
                 overflowButton: HTMLButtonElement;
                 overflowArea: HTMLElement;
+                overflowAreaContainer: HTMLElement;
             };
             _machine: IOpenCloseMachine;
+            _layoutCompleteCallback(): any;
+            _menuCommandProjections: PrivateMenuCommand[];
         }
 
         class PrivateAppBar extends WinJS.UI.AppBar {
@@ -452,7 +498,7 @@ declare module WinJS {
             _handleShowingKeyboard: () => Promise<any>;
             _handleHidingKeyboard: () => void;
             _updateDomImpl_renderedState: {
-                adjustedOffsets: { top: string; bottom: string; }; 
+                adjustedOffsets: { top: string; bottom: string; };
             }
             _dismissable: _LightDismissService.ILightDismissable;
         }
@@ -466,6 +512,16 @@ declare module WinJS {
             };
             _commandingSurface: WinJS.UI.PrivateCommandingSurface;
             _dismissable: _LightDismissService.ILightDismissable;
+            _handleShowingKeyboard: () => void;
+        }
+
+        export interface AppBarCommandPropertyMutatedEventObj {
+            detail: {
+                command: ICommand;
+                oldValue: any;
+                newValue: any;
+                propertyName: string;
+            };
         }
 
         class PrivateCommand extends WinJS.UI.AppBarCommand {
@@ -474,6 +530,11 @@ declare module WinJS {
             _disposed;
             _tooltipControl;
             _lastElementFocus;
+            _propertyMutations: {
+                bind(callback:any): void;
+                unbind(callback:any): void;
+                dispatchEvent(type: string, eventProperties: any): boolean;
+            }
         }
 
         /**
@@ -526,7 +587,6 @@ declare module WinJS {
 
         class PrivateFlyout extends Flyout {
             _disposed;
-            _previousFocus;
 
             static _cascadeManager;
         }
@@ -537,7 +597,8 @@ declare module WinJS {
             _labelSpan;
             _flyoutSpan;
             _invoke;
-            static _activateFlyoutCommand;
+            static _activateFlyoutCommand: (command: WinJS.UI.PrivateMenuCommand) => Promise<any>;
+            static _deactivateFlyoutCommand: (command: WinJS.UI.PrivateMenuCommand) => Promise<any>;
         }
 
         class PrivateMenu extends Menu {
@@ -604,6 +665,7 @@ declare module WinJS {
             _goNext;
             _goPrevious;
             _headersContainerElement;
+            _headerItemsElement;
             _headersState;
             forceLayout();
             _navMode;
@@ -637,9 +699,13 @@ declare module WinJS {
             public dispose(): void;
             public forceLayout(): void;
             public closedDisplayMode: string;
+            public createOpenAnimation(): { execute(): Promise<any> };
+            public createCloseAnimation(): { execute(): Promise<any> };
             public open(): void;
             public close(): void;
             public opened: boolean;
+            public getCommandById(id: string): ICommand;
+            public showOnlyCommands(commands: Array<string|ICommand>): void;
             public onbeforeopen: (ev: CustomEvent) => void;
             public onafteropen: (ev: CustomEvent) => void;
             public onbeforeclose: (ev: CustomEvent) => void;

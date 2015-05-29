@@ -75,6 +75,7 @@
 button.win-hub-section-header-tabstop,
 html.win-hoverable button.win-hub-section-header-tabstop:hover,
 button.win-hub-section-header-tabstop:hover:active {
+    touch-action: manipulation;
     width: 100%;
     background-color: transparent;
     border: 0;
@@ -101,7 +102,7 @@ button.win-hub-section-header-tabstop:-ms-keyboard-active {
     outline: none;
 }
 .win-hub-section-header-content {
-    .win-type-subtitle();
+    ._win-type-subtitle();
     #flex > .flex(@grow: 1);
     text-align: left;
     vertical-align: bottom;
@@ -115,9 +116,6 @@ button.win-hub-section-header-tabstop:-ms-keyboard-active {
         text-align: right;
     });
 }
-.win-semanticzoom-zoomedoutview .win-hub-section-header-interactive .win-hub-section-header-content {
-    color: @accentColor;
-}
 .win-hub-section-header-chevron {
     display: none;
 }
@@ -127,7 +125,6 @@ button.win-hub-section-header-tabstop:-ms-keyboard-active {
     margin-left: 24px;
     line-height: 1.5;
     padding-top: 7px;
-    color: @accentColor;
     text-align: right;
     vertical-align: bottom;
 
