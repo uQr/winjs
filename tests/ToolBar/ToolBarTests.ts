@@ -2179,7 +2179,6 @@ module CorsicaTests {
                 LiveUnit.Assert.areEqual(scrollTop, iframeWindow.pageYOffset,
                     "Test Error: Test should begin with <body> scrolled all the way to the top.");
 
-                //iframeWinJS.Promise.timeout(1000).then(() => { 
                 toolBar.open();
                 LiveUnit.Assert.areEqual(scrollTop, iframeWindow.pageYOffset,
                     "Opening the ToolBar should not cause ancestors to scroll.");
@@ -2188,8 +2187,7 @@ module CorsicaTests {
                 LiveUnit.Assert.areEqual(scrollTop, iframeWindow.pageYOffset,
                     "Closing the ToolBar should not cause ancestors to scroll.");
 
-                    complete();
-                //})
+                complete();
             };
             this._element.appendChild(iframe);
         }
