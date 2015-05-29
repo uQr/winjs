@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
+﻿// Copyright (c) Microsoft Corporation.  All Rights Reserved. Licensed under the MIT License. See License.txt in the project root for license information.
 /// <dictionary>appbar,Flyout,Flyouts,Statics</dictionary>
 define([
     'exports',
@@ -663,7 +663,7 @@ define([
                     if (coordinates) {
                         // If we are showing via arbitrary coordinates, then we don't require an anchor to show
                         // ourselves. If an anchor hasn't been assigned just use the body.
-                        anchor = anchor || this._anchor || document.body;
+                        anchor = anchor || this._anchor || _Global.document.body;
 
                         placement = "cartesian";
                         alignment = "none";
@@ -671,8 +671,8 @@ define([
                         // Normalize coordinates since they could be a mouse/pointer event object or an (x,y) pair.
                         var temp = coordinates;
                         coordinates = {
-                            x: temp.clientX - window.pageXOffset || temp.x,
-                            y: temp.clientY - window.pageYOffset || temp.y
+                            x: temp.clientX - _Global.pageXOffset || temp.x,
+                            y: temp.clientY - _Global.pageYOffset || temp.y
                         };
                     } else {
                         // Else we are showing relative to our anchor element. Anchor element is required.
@@ -777,8 +777,6 @@ define([
 
                     this._setAlignment(this._currentAlignment);
 
-                    this._setAlignment(this._currentAlignment);
-
                     // Set up the new position, and prep the offset for showPopup.
                     this._getTopLeft();
 
@@ -794,7 +792,7 @@ define([
                     }
                     if (this._nextLeft < 0) {
                         // Overran right, attach to right
-                        this._element.style.right = 0 + "px";
+                        this._element.style.right = "0px";
                         this._element.style.left = "auto";
                     } else {
                         // Normal, set left
@@ -933,12 +931,6 @@ define([
                         } else if (that._nextLeft + flyout.totalWidth >= _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
                             // Flag to pin to right edge of visible document.
                             that._nextLeft = _Constants.pinToRightEdge;
-                        }
-                    }
-
-                        } else if (that._nextLeft + flyout.width >= _Global.document.documentElement.clientWidth) {
-                            // flag to put on right
-                            that._nextLeft = -1;
                         }
                     }
 
@@ -1133,7 +1125,7 @@ define([
                     if (this._lastMaxHeight !== null) {
                         this._element.style.maxHeight = this._lastMaxHeight;
                         this._lastMaxHeight = null;
-                    };
+                    }
 
                     // Clear Alignment
                     _ElementUtilities.removeClass(this._element, "win-rightalign");
@@ -1152,7 +1144,7 @@ define([
                         case "center":
                         case "none":
                             break;
-                    };
+                    }
                 },
 
                 _showingKeyboard: function Flyout_showingKeyboard(event) {
