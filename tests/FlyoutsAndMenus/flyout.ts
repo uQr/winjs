@@ -16,7 +16,6 @@ module CorsicaTests {
 
     var Flyout = <typeof WinJS.UI.PrivateFlyout> WinJS.UI.Flyout;
 
-
     export class FlyoutTests {
 
         setUp() {
@@ -603,9 +602,9 @@ module CorsicaTests {
                 .then(complete);
         }
 
-        xtestShowAtRTL() {
-            // TODO test showAt in RTL
-        }
+        //xtestShowAtRTL() {
+        //    // TODO test showAt in RTL
+        //}
 
         xtestShowAt_Boundaries() {
             /** 

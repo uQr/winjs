@@ -109,7 +109,7 @@ define([
                         }
                     }
                 },
-                
+
                 keyDown: function _LightDismissableLayer_keyDown(client /*: ILightDismissable */, eventObject) {
                     _LightDismissService.keyDown(this, eventObject);
                 },
@@ -1037,16 +1037,20 @@ define([
                                 }
                             }
                             break;
-                            case "cartesian":
+                        case "cartesian":
+                            var widthOfPaddingBox = (flyout.totalWidth - flyout.marginLeft - flyout.marginRight);
+                            var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
+                            var adjustForRTL = rtl? widthOfPaddingBox: 0; 
+                            
                             this._nextTop = this._currentCoordinates.y - flyout.marginTop;
-                            this._nextLeft = this._currentCoordinates.x - flyout.marginLeft;
+                            this._nextLeft = this._currentCoordinates.x - flyout.marginLeft - adjustForRTL;
 
                             if (this._nextTop < 0) {
                                 // Overran top, pin to top edge.
                                 this._nextTop = 0;
                             } else if (this._nextTop + this._adjustedHeight + this._verticalMarginBorderPadding > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
                                 // Overran bottom, pin to bottom edge.
-                                this._nextTop = -1;
+                                this._nextTop = pinToBottomEdge;
                             }
 
                             if (this._nextLeft < 0) {
@@ -1054,11 +1058,11 @@ define([
                                 this._nextLeft = 0;
                             } else if (this._nextLeft + flyout.width > _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
                                 // Overran right, pin to right edge.
-                                this._nextLeft = -1;
+                                this._nextLeft = pinToRightEdge;
                             }
 
                             break;
-                        case "_cascade": 
+                        case "_cascade":
                             // Align vertically
                             // PREFERRED: When there is enough room to align a subMenu to either the top or the bottom of its
                             // anchor element, the subMenu prefers to be top aligned.
