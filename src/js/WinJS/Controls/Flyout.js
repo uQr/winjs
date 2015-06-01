@@ -767,11 +767,6 @@ define([
                     this._keyboardMovedUs = false;
                     this._doesScroll = false;
 
-                    // Make sure menu commands display correctly
-                    if (this._checkMenuCommands) {
-                        this._checkMenuCommands();
-                    }
-
                     // Remove old height restrictions and scrolling.
                     this._clearAdjustedStyles();
 
@@ -818,11 +813,12 @@ define([
                     }
                 },
 
-                // This determines our positioning.  We have 8 modes, the 1st four are explicit, the last 4 are automatic:
+                // This determines our positioning.  We have 8 modes, the 1st five are explicit, the last 4 are automatic:
                 // * top - position explicitly on the top of the anchor, shrinking and adding scrollbar as needed.
                 // * bottom - position explicitly below the anchor, shrinking and adding scrollbar as needed.
                 // * left - position left of the anchor, shrinking and adding a vertical scrollbar as needed.
                 // * right - position right of the anchor, shrinking and adding a vertical scroolbar as needed.
+                // * cartesian - TODO
                 // * auto - Automatic placement.
                 // * autohorizontal - Automatic placement (only left or right).
                 // * autovertical - Automatic placement (only top or bottom).

@@ -265,7 +265,7 @@ define([
                     // Additionally, Menu will need to adjust MenuCommand layouts based on the various 
                     // types of commands visible in our Menu, but only after we send the beforeshow
                     // event, so the developer has a chance to show or hide more commands.
-                    // Flyout's _findPosition will make that call.
+                    // _findPosition() will make that call.
                 },
 
                 showAt: function (coordinates) {
@@ -302,6 +302,12 @@ define([
                     Flyout.Flyout.prototype._beforeEndHide.call(this);
                 },
 
+                _findPosition: function Menu_findPosition() {
+                    // Make sure menu commands display correctly
+                    this._checkMenuCommands();
+                    Flyout.Flyout.prototype._findPosition.call(this);
+                },
+
                 _addCommand: function Menu_addCommand(command) {
                     if (!command) {
                         throw new _ErrorFromName("WinJS.UI.Menu.NullCommand", strings.nullCommand);
@@ -334,8 +340,22 @@ define([
                     }
                 },
 
-                // Called when we show/hide commands or by flyout's _findPosition when the Menu is showing.
                 _checkMenuCommands: function Menu_checkMenuCommands() {
+                    // Make sure menu commands display correctly.
+                    // Called when we show/hide commands or by _findPosition when the Menu is showing.
+
+                    if (!_ElementUtilities.hasClass(this.element, _Constants.menuMouseSpacingClass) && !_ElementUtilities.hasClass(this.element, _Constants.menuTouchSpacingClass)) {
+                        // The Menu's spacing shouldn't change while it is already shown. Only
+                        // add a spacing class if it doesn't already have one. It will get
+                        // removed after the Menu hides.
+                        _ElementUtilities.addClass(
+                            this.element,
+                            Flyout.Flyout._cascadeManager.inputType === _KeyboardBehavior._InputTypes.mouse || Flyout.Flyout._cascadeManager.inputType === _KeyboardBehavior._InputTypes.keyboard ?
+                                _Constants.menuMouseSpacingClass :
+                                _Constants.menuTouchSpacingClass
+                        );
+                    }
+
                     var menuCommands = this._element.querySelectorAll(".win-command"),
                         hasToggleCommands = false,
                         hasFlyoutCommands = false;
@@ -352,21 +372,9 @@ define([
                             }
                         }
                     }
-                    // REFACTOR THIS INTO function called findPosition or something like that and then call Flyout findPosition from it.
+                    
                     _ElementUtilities[hasToggleCommands ? 'addClass' : 'removeClass'](this._element, _Constants.menuContainsToggleCommandClass);
                     _ElementUtilities[hasFlyoutCommands ? 'addClass' : 'removeClass'](this._element, _Constants.menuContainsFlyoutCommandClass);
-
-                    if (!_ElementUtilities.hasClass(this.element, _Constants.menuMouseSpacingClass) && !_ElementUtilities.hasClass(this.element, _Constants.menuTouchSpacingClass)) {
-                        // The Menu's spacing shouldn't change while it is already shown. Only
-                        // add a spacing class if it doesn't already have one. It will get
-                        // removed after the Menu hides.
-                        _ElementUtilities.addClass(
-                            this.element,
-                            Flyout.Flyout._cascadeManager.inputType === _KeyboardBehavior._InputTypes.mouse || Flyout.Flyout._cascadeManager.inputType === _KeyboardBehavior._InputTypes.keyboard ?
-                                _Constants.menuMouseSpacingClass :
-                                _Constants.menuTouchSpacingClass
-                        );
-                    }
                 },
 
                 _handleKeyDown: function Menu_handleKeyDown(event) {
