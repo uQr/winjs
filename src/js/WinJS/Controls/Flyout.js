@@ -1038,6 +1038,8 @@ define([
                             }
                             break;
                         case "cartesian":
+                            // Place the top left of the Flyout's border box at the specified coordinates.
+                            // If we are in RTL, position the top right of the Flyout's border box instead.
                             var widthOfPaddingBox = (flyout.totalWidth - flyout.marginLeft - flyout.marginRight);
                             var rtl = _Global.getComputedStyle(this._element).direction === "rtl";
                             var adjustForRTL = rtl? widthOfPaddingBox: 0; 
@@ -1050,15 +1052,15 @@ define([
                                 this._nextTop = 0;
                             } else if (this._nextTop + this._adjustedHeight + this._verticalMarginBorderPadding > _Overlay._Overlay._keyboardInfo._visibleDocBottom) {
                                 // Overran bottom, pin to bottom edge.
-                                this._nextTop = pinToBottomEdge;
+                                this._nextTop = _Constants.pinToBottomEdge;
                             }
 
                             if (this._nextLeft < 0) {
                                 // Overran left, pin to left edge.
                                 this._nextLeft = 0;
-                            } else if (this._nextLeft + flyout.width > _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
+                            } else if (this._nextLeft + flyout.totalWidth > _Overlay._Overlay._keyboardInfo._visualViewportWidth) {
                                 // Overran right, pin to right edge.
-                                this._nextLeft = pinToRightEdge;
+                                this._nextLeft = _Constants.pinToRightEdge;
                             }
 
                             break;

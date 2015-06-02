@@ -16,6 +16,8 @@ module CorsicaTests {
 
     var Flyout = <typeof WinJS.UI.PrivateFlyout> WinJS.UI.Flyout;
 
+    interface IMarginBox { top: number; bottom: number; left: number; right: number; };
+
     export class FlyoutTests {
 
         setUp() {
@@ -178,22 +180,22 @@ module CorsicaTests {
 
 
     testHiddenProperty = function (complete) {
-        var flyout = new WinJS.UI.Flyout(_element);
-        flyout.anchor = document.body;
+            var flyout = new WinJS.UI.Flyout(_element);
+            flyout.anchor = document.body;
 
-        flyout.addEventListener("aftershow", function () {
-            LiveUnit.Assert.isFalse(flyout.hidden);
-            flyout.hidden = true;
-            LiveUnit.Assert.isTrue(flyout.hidden);
-            flyout.addEventListener("afterhide", function () {
+            flyout.addEventListener("aftershow", function () {
+                LiveUnit.Assert.isFalse(flyout.hidden);
+                flyout.hidden = true;
                 LiveUnit.Assert.isTrue(flyout.hidden);
-                complete();
+                flyout.addEventListener("afterhide", function () {
+                    LiveUnit.Assert.isTrue(flyout.hidden);
+                    complete();
+                });
             });
-        });
-        LiveUnit.Assert.isTrue(flyout.hidden);
-        flyout.hidden = false;
-        LiveUnit.Assert.isFalse(flyout.hidden);
-    }
+            LiveUnit.Assert.isTrue(flyout.hidden);
+            flyout.hidden = false;
+            LiveUnit.Assert.isFalse(flyout.hidden);
+        }
 
 
     testFlyoutDispose = function () {
@@ -549,7 +551,7 @@ module CorsicaTests {
                 msg = "Flyout.hide should move focus before the 'afterhide' event";
                 LiveUnit.LoggingCore.logComment("Test: " + msg);
                 return OverlayHelpers.hide(flyout);
-                });
+            });
         }
 
         testShowAt(complete) {
@@ -602,32 +604,84 @@ module CorsicaTests {
                 .then(complete);
         }
 
-        //xtestShowAtRTL() {
-        //    // TODO test showAt in RTL
-        //}
+        testShowAt_Boundaries(complete) {
+             // Verify that when showAt is called:
+             // if any edge of the flyout would clip through the corresponding edge of the visual viewport, 
+             // then: the flyout is repositioned such that the clipping edge is instead pinned to the 
+             // corresponding viewport edge.
 
-        xtestShowAt_Boundaries() {
-            /** 
-             * TODO: verify that when showAt is called,
-             * if: any edge of the flyout would clip through the corresponding edge of the visual viewport, 
-             * then: the flyout is repositioned such that the clipping edge is instead pinned to the 
-             * corresponding viewport edge
-             *
-             * Test Cases: 
-             * Top left corner: showAt({x: -1, y: -1}) => (style.left: 0 - marginLeft, style.top: 0 - marginTop)
-             * Top right corner: showAt({x: window.innerWidth + 1, y: -1}) => (style.right: 0 - marginRight, style.top: 0 - marginTop)
-             * Bottom left corner: showAt({x: -1, y: window.innerHeight + 1}) => (style.left: 0 - marginLeft, style.bottom: 0 - marginBottom)
-             * Bottom right corner: showAt({x: window.innerWidth+1, y: window.innerHeight+1}) => (style.right: 0 - marginRight, style.bottom: 0 - marginBottom)
-            **/
-
-            function measure(flyout: WinJS.UI.PrivateFlyout) {
-
+            
+            function getLocation(flyout: WinJS.UI.PrivateFlyout): IMarginBox {
+                // Returns locaton of the Flyout's margin box.
+                var margins = WinJS.Utilities._getPreciseMargins(flyout.element);
+                var borderBox = flyout.element.getBoundingClientRect();
+                return {
+                    top: borderBox.top - margins.top,
+                    right: borderBox.right + margins.right,
+                    bottom: borderBox.bottom + margins.bottom,
+                    left: borderBox.left - margins.left,
+                }
             }
 
+            function asyncShowAt(flyout: WinJS.UI.PrivateFlyout, options: { x: number; y: number; }) {
+                return new WinJS.Promise((completePromise) => {
+
+                    flyout.addEventListener("aftershow", function afterShow() {
+                        flyout.removeEventListener("aftershow", afterShow, false);
+                        completePromise();
+                    }, false);
+
+                    if (flyout.hidden) {
+                        flyout.showAt(options);
+                    } else {
+                        flyout.addEventListener("afterhide", function afterHide() {
+                            flyout.removeEventListener("afterhide", afterHide, false);
+                            flyout.showAt(options);
+                        }, false);
+
+                        flyout.hide();
+                    }
+                });
+            }
 
             var flyout = new Flyout(_element, { anchor: document.body });
+            var marginBox: IMarginBox;
 
+            // Test Cases: 
+            var overrunTopLeft = { x: -2, y: -2 };
+            var overrunTopRight = { x: window.innerWidth, y: -2 };
+            var overrunBottomLeft = { x: -2, y: -2 };
+            var overrunBottomRight = { x: window.innerWidth, y: -2 };
 
+            asyncShowAt(flyout, overrunTopLeft)
+                .then(() => {
+                    marginBox = getLocation(flyout);
+                    Helper.Assert.areFloatsEqual(0, marginBox.left, "top left", 1);
+                    Helper.Assert.areFloatsEqual(0, marginBox.top, "top left", 1);
+
+                    return asyncShowAt(flyout, overrunTopRight);
+                })
+                .then(() => {
+                    marginBox = getLocation(flyout);
+                    Helper.Assert.areFloatsEqual(window.innerWidth, marginBox.right, "top right", 1);
+                    Helper.Assert.areFloatsEqual(0, marginBox.top, "top right", 1);
+
+                    return asyncShowAt(flyout, overrunBottomLeft)
+                })
+                .then(() => {
+                    marginBox = getLocation(flyout);
+                    Helper.Assert.areFloatsEqual(0, marginBox.left, "bottom left", 1);
+                    Helper.Assert.areFloatsEqual(window.innerHeight, marginBox.bottom, "bottom left", 1);
+
+                    return asyncShowAt(flyout, overrunBottomRight)
+                })
+                .done(() => {
+                    marginBox = getLocation(flyout);
+                    Helper.Assert.areFloatsEqual(window.innerWidth, marginBox.right, "bottom right", 1);
+                    Helper.Assert.areFloatsEqual(window.innerHeight, marginBox.bottom, "bottom right", 1);
+
+                    complete();
+                });
         }
     }
 }
