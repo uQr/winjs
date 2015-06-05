@@ -61,6 +61,16 @@ module CorsicaTests {
         };
     }
 
+    function disposeAndRemoveElement(element: HTMLElement) {
+        if (element.winControl) {
+            element.winControl.dispose();
+        }
+        WinJS.Utilities.disposeSubTree(element);
+        if (element.parentElement) {
+            element.parentElement.removeChild(element);
+        }
+    }
+
     export class _CommandingSurfaceTests {
         "use strict";
 
@@ -77,13 +87,7 @@ module CorsicaTests {
 
         tearDown() {
             if (this._element) {
-                if (this._element.winControl) {
-                    this._element.winControl.dispose();
-                }
-                WinJS.Utilities.disposeSubTree(this._element);
-                if (this._element.parentElement) {
-                    this._element.parentElement.removeChild(this._element);
-                }
+                disposeAndRemoveElement(this._element)
                 this._element = null;
             }
         }
@@ -378,34 +382,55 @@ module CorsicaTests {
             // Verify that the resize handler knows how to correctly update commands layout if the CommandingSurface width has changed.
             // Typically the resizeHandler is only called by the window resize event.
 
-            // Make sure everything fits.
-            this._element.style.width = "1000px";
+            //Object.keys(_CommandingSurface.ClosedDisplayMode).forEach(function (mode) {
+            //    commandingSurface = new _CommandingSurface(null, { closedDisplayMode: mode });
+            //    LiveUnit.Assert.areEqual(mode, commandingSurface.closedDisplayMode, "closedDisplayMode does not match the value passed to the constructor.");
+            //    commandingSurface.dispose();
+            //})
 
-            var data = new WinJS.Binding.List([
-                new Command(null, { type: _Constants.typeButton, label: "opt 1" }),
-                new Command(null, { type: _Constants.typeButton, label: "opt 2" }),
-                new Command(null, { type: _Constants.typeButton, label: "sec opt 1", section: _Constants.secondaryCommandSection })
-            ]);
-            var commandingSurface = new _CommandingSurface(this._element, {
-                data: data
+            Object.keys(_CommandingSurface.ClosedDisplayMode).forEach((mode) => {
+
+                var prefix = "closedDisplayMode: " + mode + ", ";
+
+                // Make sure everything fits.
+                this._element.style.width = "1000px";
+
+                var data = new WinJS.Binding.List([
+                    new Command(null, { type: _Constants.typeButton, label: "opt 1" }),
+                    new Command(null, { type: _Constants.typeButton, label: "opt 2" }),
+                    new Command(null, { type: _Constants.typeButton, label: "sec opt 1", section: _Constants.secondaryCommandSection })
+                ]);
+                var commandingSurface = new _CommandingSurface(null, {
+                    data: data,
+                    opened: false,
+                    closedDisplayMode: mode,
+                });
+                this._element.appendChild(commandingSurface.element);
+                Helper._CommandingSurface.useSynchronousAnimations(commandingSurface);
+
+                // Sanity check initial state.
+                LiveUnit.Assert.areEqual(2, commandingSurface._primaryCommands.length, prefix + "Primary commands array has an invalid length");
+                LiveUnit.Assert.areEqual(1, commandingSurface._secondaryCommands.length, prefix + "Secondary commands array has an invalid length");
+                LiveUnit.Assert.areEqual(2, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.actionArea).length, prefix + "actionarea should have 2 commands");
+                LiveUnit.Assert.areEqual(1, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.overflowArea).length, prefix + "overflowarea should have 1 command");
+
+                // Decrease the width of our control to fit exactly 1 command + the overflow button in the actionarea.
+                var args: Helper._CommandingSurface.ISizeForCommandsArgs = {
+                    numStandardCommands: 1,
+                    visibleOverflowButton: true,
+                };
+                Helper._CommandingSurface.sizeForCommands(this._element, args);
+
+                // Ensure that the resizeHandler will have overflowed one primary command into the overflowarea by the time we open.
+                WinJS.Utilities._resizeNotifier._handleResize();
+                commandingSurface.open();
+                LiveUnit.Assert.areEqual(1, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.actionArea).length, prefix + "actionarea should have 1 command");
+                LiveUnit.Assert.areEqual(3 /* 1 primary command + 1 separator + 1 secondary command */, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.overflowArea).length, "overflowarea should have 3 commands");
+
+                disposeAndRemoveElement(commandingSurface.element);
             });
 
-            LiveUnit.Assert.areEqual(2, commandingSurface._primaryCommands.length, "Primary commands array has an invalid length");
-            LiveUnit.Assert.areEqual(1, commandingSurface._secondaryCommands.length, "Secondary commands array has an invalid length");
-            LiveUnit.Assert.areEqual(2, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.actionArea).length, "actionarea should have 2 commands");
-            LiveUnit.Assert.areEqual(1, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.overflowArea).length, "overflowarea should have 1 command");
 
-            // Decrease the width of our control to fit exactly 1 command + the overflow button in the actionarea.
-            var args: Helper._CommandingSurface.ISizeForCommandsArgs = {
-                numStandardCommands: 1,
-                visibleOverflowButton: true,
-            };
-            Helper._CommandingSurface.sizeForCommands(this._element, args);
-
-            // Ensure that the resizeHandler will overflow one primary command into the overflowarea.
-            WinJS.Utilities._resizeNotifier._handleResize();
-            LiveUnit.Assert.areEqual(1, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.actionArea).length, "actionarea should have 1 command");
-            LiveUnit.Assert.areEqual(3 /* 1 primary command + 1 separator + 1 secondary command */, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.overflowArea).length, "overflowarea should have 3 commands");
         }
 
         testSeparatorAddedBetweenPrimaryAndSecondary() {
