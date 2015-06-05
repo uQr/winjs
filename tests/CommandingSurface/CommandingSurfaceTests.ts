@@ -381,13 +381,8 @@ module CorsicaTests {
         testResizeHandler() {
             // Verify that the resize handler knows how to correctly update commands layout if the CommandingSurface width has changed.
             // Typically the resizeHandler is only called by the window resize event.
-
-            //Object.keys(_CommandingSurface.ClosedDisplayMode).forEach(function (mode) {
-            //    commandingSurface = new _CommandingSurface(null, { closedDisplayMode: mode });
-            //    LiveUnit.Assert.areEqual(mode, commandingSurface.closedDisplayMode, "closedDisplayMode does not match the value passed to the constructor.");
-            //    commandingSurface.dispose();
-            //})
-
+            
+            // Test all closedDisplayModes https://github.com/winjs/winjs/issues/1183
             Object.keys(_CommandingSurface.ClosedDisplayMode).forEach((mode) => {
 
                 var prefix = "closedDisplayMode: " + mode + ", ";
