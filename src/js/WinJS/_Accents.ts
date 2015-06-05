@@ -94,7 +94,7 @@ function scheduleWriteRules() {
             }
             return css;
         }).join("\n");
-        _Global.document.head.insertBefore(style, _Global.document.head.firstChild);
+        _Global.document.head.appendChild(style);
     });
 }
 
@@ -147,7 +147,7 @@ _BaseUtils.ready().then(() => {
     isDarkTheme = theme === "0";
     tag.parentElement.removeChild(tag);
 
-    if (_WinRT.Windows.UI.ViewManagement.UISettings) {
+    if (_WinRT.Windows.UI.ViewManagement.UISettings && ("oncolorvalueschanged" in _WinRT.Windows.UI.ViewManagement.UISettings.prototype)) {
         UISettings = new _WinRT.Windows.UI.ViewManagement.UISettings();
         UISettings.addEventListener("colorvalueschanged", handleColorsChanged);
         handleColorsChanged();
