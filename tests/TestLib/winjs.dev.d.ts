@@ -500,6 +500,7 @@ declare module WinJS {
             };
             _machine: IOpenCloseMachine;
             _layoutCompleteCallback(): any;
+            _canMeasure(): boolean;
             _menuCommandProjections: PrivateMenuCommand[];
         }
 

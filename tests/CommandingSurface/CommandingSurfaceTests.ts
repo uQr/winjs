@@ -378,34 +378,43 @@ module CorsicaTests {
             LiveUnit.Assert.areEqual(1, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.overflowArea).length, "overflowarea should have 1 command");
         }
 
-        testResizeHandler() {
+        testResizeHandlerWhileClosed() {
             // Verify that the resize handler knows how to correctly update commands layout if the CommandingSurface width has changed.
             // Typically the resizeHandler is only called by the window resize event.
             
             // Test all closedDisplayModes https://github.com/winjs/winjs/issues/1183
             Object.keys(_CommandingSurface.ClosedDisplayMode).forEach((mode) => {
 
+                var isClosedDisplayNone = (mode === _CommandingSurface.ClosedDisplayMode.none);
+
                 var prefix = "closedDisplayMode: " + mode + ", ";
 
-                // Make sure everything fits.
-                this._element.style.width = "1000px";
+                var commandingSurfaceElement = document.createElement("DIV");
+                // Make sure everything will fit.
+                commandingSurfaceElement.style.width = "1000px";
+                this._element.appendChild(commandingSurfaceElement);
 
                 var data = new WinJS.Binding.List([
                     new Command(null, { type: _Constants.typeButton, label: "opt 1" }),
                     new Command(null, { type: _Constants.typeButton, label: "opt 2" }),
                     new Command(null, { type: _Constants.typeButton, label: "sec opt 1", section: _Constants.secondaryCommandSection })
                 ]);
-                var commandingSurface = new _CommandingSurface(null, {
+                var commandingSurface = new _CommandingSurface(commandingSurfaceElement, {
                     data: data,
                     opened: false,
                     closedDisplayMode: mode,
                 });
-                this._element.appendChild(commandingSurface.element);
                 Helper._CommandingSurface.useSynchronousAnimations(commandingSurface);
 
                 // Sanity check initial state.
                 LiveUnit.Assert.areEqual(2, commandingSurface._primaryCommands.length, prefix + "Primary commands array has an invalid length");
                 LiveUnit.Assert.areEqual(1, commandingSurface._secondaryCommands.length, prefix + "Secondary commands array has an invalid length");
+                if (isClosedDisplayNone) {
+                    // ClosedDisplayMode none can't measure & layout commands while element.style.display is none.
+                    // open the commandingSurface to finish pending measurements and complete layout.
+                    commandingSurface.open();
+                    commandingSurface.close();
+                }
                 LiveUnit.Assert.areEqual(2, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.actionArea).length, prefix + "actionarea should have 2 commands");
                 LiveUnit.Assert.areEqual(1, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.overflowArea).length, prefix + "overflowarea should have 1 command");
 
@@ -414,17 +423,22 @@ module CorsicaTests {
                     numStandardCommands: 1,
                     visibleOverflowButton: true,
                 };
-                Helper._CommandingSurface.sizeForCommands(this._element, args);
-
-                // Ensure that the resizeHandler will have overflowed one primary command into the overflowarea by the time we open.
+                Helper._CommandingSurface.sizeForCommands(commandingSurfaceElement, args);
                 WinJS.Utilities._resizeNotifier._handleResize();
-                commandingSurface.open();
+
+                if (isClosedDisplayNone) {
+                    // ClosedDisplayMode none can't measure & layout commands while element.style.display is none.
+                    // open the commandingSurface to finish pending measurements and complete layout.
+                    commandingSurface.open();
+                    commandingSurface.close();
+                }
+
+                // Ensure that the resizeHandler will have overflowed one primary command into the overflowarea
                 LiveUnit.Assert.areEqual(1, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.actionArea).length, prefix + "actionarea should have 1 command");
                 LiveUnit.Assert.areEqual(3 /* 1 primary command + 1 separator + 1 secondary command */, Helper._CommandingSurface.getVisibleCommandsInElement(commandingSurface._dom.overflowArea).length, "overflowarea should have 3 commands");
 
                 disposeAndRemoveElement(commandingSurface.element);
             });
-
 
         }
 

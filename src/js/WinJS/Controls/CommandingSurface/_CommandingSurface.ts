@@ -694,7 +694,7 @@ export class _CommandingSurface {
     }
 
     private _resizeHandler() {
-        if (this._canMeasure) {
+        if (this._canMeasure()) {
             var currentActionAreaWidth = _ElementUtilities._getPreciseContentWidth(this._dom.actionArea);
             if (this._cachedMeasurements && this._cachedMeasurements.actionAreaContentBoxWidth !== currentActionAreaWidth) {
                 this._cachedMeasurements.actionAreaContentBoxWidth = currentActionAreaWidth
@@ -950,7 +950,6 @@ export class _CommandingSurface {
 
     private _measure(): boolean {
         this._writeProfilerMark("_measure,info");
-        //var canMeasure = (_Global.document.body.contains(this._dom.root) && this._dom.actionArea.offsetWidth > 0);
         if (this._canMeasure()) {
             var overflowButtonWidth = _ElementUtilities._getPreciseTotalWidth(this._dom.overflowButton),
                 actionAreaContentBoxWidth = _ElementUtilities._getPreciseContentWidth(this._dom.actionArea),
