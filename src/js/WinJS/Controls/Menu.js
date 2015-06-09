@@ -248,17 +248,6 @@ define([
                 },
 
                 _show: function Menu_show(anchor, placement, alignment) {
-                    //if (!_ElementUtilities.hasClass(this.element, _Constants.menuMouseSpacingClass) && !_ElementUtilities.hasClass(this.element, _Constants.menuTouchSpacingClass)) {
-                    //    // The Menu's spacing shouldn't change while it is already shown. Only
-                    //    // add a spacing class if it doesn't already have one. It will get
-                    //    // removed after the Menu hides.
-                    //    _ElementUtilities.addClass(
-                    //        this.element,
-                    //        Flyout.Flyout._cascadeManager.inputType === _KeyboardBehavior._InputTypes.mouse || Flyout.Flyout._cascadeManager.inputType === _KeyboardBehavior._InputTypes.keyboard ?
-                    //            _Constants.menuMouseSpacingClass :
-                    //            _Constants.menuTouchSpacingClass
-                    //    );
-                    //}
                     // Call flyout show 
                     this._baseFlyoutShow(anchor, placement, alignment, null);
 

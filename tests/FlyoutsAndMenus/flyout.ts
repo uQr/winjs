@@ -650,8 +650,8 @@ module CorsicaTests {
             // Test Cases: 
             var overrunTopLeft = { x: -2, y: -2 };
             var overrunTopRight = { x: window.innerWidth, y: -2 };
-            var overrunBottomLeft = { x: -2, y: -2 };
-            var overrunBottomRight = { x: window.innerWidth, y: -2 };
+            var overrunBottomLeft = { x: -2, y: window.innerHeight };
+            var overrunBottomRight = { x: window.innerWidth, y: window.innerHeight };
 
             asyncShowAt(flyout, overrunTopLeft)
                 .then(() => {
