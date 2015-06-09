@@ -17,6 +17,11 @@ interface IOpenCloseMachine {
     _state: { name: string; }
 }
 
+interface IMutationRecordShim {
+    type: string;
+    target: HTMLElement;
+    attributeName: string;
+}
 
 declare module WinJS {
 
@@ -195,6 +200,7 @@ declare module WinJS {
 
             export var _colors: string[];
             export function _reset();
+            export var _isDarkTheme: boolean;
         }
 
         class _ParallelWorkQueue {
@@ -252,6 +258,15 @@ declare module WinJS {
             _updateTabIndices();
             _updateTabIndicesImpl();
         }
+        
+        interface ISplitViewDom {
+            root: HTMLElement;
+            pane: HTMLElement;
+            paneWrapper: HTMLElement;
+            panePlaceholder: HTMLElement;
+            content: HTMLElement;
+            contentWrapper: HTMLElement;
+        }
 
         class PrivateSplitView extends WinJS.UI.SplitView {
             static _ClassNames: {
@@ -262,7 +277,8 @@ declare module WinJS {
                 paneOpened: string;
                 paneClosed: string;
             }
-
+            
+            _dom: ISplitViewDom;
             _playShowAnimation(): Promise<any>;
             _playHideAnimation(): Promise<any>;
             _prepareAnimation(paneRect: any, contentRect: any): void;
@@ -276,6 +292,7 @@ declare module WinJS {
                 splitViewPaneToggle: string;
             }
             
+            _onAriaExpandedPropertyChanged(mutations: IMutationRecordShim[]): void;
             _invoked(): void;
             _disposed: boolean;
         }
@@ -586,7 +603,7 @@ declare module WinJS {
         }
 
         class PrivateFlyout extends Flyout {
-            _disposed;
+            _disposed: boolean;
 
             static _cascadeManager;
         }
