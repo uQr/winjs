@@ -280,6 +280,7 @@ export class _CommandingSurface {
         this._refreshPending = false;
         this._rtl = false;
         this._initializedSignal = new _Signal();
+        //this._nextLayoutStage = CommandLayoutPipeline.idle;
         this._isOpenedMode = _Constants.defaultOpened;
         this._menuCommandProjections = [];
 
